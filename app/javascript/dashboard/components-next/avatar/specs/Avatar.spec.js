@@ -5,6 +5,7 @@ const UPLOAD_OVERLAY = '.bg-n-alpha-black1';
 const DELETE_BUTTON = '.bg-n-solid-3';
 const INITIALS = '.select-none';
 const AVATAR_BOX = 'span[role="img"]';
+const STATUS_BADGE = '.z-20.rounded-full';
 
 const global = {
   stubs: {
@@ -101,26 +102,42 @@ describe('Avatar', () => {
       [32, 'rounded-lg'],
       [48, 'rounded-xl'],
       [64, 'rounded-2xl'],
-    ])('uses a %ipx-appropriate radius', (size, expected) => {
-      expect(createAvatar({ size }).find(AVATAR_BOX).classes()).toContain(
-        expected
+    ])('uses a %ipx-appropriate radius on an inbox', (size, expected) => {
+      expect(
+        createAvatar({ size, inbox: { channel_type: 'Channel::Api' } })
+          .find(AVATAR_BOX)
+          .classes()
+      ).toContain(expected);
+    });
+
+    it('is a circle for a person, whatever the size', () => {
+      expect(createAvatar({ size: 64 }).find(AVATAR_BOX).classes()).toContain(
+        'rounded-full'
       );
     });
 
     it('honours roundedFull regardless of size', () => {
       expect(
-        createAvatar({ size: 64, roundedFull: true }).find(AVATAR_BOX).classes()
+        createAvatar({
+          size: 64,
+          roundedFull: true,
+          inbox: { channel_type: 'Channel::Api' },
+        })
+          .find(AVATAR_BOX)
+          .classes()
       ).toContain('rounded-full');
     });
   });
 
   describe('status badge', () => {
     it.each([
-      ['online', 'bg-n-teal-10'],
-      ['busy', 'bg-n-amber-10'],
-      ['offline', 'bg-n-slate-10'],
+      ['online', 'bg-[var(--g-agent)]'],
+      ['busy', 'bg-[var(--g-text-muted)]'],
+      ['offline', 'bg-[var(--g-surface)]'],
     ])('renders the %s badge', (status, expected) => {
-      expect(createAvatar({ status }).find(`.${expected}`).exists()).toBe(true);
+      expect(createAvatar({ status }).find(STATUS_BADGE).classes()).toContain(
+        expected
+      );
     });
 
     it('hides the offline badge when hideOfflineStatus is set', () => {
@@ -129,7 +146,7 @@ describe('Avatar', () => {
         hideOfflineStatus: true,
       });
 
-      expect(wrapper.find('.bg-n-slate-10').exists()).toBe(false);
+      expect(wrapper.find(STATUS_BADGE).exists()).toBe(false);
     });
 
     it('accepts only known availability statuses', () => {
@@ -152,7 +169,9 @@ describe('Avatar', () => {
         inbox: { channel_type: 'Channel::Api' },
       });
 
-      expect(wrapper.find('.bg-n-teal-10').exists()).toBe(true);
+      expect(wrapper.find(STATUS_BADGE).classes()).toContain(
+        'bg-[var(--g-agent)]'
+      );
       expect(wrapper.find('.channel-icon').exists()).toBe(false);
     });
 
@@ -163,7 +182,7 @@ describe('Avatar', () => {
       );
 
       expect(wrapper.find('.custom-badge').exists()).toBe(true);
-      expect(wrapper.find('.bg-n-teal-10').exists()).toBe(false);
+      expect(wrapper.find(STATUS_BADGE).exists()).toBe(false);
     });
   });
 

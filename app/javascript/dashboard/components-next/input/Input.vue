@@ -53,9 +53,9 @@ const messageClass = computed(() => {
 const inputOutlineClass = computed(() => {
   switch (props.messageType) {
     case 'error':
-      return 'outline-n-ruby-8 dark:outline-n-ruby-8 hover:outline-n-ruby-9 dark:hover:outline-n-ruby-9 disabled:outline-n-ruby-8 dark:disabled:outline-n-ruby-8';
+      return 'outline-n-ruby-9 dark:outline-n-ruby-9 hover:outline-n-ruby-9 dark:hover:outline-n-ruby-9 disabled:outline-n-ruby-9 dark:disabled:outline-n-ruby-9 ring-[3px] ring-[--g-danger-tint]';
     default:
-      return 'outline-n-weak dark:outline-n-weak hover:outline-n-slate-6 dark:hover:outline-n-slate-6 disabled:outline-n-weak dark:disabled:outline-n-weak focus:outline-n-brand dark:focus:outline-n-brand';
+      return 'outline-[--g-border] hover:outline-[--g-border-strong] disabled:outline-[--g-border] focus:outline-n-brand dark:focus:outline-n-brand focus:ring-[3px] focus:ring-[--g-slate-tint]';
   }
 });
 
@@ -137,7 +137,7 @@ onMounted(() => {
           ? max
           : undefined
       "
-      class="block w-full reset-base text-sm !mb-0 outline outline-1 border-none border-0 outline-offset-[-1px] rounded-lg bg-n-alpha-black2 file:border-0 file:bg-transparent file:text-sm file:font-medium text-ellipsis placeholder:text-n-slate-10 dark:placeholder:text-n-slate-10 disabled:cursor-not-allowed disabled:opacity-50 text-n-slate-12 transition-all duration-500 ease-in-out [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      class="block w-full reset-base text-sm !mb-0 outline outline-1 border-none border-0 outline-offset-[-1px] rounded-md bg-[--g-slate-tint] file:border-0 file:bg-transparent file:text-sm file:font-medium text-ellipsis placeholder:text-n-slate-10 dark:placeholder:text-n-slate-10 disabled:cursor-not-allowed disabled:opacity-50 text-n-slate-12 transition-all duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       @input="handleInput"
       @focus="handleFocus"
       @blur="handleBlur"
@@ -145,7 +145,7 @@ onMounted(() => {
     />
     <p
       v-if="message"
-      class="min-w-0 mt-1 mb-0 text-label-small truncate transition-all duration-500 ease-in-out"
+      class="min-w-0 mt-1 mb-0 text-label-small truncate transition-all duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)]"
       :class="messageClass"
     >
       {{ message }}

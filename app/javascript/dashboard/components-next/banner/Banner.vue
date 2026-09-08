@@ -21,30 +21,45 @@ const props = defineProps({
 
 const emit = defineEmits(['action']);
 
+// The design has three banner tones, so the five colour values collapse onto
+// them the way Button's roles do: teal is the assistant, ruby is danger. Blue
+// and amber have no equivalent in a six-colour palette — an informational or
+// cautionary banner reads as neutral rather than as an alarm — so both land on
+// slate rather than inventing a fourth tone.
+const TONE_BY_COLOR = {
+  slate: 'slate',
+  blue: 'slate',
+  amber: 'slate',
+  teal: 'agent',
+  ruby: 'danger',
+};
+
+const tone = computed(() => TONE_BY_COLOR[props.color] ?? 'slate');
+
 const bannerClass = computed(() => {
   const classMap = {
     slate:
-      'bg-n-slate-3 border-n-slate-4 text-n-slate-11 [&_.link]:text-n-slate-11',
-    amber:
-      'bg-n-amber-3 border-n-amber-4 text-n-amber-11 [&_.link]:text-n-amber-11',
-    teal: 'bg-n-teal-3 border-n-teal-4 text-n-teal-11 [&_.link]:text-n-teal-11',
-    ruby: 'bg-n-ruby-3 border-n-ruby-4 text-n-ruby-11 [&_.link]:text-n-ruby-11',
-    blue: 'bg-n-blue-3 border-n-blue-4 text-n-blue-11 [&_.link]:text-n-blue-11',
+      'bg-[var(--g-slate-tint)] border-[var(--g-border)] text-[var(--g-text)] [&_.link]:text-[var(--g-text)]',
+    agent:
+      'bg-[var(--g-surface-tank)] border-[var(--g-agent-border)] text-[var(--g-text)] [&_.link]:text-[var(--g-text)]',
+    danger:
+      'bg-[var(--g-danger-tint)] border-[var(--g-danger-border)] text-[var(--g-danger-text)] [&_.link]:text-[var(--g-danger-text)]',
   };
 
-  return classMap[props.color];
+  return classMap[tone.value];
 });
 
+// The action sits on a tinted ground, so it takes the surface as its own and
+// carries the tone in its border and label — a faded fill would be the banner
+// colour twice over and read as no button at all.
 const buttonClass = computed(() => {
   const classMap = {
-    slate: 'bg-n-slate-4 hover:bg-n-slate-5 text-n-slate-11',
-    amber: 'bg-n-amber-4 hover:bg-n-amber-5 text-n-amber-11',
-    teal: 'bg-n-teal-4 hover:bg-n-teal-5 text-n-teal-11',
-    ruby: 'bg-n-ruby-4 hover:bg-n-ruby-5 text-n-ruby-11',
-    blue: 'bg-n-blue-4 hover:bg-n-blue-5 text-n-blue-11',
+    slate: 'border-[var(--g-border)] text-[var(--g-text)]',
+    agent: 'border-[var(--g-agent-border)] text-[var(--g-agent)]',
+    danger: 'border-[var(--g-danger-border)] text-[var(--g-danger-text)]',
   };
 
-  return classMap[props.color];
+  return classMap[tone.value];
 });
 
 const triggerAction = () => {
@@ -55,7 +70,7 @@ const triggerAction = () => {
 
 <template>
   <div
-    class="text-sm rounded-xl flex items-center justify-between gap-2 border"
+    class="text-sm rounded-[var(--g-radius-card)] flex items-center justify-between gap-2 border animate-[g-in_var(--g-dur-arrive)_var(--g-ease-out)]"
     :class="[
       bannerClass,
       {
@@ -64,13 +79,17 @@ const triggerAction = () => {
       },
     ]"
   >
-    <div>
+    <div :class="tone === 'agent' ? 'flex items-center gap-2' : ''">
+      <span
+        v-if="tone === 'agent'"
+        class="flex-shrink-0 rounded-full size-1.5 bg-[var(--g-agent)]"
+      />
       <slot />
     </div>
     <div class="flex-shrink-0">
       <button
         v-if="actionLabel"
-        class="px-3 py-1 w-auto grid place-content-center rounded-lg whitespace-nowrap"
+        class="px-3 py-1 w-auto grid place-content-center border rounded-[var(--g-radius-control)] whitespace-nowrap bg-[var(--g-surface)] hover:brightness-[0.94]"
         :class="buttonClass"
         :disabled="isLoading"
         @click="triggerAction"

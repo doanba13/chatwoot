@@ -51,12 +51,14 @@ const modelValue = defineModel({
       v-model="modelValue"
       :disabled="disabled"
       :aria-label="ariaLabel || undefined"
-      class="appearance-none bg-none rounded-lg border-0 outline-1 outline -outline-offset-1 transition-all duration-200 bg-n-surface-1 !mb-0 py-2 px-3 pr-10 text-sm"
+      class="appearance-none bg-none rounded-md border-0 outline-1 outline -outline-offset-1 transition-all duration-200 bg-[--g-surface] !mb-0 h-10 py-2 px-3 pr-10 text-sm"
       :class="{
-        'outline-n-weak hover:outline-n-slate-6 focus:outline-n-blue-9':
+        'outline-[--g-border] hover:outline-[--g-border-strong] focus:outline-n-blue-9 focus:ring-[3px] focus:ring-[--g-slate-tint]':
           !error && !disabled,
-        'outline-n-red-9 focus:outline-n-red-9': error && !disabled,
-        'outline-n-weak bg-n-slate-2 cursor-not-allowed opacity-60': disabled,
+        'outline-n-ruby-9 focus:outline-n-ruby-9 ring-[3px] ring-[--g-danger-tint]':
+          error && !disabled,
+        'outline-[--g-border] bg-n-slate-2 cursor-not-allowed opacity-60':
+          disabled,
       }"
     >
       <option v-if="placeholder" value="" disabled>
@@ -94,7 +96,7 @@ const modelValue = defineModel({
     >
       <Icon
         icon="i-lucide-chevron-down"
-        class="size-4 text-n-slate-11"
+        class="size-3.5 text-n-slate-11"
         :class="{ 'opacity-50': disabled }"
       />
     </div>

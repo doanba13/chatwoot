@@ -137,9 +137,9 @@ onMounted(() => {
 
 <template>
   <div
-    class="bg-n-alpha-3 backdrop-blur-[100px] border-0 outline outline-1 outline-n-container absolute rounded-xl z-50 flex flex-col min-w-[136px] shadow-lg pt-2 overflow-hidden"
+    class="bg-[var(--g-surface)] border border-[var(--g-border)] absolute rounded-[var(--g-radius-card)] z-50 flex flex-col min-w-[136px] shadow-[shadow:var(--g-shadow-pop)] pt-1.5 overflow-hidden animate-[g-in_var(--g-dur-reveal)_var(--g-ease-out)]"
   >
-    <div v-if="showSearch" class="relative shrink-0 px-2 mb-2">
+    <div v-if="showSearch" class="relative shrink-0 px-1.5 mb-1.5">
       <span
         class="absolute i-lucide-search size-3.5 top-2 ltr:left-5 rtl:right-5"
       />
@@ -154,7 +154,7 @@ onMounted(() => {
         @input="handleSearchInput"
       />
     </div>
-    <div class="flex flex-col gap-2 overflow-y-auto min-h-0 px-2 pb-2">
+    <div class="flex flex-col gap-2 overflow-y-auto min-h-0 px-1.5 pb-1.5">
       <template v-if="hasSections">
         <div
           v-for="(section, sectionIndex) in filteredMenuSections"
@@ -163,7 +163,7 @@ onMounted(() => {
         >
           <p
             v-if="section.title"
-            class="px-2 py-2 text-xs mb-0 font-medium text-n-slate-11 uppercase tracking-wide sticky top-0 z-10 bg-n-alpha-3 backdrop-blur-sm truncate min-w-0"
+            class="px-2 py-2 text-xs mb-0 font-medium text-[var(--g-text-muted)] sticky top-0 z-10 bg-[var(--g-surface)] truncate min-w-0"
           >
             {{ section.title }}
           </p>
@@ -175,7 +175,7 @@ onMounted(() => {
           </div>
           <div
             v-else-if="!section.items.length && section.emptyState"
-            class="text-sm text-n-slate-11 px-2 py-1.5"
+            class="text-sm text-[var(--g-text-muted)] px-2 py-1.5"
           >
             {{ section.emptyState }}
           </div>
@@ -183,11 +183,11 @@ onMounted(() => {
             v-for="(item, itemIndex) in section.items"
             :key="item.value || itemIndex"
             type="button"
-            class="inline-flex items-center justify-start w-full h-8 min-w-0 gap-2 px-2 py-1.5 transition-all duration-200 ease-in-out border-0 rounded-lg z-60 hover:bg-n-alpha-1 dark:hover:bg-n-alpha-2 disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50"
+            class="inline-flex items-center justify-start w-full h-8 min-w-0 gap-2 px-2 py-1.5 transition-all duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)] border-0 rounded-[var(--g-radius-control)] z-60 hover:bg-[var(--g-slate-tint)] disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50"
             :class="{
-              'bg-n-alpha-1 dark:bg-n-solid-active': item.isSelected,
-              'text-n-ruby-11': item.action === 'delete',
-              'text-n-slate-12': item.action !== 'delete',
+              'bg-[var(--g-surface-tank)]': item.isSelected,
+              'text-[var(--g-danger-text)]': item.action === 'delete',
+              'text-[var(--g-text)]': item.action !== 'delete',
             }"
             :disabled="item.disabled"
             @click="handleAction(item)"
@@ -223,11 +223,17 @@ onMounted(() => {
                 {{ item.label }}
               </span>
             </slot>
-            <slot name="trailing-icon" :item="item" />
+            <slot name="trailing-icon" :item="item">
+              <Icon
+                v-if="item.isSelected"
+                icon="i-lucide-check"
+                class="flex-shrink-0 ms-auto size-3.5 text-[var(--g-agent)]"
+              />
+            </slot>
           </button>
           <div
             v-if="sectionIndex < filteredMenuSections.length - 1"
-            class="h-px bg-n-alpha-2 mx-2 my-1"
+            class="h-px bg-[var(--g-border)] mx-2 my-1"
           />
         </div>
       </template>
@@ -239,11 +245,11 @@ onMounted(() => {
           v-for="(item, index) in filteredMenuItems"
           :key="index"
           type="button"
-          class="inline-flex items-center justify-start w-full h-8 min-w-0 gap-2 px-2 py-1.5 transition-all duration-200 ease-in-out border-0 rounded-lg z-60 hover:bg-n-alpha-1 dark:hover:bg-n-alpha-2 disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50"
+          class="inline-flex items-center justify-start w-full h-8 min-w-0 gap-2 px-2 py-1.5 transition-all duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)] border-0 rounded-[var(--g-radius-control)] z-60 hover:bg-[var(--g-slate-tint)] disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50"
           :class="{
-            'bg-n-alpha-1 dark:bg-n-solid-active': item.isSelected,
-            'text-n-ruby-11': item.action === 'delete',
-            'text-n-slate-12': item.action !== 'delete',
+            'bg-[var(--g-surface-tank)]': item.isSelected,
+            'text-[var(--g-danger-text)]': item.action === 'delete',
+            'text-[var(--g-text)]': item.action !== 'delete',
           }"
           :disabled="item.disabled"
           @click="handleAction(item)"
@@ -279,12 +285,18 @@ onMounted(() => {
               {{ item.label }}
             </span>
           </slot>
-          <slot name="trailing-icon" :item="item" />
+          <slot name="trailing-icon" :item="item">
+            <Icon
+              v-if="item.isSelected"
+              icon="i-lucide-check"
+              class="flex-shrink-0 ms-auto size-3.5 text-[var(--g-agent)]"
+            />
+          </slot>
         </button>
       </template>
       <div
         v-if="shouldShowEmptyState"
-        class="text-sm text-n-slate-11 px-2 py-1.5"
+        class="text-sm text-[var(--g-text-muted)] px-2 py-1.5"
       >
         {{
           isSearching

@@ -55,30 +55,15 @@ const { t } = useI18n();
 const isImageValid = ref(true);
 const fileInput = ref(null);
 
-const AVATAR_COLORS = {
-  dark: [
-    ['#4B143D', '#FF8DCC'],
-    ['#3F220D', '#FFA366'],
-    ['#2A2A2A', '#ADB1B8'],
-    ['#023B37', '#0BD8B6'],
-    ['#27264D', '#A19EFF'],
-    ['#1D2E62', '#9EB1FF'],
-  ],
-  light: [
-    ['#FBDCEF', '#C2298A'],
-    ['#FFE0BB', '#99543A'],
-    ['#E8E8E8', '#60646C'],
-    ['#CCF3EA', '#008573'],
-    ['#EBEBFE', '#4747C2'],
-    ['#E1E9FF', '#3A5BC7'],
-  ],
-  default: { bg: '#E8E8E8', text: '#60646C' },
-};
-
 const STATUS_CLASSES = computed(() => ({
-  online: 'bg-n-teal-10',
-  busy: 'bg-n-amber-10',
-  ...(props.hideOfflineStatus ? {} : { offline: 'bg-n-slate-10' }),
+  online: 'bg-[var(--g-agent)]',
+  busy: 'bg-[var(--g-text-muted)]',
+  ...(props.hideOfflineStatus
+    ? {}
+    : {
+        offline:
+          'bg-[var(--g-surface)] ring-1 ring-inset ring-[var(--g-border-strong)]',
+      }),
 }));
 
 const showDefaultAvatar = computed(() => !props.src && !props.name);
@@ -95,29 +80,17 @@ const initials = computed(() => {
         .toUpperCase();
 });
 
-const getColorsByNameLength = computed(() => {
-  if (!props.name) return AVATAR_COLORS.default;
-
-  const index = props.name.length % AVATAR_COLORS.light.length;
-  return {
-    bg: AVATAR_COLORS.light[index][0],
-    darkBg: AVATAR_COLORS.dark[index][0],
-    text: AVATAR_COLORS.light[index][1],
-    darkText: AVATAR_COLORS.dark[index][1],
-  };
-});
-
 const containerStyles = computed(() => ({
   width: `${props.size}px`,
   height: `${props.size}px`,
 }));
 
 const borderRadiusClass = computed(() => {
-  if (props.roundedFull) {
+  if (props.roundedFull || !props.inbox) {
     return 'rounded-full';
   }
 
-  // Approximates 25% of size
+  // Approximates size / 4
   if (props.size <= 16) return 'rounded'; // 4px
   if (props.size <= 24) return 'rounded-md'; // 6px
   if (props.size <= 32) return 'rounded-lg'; // 8px
@@ -127,20 +100,16 @@ const borderRadiusClass = computed(() => {
 
 const avatarStyles = computed(() => ({
   ...containerStyles.value,
-  backgroundColor:
-    !showDefaultAvatar.value && (!props.src || !isImageValid.value)
-      ? getColorsByNameLength.value.bg
-      : undefined,
-  color:
-    !showDefaultAvatar.value && (!props.src || !isImageValid.value)
-      ? getColorsByNameLength.value.text
-      : undefined,
-  '--dark-bg': getColorsByNameLength.value.darkBg,
-  '--dark-text': getColorsByNameLength.value.darkText,
+  ...(props.src && isImageValid.value
+    ? {}
+    : {
+        backgroundColor: 'var(--g-surface-tank)',
+        color: 'var(--g-text)',
+      }),
 }));
 
 const badgeStyles = computed(() => {
-  const badgeSize = Math.max(props.size * 0.35, 8); // 35% of avatar size, minimum 8px
+  const badgeSize = Math.max(props.size * 0.3, 8); // 30% of avatar size, minimum 8px
   return {
     width: `${badgeSize}px`,
     height: `${badgeSize}px`,
@@ -155,6 +124,9 @@ const iconStyles = computed(() => ({
 
 const initialsStyles = computed(() => ({
   fontSize: `${Math.min(props.size / 2.5, 24)}px`,
+  ...(props.inbox || props.size >= 48
+    ? { fontFamily: 'var(--g-font-display)' }
+    : {}),
 }));
 
 const invalidateCurrentImage = () => {
@@ -204,7 +176,7 @@ watch(
     <slot name="badge" :size="size">
       <div
         v-if="status && STATUS_CLASSES[status]"
-        class="absolute z-20 border rounded-full border-n-slate-3"
+        class="absolute z-20 border-2 rounded-full border-[var(--g-surface)]"
         :style="badgeStyles"
         :class="STATUS_CLASSES[status]"
       />
@@ -230,14 +202,7 @@ watch(
     <span
       role="img"
       class="relative inline-flex items-center justify-center object-cover overflow-hidden font-medium outline outline-1 -outline-offset-1 outline-[rgb(0_0_0_/_0.03)] dark:outline-[rgb(255_255_255_/_0.04)]"
-      :class="[
-        borderRadiusClass,
-        {
-          'dark:!bg-[var(--dark-bg)] dark:!text-[var(--dark-text)]':
-            !showDefaultAvatar && (!src || !isImageValid),
-          'bg-n-slate-3 dark:bg-n-slate-4': showDefaultAvatar,
-        },
-      ]"
+      :class="borderRadiusClass"
       :style="avatarStyles"
     >
       <!-- Avatar Content -->

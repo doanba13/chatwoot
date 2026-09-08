@@ -98,26 +98,30 @@ const computedJustify = computed(() => {
 });
 
 const STYLE_CONFIG = {
+  // Hover brightness only works on a variant that has a ground to act on, so
+  // solid (1.08) and faded (0.94) carry nothing else. Ghost and outline keep a
+  // tint fill alongside it — that fill is the hover the eye actually reads.
   colors: {
     blue: {
       solid:
-        'bg-n-brand text-white hover:enabled:brightness-110 focus-visible:brightness-110 outline-transparent',
+        'bg-n-brand text-n-on-ink hover:enabled:brightness-[1.08] focus-visible:brightness-[1.08] outline-transparent',
       faded:
-        'bg-n-brand/10 text-n-blue-11 hover:enabled:bg-n-brand/20 focus-visible:bg-n-brand/20 outline-transparent',
-      outline: 'text-n-blue-11 outline-n-brand',
+        'bg-n-brand/10 text-n-blue-11 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
+      outline:
+        'text-n-blue-11 outline-n-brand hover:enabled:bg-n-brand/10 focus-visible:bg-n-brand/10 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94]',
       ghost:
-        'text-n-blue-11 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 outline-transparent',
+        'text-n-blue-11 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
       link: 'text-n-blue-11 hover:enabled:underline focus-visible:underline outline-transparent',
     },
     ruby: {
       solid:
-        'bg-n-ruby-9 text-white hover:enabled:bg-n-ruby-10 focus-visible:bg-n-ruby-10 outline-transparent',
+        'bg-n-ruby-9 text-white hover:enabled:brightness-[1.08] focus-visible:brightness-[1.08] outline-transparent',
       faded:
-        'bg-n-ruby-9/10 text-n-ruby-11 hover:enabled:bg-n-ruby-9/20 focus-visible:bg-n-ruby-9/20 outline-transparent',
+        'bg-n-ruby-9/10 text-n-ruby-11 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
       outline:
-        'text-n-ruby-11 hover:enabled:bg-n-ruby-9/10 focus-visible:bg-n-ruby-9/10 outline-n-ruby-8',
+        'text-n-ruby-11 hover:enabled:bg-n-ruby-9/10 focus-visible:bg-n-ruby-9/10 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-n-ruby-8',
       ghost:
-        'text-n-ruby-11 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 outline-transparent',
+        'text-n-ruby-11 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
       link: 'text-n-ruby-9 dark:text-n-ruby-11 hover:enabled:underline focus-visible:underline outline-transparent',
     },
     amber: {
@@ -133,39 +137,39 @@ const STYLE_CONFIG = {
     },
     slate: {
       solid:
-        'bg-n-button-color dark:hover:enabled:bg-n-solid-2 dark:focus-visible:bg-n-solid-2 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 text-n-slate-12 outline-n-container',
+        'bg-n-button-color dark:hover:enabled:bg-n-solid-2 dark:focus-visible:bg-n-solid-2 hover:enabled:bg-[var(--g-slate-tint)] focus-visible:bg-[var(--g-slate-tint)] hover:enabled:brightness-[1.08] focus-visible:brightness-[1.08] text-n-slate-12 outline-n-container',
       faded:
-        'bg-n-slate-9/10 text-n-slate-12 hover:enabled:bg-n-slate-9/20 focus-visible:bg-n-slate-9/20 outline-transparent',
+        'bg-n-slate-9/10 text-n-slate-12 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
       outline:
-        'text-n-slate-11 outline-n-strong hover:enabled:bg-n-slate-9/10 focus-visible:bg-n-slate-9/10',
+        'text-n-slate-11 outline-n-strong hover:enabled:bg-n-slate-9/10 focus-visible:bg-n-slate-9/10 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94]',
       link: 'text-n-slate-11 hover:enabled:text-n-slate-12 focus-visible:text-n-slate-12 hover:enabled:underline focus-visible:underline outline-transparent',
       ghost:
-        'text-n-slate-12 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 outline-transparent',
+        'text-n-slate-12 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
     },
     teal: {
       solid:
-        'bg-n-teal-9 text-white hover:enabled:bg-n-teal-10 focus-visible:bg-n-teal-10 outline-transparent',
+        'bg-n-teal-9 text-white hover:enabled:brightness-[1.08] focus-visible:brightness-[1.08] outline-transparent',
       faded:
-        'bg-n-teal-9/10 text-n-teal-11 hover:enabled:bg-n-teal-9/20 focus-visible:bg-n-teal-9/20 outline-transparent',
+        'bg-n-teal-9/10 text-n-teal-11 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
       outline:
-        'text-n-teal-11 hover:enabled:bg-n-teal-9/10 focus-visible:bg-n-teal-9/10 outline-n-teal-9',
+        'text-n-teal-11 hover:enabled:bg-n-teal-9/10 focus-visible:bg-n-teal-9/10 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-n-teal-9',
       link: 'text-n-teal-9 hover:enabled:underline focus-visible:underline outline-transparent',
       ghost:
-        'text-n-teal-9 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 outline-transparent',
+        'text-n-teal-9 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
     },
   },
   sizes: {
     regular: {
       xs: 'h-6 px-2',
       sm: 'h-8 px-3',
-      md: 'h-10 px-4',
-      lg: 'h-12 px-5',
+      md: 'h-9 px-4',
+      lg: 'h-10 px-5',
     },
     iconOnly: {
       xs: 'h-6 w-6 p-0',
       sm: 'h-8 w-8 p-0',
-      md: 'h-10 w-10 p-0',
-      lg: 'h-12 w-12 p-0',
+      md: 'h-9 w-9 p-0',
+      lg: 'h-10 w-10 p-0',
     },
     link: {
       xs: 'p-0',
@@ -175,14 +179,14 @@ const STYLE_CONFIG = {
     },
   },
   fontSize: {
-    xs: 'text-xs',
-    sm: 'text-sm',
+    xs: 'text-xs font-medium',
+    sm: 'text-sm font-medium',
     md: 'text-sm font-medium',
-    lg: 'text-base',
+    lg: 'text-base font-medium',
   },
   clickAnimation: {
-    xs: 'active:enabled:scale-[0.97]',
-    sm: 'active:enabled:scale-[0.97]',
+    xs: 'active:enabled:scale-[0.98]',
+    sm: 'active:enabled:scale-[0.98]',
     md: 'active:enabled:scale-[0.98]',
     lg: 'active:enabled:scale-[0.98]',
   },
@@ -191,7 +195,7 @@ const STYLE_CONFIG = {
     center: 'justify-center',
     end: 'justify-end',
   },
-  base: 'inline-flex items-center min-w-0 gap-2 transition-all duration-100 ease-out border-0 rounded-lg outline-1 outline disabled:opacity-50',
+  base: 'inline-flex items-center min-w-0 gap-2 transition-all duration-100 ease-out border-0 rounded-md outline-1 outline disabled:opacity-50',
 };
 
 const variantClasses = computed(() => {
@@ -252,7 +256,7 @@ const animationClasses = computed(() => {
       <Icon :icon="icon" class="flex-shrink-0" />
     </slot>
 
-    <Spinner v-if="isLoading" class="!w-5 !h-5 flex-shrink-0" />
+    <Spinner v-if="isLoading" class="!w-5 !h-5 !text-current flex-shrink-0" />
 
     <slot v-if="label || $slots.default" name="default">
       <span v-if="label" class="min-w-0 truncate">{{ label }}</span>

@@ -37,7 +37,7 @@ const handleChange = event => {
     <svg
       viewBox="0 0 14 14"
       fill="none"
-      class="pointer-events-none absolute w-3.5 h-3.5 z-20 stroke-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+      class="pointer-events-none absolute w-3.5 h-3.5 z-20 stroke-[var(--g-on-ink)] opacity-0 peer-checked:opacity-100 transition-opacity duration-200 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
     >
       <path
         d="M3 8L6 11L11 3.5"
@@ -50,7 +50,7 @@ const handleChange = event => {
     <svg
       viewBox="0 0 14 14"
       fill="none"
-      class="pointer-events-none absolute w-3.5 h-3.5 z-20 stroke-white opacity-0 peer-indeterminate:opacity-100 transition-opacity duration-200 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+      class="pointer-events-none absolute w-3.5 h-3.5 z-20 stroke-[var(--g-on-ink)] opacity-0 peer-indeterminate:opacity-100 transition-opacity duration-200 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
     >
       <path
         d="M3 7L11 7"

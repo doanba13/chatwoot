@@ -9,6 +9,10 @@ const isEnabled = ref(false);
 const defaultValue = ref(false);
 const checkedValue = ref(true);
 
+// Agent variant
+const agentOff = ref(false);
+const agentOn = ref(true);
+
 // Events variant
 const eventValue = ref(false);
 const lastChange = ref('No changes yet');
@@ -36,6 +40,20 @@ const onChange = value => {
         <div class="flex items-center gap-4">
           <span class="w-20">Checked:</span>
           <Switch v-model="checkedValue" />
+        </div>
+      </div>
+    </Variant>
+
+    <Variant title="Agent">
+      <div class="p-2 space-y-4">
+        <div class="flex items-center gap-4">
+          <span class="w-20">Off:</span>
+          <Switch v-model="agentOff" agent />
+        </div>
+
+        <div class="flex items-center gap-4">
+          <span class="w-20">On:</span>
+          <Switch v-model="agentOn" agent />
         </div>
       </div>
     </Variant>

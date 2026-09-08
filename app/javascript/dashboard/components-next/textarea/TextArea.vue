@@ -148,16 +148,17 @@ onMounted(() => {
       {{ label }}
     </label>
     <div
-      class="flex flex-col gap-2 px-3 pt-3 pb-3 transition-all duration-500 ease-in-out border rounded-lg bg-n-alpha-black2"
+      class="flex flex-col gap-2 px-3 pt-3 pb-3 transition-all duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)] border rounded-md bg-[--g-slate-tint]"
       :class="[
         customTextAreaWrapperClass,
         {
-          'cursor-not-allowed opacity-50 !bg-n-alpha-black2 disabled:border-n-weak dark:disabled:border-n-weak':
+          'cursor-not-allowed opacity-50 !bg-[--g-slate-tint] disabled:border-[--g-border]':
             disabled,
-          'border-n-brand dark:border-n-brand': isFocused,
-          'hover:border-n-slate-6 dark:hover:border-n-slate-6 border-n-weak dark:border-n-weak':
+          'border-n-brand dark:border-n-brand ring-[3px] ring-[--g-slate-tint]':
+            isFocused,
+          'border-[--g-border] hover:border-[--g-border-strong]':
             !isFocused && messageType !== 'error',
-          'border-n-ruby-8 dark:border-n-ruby-8 hover:border-n-ruby-9 dark:hover:border-n-ruby-9':
+          'border-n-ruby-9 dark:border-n-ruby-9 ring-[3px] ring-[--g-danger-tint]':
             messageType === 'error' && !isFocused,
         },
       ]"
@@ -197,7 +198,7 @@ onMounted(() => {
     </div>
     <p
       v-if="message"
-      class="min-w-0 mt-1 mb-0 text-xs truncate transition-all duration-500 ease-in-out"
+      class="min-w-0 mt-1 mb-0 text-xs truncate transition-all duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)]"
       :class="messageClass"
     >
       {{ message }}

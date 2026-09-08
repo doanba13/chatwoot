@@ -1,6 +1,15 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
 
+defineProps({
+  // Turns the on-state track `--g-agent` instead of ink, for switches that
+  // mean "the assistant handles this".
+  agent: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 const emit = defineEmits(['change']);
 
 const { t } = useI18n();
@@ -20,14 +29,16 @@ const updateValue = () => {
   <button
     type="button"
     class="group relative h-4 rounded-full w-7 flex-shrink-0 select-none focus:outline-none focus:ring-1 focus:ring-n-brand focus:ring-offset-n-slate-2 focus:ring-offset-2 transition-colors duration-200 ease-in-out"
-    :class="modelValue ? 'bg-n-brand' : 'bg-n-slate-6'"
+    :class="
+      modelValue ? (agent ? 'bg-n-teal-9' : 'bg-n-brand') : 'bg-n-slate-6'
+    "
     role="switch"
     :aria-checked="modelValue"
     @click="updateValue"
   >
     <span class="sr-only">{{ t('SWITCH.TOGGLE') }}</span>
     <span
-      class="absolute top-1/2 ltr:left-0.5 rtl:right-0.5 -translate-y-1/2 transition-transform duration-[350ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+      class="absolute top-1/2 ltr:left-0.5 rtl:right-0.5 -translate-y-1/2 transition-transform duration-[var(--g-dur-reveal)] ease-[var(--g-ease-out)]"
       :class="
         modelValue
           ? 'ltr:translate-x-3 rtl:-translate-x-3 group-active:ltr:translate-x-[6px] rtl:group-active:-translate-x-[6px]'

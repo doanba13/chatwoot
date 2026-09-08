@@ -58,7 +58,9 @@ const onClick = (item, index) => {
             :color="item.iconColor"
             class="flex-shrink-0 size-4"
           />
-          <span class="truncate text-n-slate-12">{{ item.label }}</span>
+          <span class="font-medium truncate text-n-slate-12">{{
+            item.label
+          }}</span>
         </span>
       </li>
     </ol>

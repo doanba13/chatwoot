@@ -118,7 +118,7 @@ defineExpose({ open, close });
   <TeleportWithDirection to="body">
     <dialog
       ref="dialogRef"
-      class="w-full transition-all duration-300 ease-in-out shadow-xl rounded-xl"
+      class="w-full bg-transparent rounded-[var(--g-radius-modal)]"
       :class="[
         maxWidthClass,
         positionClass,
@@ -129,7 +129,7 @@ defineExpose({ open, close });
       <OnClickOutside @trigger="handleClickOutside">
         <form
           ref="dialogContentRef"
-          class="flex flex-col w-full h-auto gap-6 p-6 overflow-visible text-start align-middle transition-all duration-300 ease-in-out transform bg-n-alpha-3 backdrop-blur-[100px] shadow-xl rounded-xl"
+          class="flex flex-col w-full h-auto gap-6 p-5 overflow-visible text-start align-middle bg-[var(--g-bg)] shadow-[shadow:var(--g-shadow-modal)] rounded-[var(--g-radius-modal)]"
           @submit.prevent="confirm"
           @click.stop
         >
@@ -177,8 +177,40 @@ defineExpose({ open, close });
 </template>
 
 <style scoped>
+/*
+ * Flat scrim, no blur.
+ *
+ * Neither half of this is motion-v, and both are enters only. `::backdrop` is
+ * a pseudo-element rather than a DOM node, so there is nothing for motion-v to
+ * attach to; and the panel has no exit to hold, because `close()` calls the
+ * native `dialog.close()`, which drops the element out of the top layer in the
+ * same tick — an `AnimatePresence` exit would run inside a `display: none`
+ * subtree. So the SCRIM and MODAL presets are spelled out here in CSS, keyed
+ * off `[open]` so they replay on every open rather than once on mount.
+ */
 dialog::backdrop {
-  @apply bg-n-alpha-black1 backdrop-blur-[4px];
+  background-color: var(--g-scrim);
+}
+
+dialog[open]::backdrop {
+  animation: dialog-scrim-in var(--g-dur-hover) var(--g-ease-out);
+}
+
+dialog[open] form {
+  animation: dialog-panel-in var(--g-dur-arrive) var(--g-ease-out);
+}
+
+@keyframes dialog-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
 }
 
 .dialog-position-top {
