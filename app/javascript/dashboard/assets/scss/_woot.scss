@@ -9,6 +9,10 @@
 // Next Colors
 @import 'next-colors';
 
+// Gotchu design tokens — imported after next-colors so its Radix overrides win
+// at equal specificity. See the header of _gotchu-tokens.scss.
+@import 'gotchu-tokens';
+
 // Base styles for elements
 @import 'base';
 

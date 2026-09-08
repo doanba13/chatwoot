@@ -15,6 +15,7 @@ import { setColorTheme } from './helper/themeHelper';
 import { isOnOnboardingView } from 'v3/helpers/RouteHelper';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useFontSize } from 'dashboard/composables/useFontSize';
+import { MotionConfig } from 'motion-v';
 import {
   registerSubscription,
   verifyServiceWorkerExistence,
@@ -26,6 +27,7 @@ export default {
   name: 'App',
 
   components: {
+    MotionConfig,
     LoadingState,
     NetworkNotification,
     UpdateBanner,
@@ -134,28 +136,34 @@ export default {
 </script>
 
 <template>
-  <div
-    v-if="!authUIFlags.isFetching"
-    id="app"
-    class="flex flex-col w-full h-screen min-h-0 bg-n-background"
-    :dir="isRTL ? 'rtl' : 'ltr'"
-  >
-    <UpdateBanner :latest-chatwoot-version="latestChatwootVersion" />
-    <StatusBanner />
-    <template v-if="currentAccountId">
-      <PendingEmailVerificationBanner v-if="hideOnOnboardingView" />
-      <PaymentPendingBanner v-if="hideOnOnboardingView" />
-      <LowBackupCodesBanner v-if="hideOnOnboardingView" />
-    </template>
-    <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
-    <WootSnackbarBox />
-    <NetworkNotification />
-  </div>
-  <LoadingState v-else />
+  <!-- `reduced-motion="user"` is the JS half of the accessibility contract. The
+       CSS half lives in the prefers-reduced-motion block in
+       assets/scss/_gotchu-tokens.scss; a motion-v animation does not go through
+       transition-duration, so it has to be told separately. -->
+  <MotionConfig reduced-motion="user">
+    <div
+      v-if="!authUIFlags.isFetching"
+      id="app"
+      class="flex flex-col w-full h-screen min-h-0 bg-n-background"
+      :dir="isRTL ? 'rtl' : 'ltr'"
+    >
+      <UpdateBanner :latest-chatwoot-version="latestChatwootVersion" />
+      <StatusBanner />
+      <template v-if="currentAccountId">
+        <PendingEmailVerificationBanner v-if="hideOnOnboardingView" />
+        <PaymentPendingBanner v-if="hideOnOnboardingView" />
+        <LowBackupCodesBanner v-if="hideOnOnboardingView" />
+      </template>
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+      <WootSnackbarBox />
+      <NetworkNotification />
+    </div>
+    <LoadingState v-else />
+  </MotionConfig>
 </template>
 
 <style lang="scss">

@@ -1,0 +1,273 @@
+// Gotchu design tokens
+//
+// Source: Claude Design project "Chatwoot Design System Kickoff"
+// (bdf19a68-cabf-4ba1-800f-4bcdc617e082), files tokens/{colors,typography,
+// spacing,motion}.css. Values are copied from there — change them in the design
+// project first, then re-copy, so the two do not drift.
+//
+// Two deliberate departures from the source files:
+//
+//  1. Every semantic token is prefixed `--g-`. The design ships bare names
+//     (`--surface`, `--text`, `--border-strong`), and `--border-strong` already
+//     exists in _next-colors.scss as an RGB triplet feeding `n-strong`. Reusing
+//     the bare name would break `rgb(var(--border-strong) / <alpha-value>)`.
+//     Prefixing also makes every Gotchu-sourced value greppable in a diff
+//     against upstream.
+//
+//  2. Dark mode is keyed on `.dark`, not `[data-theme="dark"]`. Chatwoot sets
+//     `document.body.classList.add('dark')` in dashboard/helper/themeHelper.js.
+//
+// The Radix compatibility block at the bottom is the load-bearing part: it
+// repaints Chatwoot's own `n-*` scales, so components that never learn about
+// Gotchu still render in it.
+
+// The two new font families are pulled in from entrypoints/dashboard.js rather
+// than here. Vite resolves a bare package specifier in JS unambiguously; from
+// inside Sass it depends on the preprocessor importer, and this file has to load
+// under vite, vitest and histoire alike.
+
+@layer base {
+  :root {
+    // Base palette — six colours, no more.
+    --g-ink: #14213d;
+    --g-paper: #fbfbfa;
+    --g-tank: #e9f6f5;
+    --g-axolotl: #ff6b8b;
+    --g-axolotl-hover: #f55a7c;
+    --g-gill: #2a9d8f;
+    --g-slate: #6b7280;
+    --g-ruby: #c8324f;
+    --g-ruby-text: #a8213c;
+
+    // Semantic — light
+    --g-bg: var(--g-paper);
+    --g-surface: #ffffff;
+    --g-surface-tank: var(--g-tank);
+    --g-bubble-customer: #f0f1f0;
+    --g-text: var(--g-ink);
+    --g-text-muted: var(--g-slate);
+    --g-on-ink: var(--g-paper);
+    --g-border: rgb(107 114 128 / 20%);
+    --g-border-strong: rgb(107 114 128 / 40%);
+
+    // Everything Gotchu wrote or did.
+    --g-agent: var(--g-gill);
+    --g-agent-border: rgb(42 157 143 / 30%);
+    --g-agent-tint: rgb(42 157 143 / 10%);
+
+    // Once per screen.
+    --g-brand: var(--g-axolotl);
+    --g-brand-hover: var(--g-axolotl-hover);
+    --g-on-brand: var(--g-ink);
+
+    --g-danger: var(--g-ruby);
+    --g-danger-text: var(--g-ruby-text);
+    --g-danger-tint: rgb(200 50 79 / 8%);
+    --g-danger-border: rgb(200 50 79 / 40%);
+
+    --g-slate-tint: rgb(107 114 128 / 8%);
+    --g-slate-tint-strong: rgb(107 114 128 / 14%);
+    --g-scrim: rgb(20 33 61 / 40%);
+
+    // Per-store identity — 8px dots and chips only, never a background.
+    --g-store-1: #6366f1;
+    --g-store-2: #f97316;
+    --g-store-3: #a855f7;
+    --g-store-4: #0ea5e9;
+    --g-store-5: #eab308;
+
+    // Type. Body stays Inter, which the dashboard already self-hosts; display
+    // and mono are additive and used for headings, store avatars, and the IDs /
+    // SKUs / tracking numbers the desk copies by hand.
+    --g-font-display: 'Bricolage Grotesque Variable', 'Inter', system-ui,
+      sans-serif;
+    --g-font-body: 'Inter', system-ui, sans-serif;
+    --g-font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+    --g-text-hero: 700 64px/68px var(--g-font-display);
+    --g-text-display: 700 44px/48px var(--g-font-display);
+    --g-text-title: 600 28px/36px var(--g-font-body);
+    --g-text-section: 600 20px/28px var(--g-font-body);
+    --g-text-body-lg: 400 16px/24px var(--g-font-body);
+    --g-text-body: 400 14px/20px var(--g-font-body);
+    --g-text-meta: 400 12px/16px var(--g-font-body);
+    --g-text-mono: 400 13px/20px var(--g-font-mono);
+    --g-text-key: 500 11px/14px var(--g-font-mono); // keyboard hints
+    --g-tracking-display: -0.01em;
+
+    // Space — 4px grid.
+    --g-space-1: 4px;
+    --g-space-2: 8px;
+    --g-space-3: 12px;
+    --g-space-4: 16px;
+    --g-space-6: 24px;
+    --g-space-8: 32px;
+    --g-space-12: 48px;
+
+    --g-radius-control: 6px; // inputs, buttons, chips
+    --g-radius-card: 10px; // cards, bubbles, popovers
+    --g-radius-modal: 16px; // dialogs, widget
+    --g-radius-full: 999px;
+
+    --g-hit: 44px; // minimum click/touch target
+    --g-control-sm: 32px;
+    --g-control-md: 36px;
+    --g-control-lg: 40px;
+
+    --g-shadow-pop: 0 8px 24px -12px rgb(20 33 61 / 25%); // the one elevation
+    --g-shadow-modal: 0 24px 48px -24px rgb(20 33 61 / 50%);
+
+    // Motion. Durations name the moment, not the number — read them that way
+    // when picking one, and see the CSS/motion-v split in the header of
+    // dashboard/helper/motion.js.
+    --g-ease-out: cubic-bezier(0.2, 0, 0, 1);
+    --g-dur-hover: 120ms; // hover / press tints
+    --g-dur-reveal: 160ms; // inline reveal: trace expand, chips, popovers
+    --g-dur-arrive: 200ms; // draft dock, approval card, rail cards
+    --g-dur-pop: 240ms; // the handled moment — the only overshoot
+    --g-dur-pulse: 1.2s; // streaming dot
+  }
+
+  .dark {
+    --g-bg: #14213d;
+    --g-surface: #182746;
+    --g-surface-tank: #1e2a47;
+    --g-bubble-customer: #22304f;
+    --g-text: #fbfbfa;
+    --g-text-muted: #9aa3b2;
+    --g-ink: #fbfbfa;
+    --g-on-ink: #14213d;
+    --g-border: rgb(251 251 250 / 14%);
+    --g-border-strong: rgb(251 251 250 / 30%);
+    --g-agent: #3fb8a9;
+    --g-agent-border: rgb(63 184 169 / 45%);
+    --g-agent-tint: rgb(63 184 169 / 14%);
+    --g-danger: #ef6880;
+    --g-danger-text: #f59aac;
+    --g-danger-tint: rgb(239 104 128 / 12%);
+    --g-danger-border: rgb(239 104 128 / 45%);
+    --g-slate-tint: rgb(251 251 250 / 8%);
+    --g-slate-tint-strong: rgb(251 251 250 / 14%);
+    --g-scrim: rgb(0 0 0 / 60%);
+
+    --g-shadow-pop: 0 8px 24px -12px rgb(0 0 0 / 60%);
+    --g-shadow-modal: 0 24px 48px -24px rgb(0 0 0 / 80%);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Chatwoot compatibility
+  //
+  // The fork keeps components-next colour props and Radix-style class names;
+  // only the RGB triplets behind them change. Imported after _next-colors.scss,
+  // so these win at equal specificity.
+  //
+  // The mapping, and why each one:
+  //   blue  → ink     Chatwoot's primary. Gotchu's primary is ink, not a hue.
+  //   teal  → agent   Chatwoot already uses teal for assistant surfaces.
+  //   ruby  → danger  Same role, different red.
+  //   slate → slate   Same role; only 11 and 12 move, so the 1–10 greys stay
+  //                   Chatwoot's and keep every untouched surface coherent.
+  //
+  // `--g-brand-rgb` bridges `n-brand`, which is a hardcoded hex in
+  // theme/colors.js rather than a variable. It is defined here — i.e. only where
+  // the dashboard stylesheet loads — so the widget and v3 packs keep today's
+  // blue through the fallback in that file.
+  // ---------------------------------------------------------------------------
+  :root {
+    --g-brand-rgb: 20 33 61;
+
+    --blue-9: 20 33 61;
+    --blue-11: 20 33 61;
+    --teal-9: 42 157 143;
+    --teal-11: 42 157 143;
+    --ruby-9: 200 50 79;
+    --ruby-11: 168 33 60;
+    --slate-11: 107 114 128;
+    --slate-12: 20 33 61;
+    --solid-blue: 233 246 245;
+    --solid-iris: 233 246 245;
+    --background-color: 251 251 250;
+  }
+
+  .dark {
+    --g-brand-rgb: 251 251 250;
+
+    --blue-9: 251 251 250;
+    --blue-11: 251 251 250;
+    --teal-9: 63 184 169;
+    --teal-11: 63 184 169;
+    --ruby-9: 239 104 128;
+    --ruby-11: 245 154 172;
+    --slate-11: 154 163 178;
+    --slate-12: 251 251 250;
+    --solid-blue: 30 42 71;
+    --solid-iris: 30 42 71;
+    --background-color: 20 33 61;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Keyframes
+//
+// These stay in CSS rather than moving to motion-v: they are state loops
+// (spinner, streaming dot) and one-shot reveals cheap enough that a JS
+// animation frame would cost more than it buys. motion-v owns enter/exit.
+// -----------------------------------------------------------------------------
+@keyframes g-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes g-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  70% {
+    transform: scale(1.15);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes g-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes g-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// The design's own reduced-motion rule. motion-v is told separately, via
+// <MotionConfig reduced-motion="user"> in App.vue — a JS animation does not go
+// through CSS transition-duration and would otherwise keep running.
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

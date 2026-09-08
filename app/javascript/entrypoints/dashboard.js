@@ -1,3 +1,9 @@
+// Self-hosted display and mono faces for the Gotchu design tokens. Imported
+// here rather than from Sass so vite, vitest and histoire all resolve them the
+// same way. Inter, the body face, is already vendored under shared/assets.
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/jetbrains-mono';
+
 import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
 
