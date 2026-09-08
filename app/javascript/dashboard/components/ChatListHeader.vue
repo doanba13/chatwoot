@@ -57,14 +57,14 @@ const toggleConversationLayout = () => {
 
 <template>
   <div
-    class="flex items-center justify-between gap-2 px-3 h-[3.25rem]"
+    class="flex items-center justify-between gap-2 pt-[14px] px-4 pb-[10px]"
     :class="{
-      'border-b border-n-strong': hasAppliedFiltersOrActiveFolders,
+      'border-b border-[var(--g-border)]': hasAppliedFiltersOrActiveFolders,
     }"
   >
     <div class="flex items-center justify-center min-w-0">
       <h1
-        class="text-base font-medium truncate text-n-slate-12"
+        class="truncate text-n-slate-12 [font:var(--g-text-section)]"
         :title="pageTitle"
       >
         {{ pageTitle }}

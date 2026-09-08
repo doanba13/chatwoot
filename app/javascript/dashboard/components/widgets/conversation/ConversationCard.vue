@@ -109,13 +109,14 @@ watch(
 
 <template>
   <div
-    class="relative flex items-start flex-grow-0 flex-shrink-0 w-auto max-w-full py-0 cursor-pointer conversation border-b border-n-slate-3 hover:border-n-surface-1 hover:bg-n-alpha-1 dark:hover:bg-n-alpha-3 group hover:z-[1] before:content-[none] before:absolute before:-top-px before:inset-x-0 before:h-px before:bg-n-surface-1 before:pointer-events-none hover:before:content-['']"
+    class="relative flex items-start flex-grow-0 flex-shrink-0 w-auto max-w-full py-0 cursor-pointer conversation border-b border-[var(--g-border)] border-s-[3px] border-s-transparent hover:bg-[var(--g-surface-tank)] group"
     :class="{
-      'active animate-card-select bg-n-background !border-n-surface-1':
+      'active animate-card-select bg-[var(--g-surface-tank)] !border-s-[var(--g-agent)]':
         isActiveChat,
-      'selected bg-n-slate-2 !border-n-surface-1': selected,
+      'selected bg-[var(--g-surface-tank)] !border-s-[var(--g-agent)]':
+        selected,
       'px-0': compact,
-      'px-3': !compact,
+      'ps-[13px] pe-4': !compact,
     }"
     @click="$emit('click', $event)"
     @contextmenu="$emit('contextmenu', $event)"
@@ -155,7 +156,11 @@ watch(
           'mx-2': compact,
         }"
       >
-        <InboxName v-if="showInboxName" :inbox="inbox" class="flex-1 min-w-0" />
+        <InboxName
+          v-if="showInboxName"
+          :inbox="inbox"
+          class="min-w-0 px-1.5 border border-[var(--g-border)] rounded-[var(--g-radius-control)]"
+        />
         <div
           class="flex items-baseline gap-2 flex-shrink-0"
           :class="{
@@ -164,13 +169,16 @@ watch(
         >
           <span
             v-if="showAssignee && assignee.name"
-            class="text-n-slate-11 text-xs font-medium leading-3 py-0.5 px-0 inline-flex items-center gap-px truncate"
+            class="text-xs font-medium leading-3 py-0.5 px-0 inline-flex items-center gap-px truncate"
+            :class="
+              isAgentBotAssignee ? 'text-[var(--g-agent)]' : 'text-n-slate-12'
+            "
           >
             <Icon
               :icon="
                 isAgentBotAssignee ? 'i-lucide-bot' : 'i-lucide-user-round'
               "
-              class="size-3 text-n-slate-11 flex-shrink-0"
+              class="size-3 flex-shrink-0"
             />
             <span class="truncate">{{ assignee.name }}</span>
           </span>
@@ -181,8 +189,7 @@ watch(
         </div>
       </div>
       <h4
-        class="conversation--user text-sm my-0 mx-2 capitalize pt-0.5 text-ellipsis overflow-hidden whitespace-nowrap flex-1 min-w-0 ltr:pr-16 rtl:pl-16 text-n-slate-12"
-        :class="hasUnread ? 'font-semibold' : 'font-medium'"
+        class="conversation--user text-sm my-0 mx-2 capitalize pt-0.5 font-semibold text-ellipsis overflow-hidden whitespace-nowrap flex-1 min-w-0 ltr:pr-16 rtl:pl-16 text-n-slate-12"
       >
         {{ currentContact.name }}
       </h4>
@@ -216,14 +223,15 @@ watch(
         </span>
       </p>
       <div
-        class="absolute flex flex-col ltr:right-3 rtl:left-3"
+        class="absolute flex flex-col ltr:right-4 rtl:left-4"
         :class="showMetaSection ? 'top-8' : 'top-4'"
       >
-        <span class="ml-auto font-normal leading-4 text-xxs">
+        <span class="ml-auto font-normal leading-4">
           <TimeAgo
             :last-activity-timestamp="chat.timestamp"
             :created-at-timestamp="chat.created_at"
             :conversation-id="chat.id"
+            class="!text-xs !text-n-slate-11"
           />
         </span>
         <UnreadBadge

@@ -28,7 +28,37 @@ const props = defineProps({
   },
 });
 
+// Two letters, an optional hyphen, then the digits — `#PL-5563`, `PL5713` and
+// `#CU1095` all name the same thing, because the store registry normalises the
+// hyphen away and customers drop it as often as not. The capture group is what
+// makes `split` hand the matches back alongside the text around them, so the
+// parity of the index says which is which; that has to be read before the empty
+// segments are dropped, because filtering first would shift it.
+const ORDER_NUMBER_PATTERN = /(#?\b[a-z]{2}-?\d{3,}\b)/i;
+
+// The design's separator between the contact and the subject. It lives here
+// rather than inline because a bare `›` in the template is an eslint error
+// (`vue/no-bare-strings-in-template`) and its allowlist is shared config this
+// pass does not own. It is decorative, so the separator is aria-hidden.
+const SUBJECT_SEPARATOR = '›';
+
 const { t } = useI18n();
+
+// Written out one key at a time rather than interpolated from the status: a key
+// assembled at runtime is invisible to the i18n linter and to anyone grepping
+// for what still needs translating, and a status with no entry here renders
+// nothing rather than the key itself.
+const STATUS_LABELS = {
+  [wootConstants.STATUS_TYPE.OPEN]: () =>
+    t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
+  [wootConstants.STATUS_TYPE.RESOLVED]: () =>
+    t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
+  [wootConstants.STATUS_TYPE.PENDING]: () =>
+    t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'),
+  [wootConstants.STATUS_TYPE.SNOOZED]: () =>
+    t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
+};
+
 const store = useStore();
 const route = useRoute();
 const conversationHeader = ref(null);
@@ -93,6 +123,31 @@ const hasMultipleInboxes = computed(
   () => store.getters['inboxes/getInboxes'].length > 1
 );
 
+// The subject is the second half of the header line. On an email conversation it
+// is also where the order number usually is: customers put the code in the
+// Subject and describe only the situation in the body.
+const mailSubject = computed(
+  () => props.chat.additional_attributes?.mail_subject || ''
+);
+
+const subjectParts = computed(() =>
+  mailSubject.value
+    .split(ORDER_NUMBER_PATTERN)
+    .map((text, index) => ({ id: index, text, mono: index % 2 === 1 }))
+    .filter(part => part.text)
+);
+
+const statusLabel = computed(() => {
+  const label = STATUS_LABELS[currentChat.value.status];
+  return label ? label() : '';
+});
+
+const assigneeName = computed(
+  () =>
+    chatMetadata.value?.assignee?.name ||
+    t('CHAT_LIST.ASSIGNEE_TYPE_TABS.unassigned')
+);
+
 const hasSlaPolicyId = computed(
   () => props.chat?.applied_sla?.id && !currentContact.value?.blocked
 );
@@ -110,7 +165,7 @@ const copyConversationId = async () => {
 <template>
   <div
     ref="conversationHeader"
-    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-3 pt-3 pb-2 h-24 xl:h-12"
+    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-5 pt-3 pb-2 xl:py-0 h-24 xl:h-14"
   >
     <div
       class="flex items-center justify-start w-full xl:w-auto max-w-full min-w-0 xl:flex-1"
@@ -128,9 +183,11 @@ const copyConversationId = async () => {
         hide-offline-status
       />
       <div class="flex flex-col items-start min-w-0 ms-2 overflow-hidden">
-        <div class="flex flex-row items-center max-w-full gap-1 p-0 m-0">
+        <div
+          class="flex flex-row items-center max-w-full min-w-0 gap-1 p-0 m-0"
+        >
           <span
-            class="text-sm font-medium truncate leading-tight text-n-slate-12"
+            class="text-sm font-semibold truncate leading-tight text-n-slate-12"
           >
             {{ currentContact.name }}
           </span>
@@ -141,6 +198,27 @@ const copyConversationId = async () => {
             class="text-n-amber-10 my-0 mx-0 min-w-[14px] flex-shrink-0"
             icon="warning"
           />
+          <template v-if="subjectParts.length">
+            <span
+              aria-hidden="true"
+              class="flex-shrink-0 text-sm leading-tight text-[var(--g-text-muted)]"
+            >
+              {{ SUBJECT_SEPARATOR }}
+            </span>
+            <span
+              :title="mailSubject"
+              class="flex-1 min-w-0 text-sm leading-tight truncate text-[var(--g-text-muted)]"
+            >
+              <span
+                v-for="part in subjectParts"
+                :key="part.id"
+                :class="
+                  part.mono ? 'font-[family-name:var(--g-font-mono)]' : ''
+                "
+                >{{ part.text }}</span
+              >
+            </span>
+          </template>
         </div>
 
         <div
@@ -163,7 +241,7 @@ const copyConversationId = async () => {
       </div>
     </div>
     <div
-      class="flex flex-row items-center justify-start xl:justify-end flex-shrink-0 gap-2 w-full xl:w-auto header-actions-wrap"
+      class="flex flex-row items-center justify-start xl:justify-end flex-shrink-0 gap-3 w-full xl:w-auto header-actions-wrap"
     >
       <SLACardLabel
         v-if="hasSlaPolicyId"
@@ -173,6 +251,17 @@ const copyConversationId = async () => {
         class="hidden md:flex"
       />
       <ConversationCallButton :inbox="inbox" :chat="currentChat" />
+      <span
+        v-if="statusLabel"
+        class="flex-shrink-0 hidden md:inline-flex items-center px-2.5 py-1 text-xs leading-4 border rounded-[var(--g-radius-control)] border-[var(--g-border)] text-[var(--g-text-muted)]"
+      >
+        {{ statusLabel }}
+      </span>
+      <span
+        class="flex-shrink-0 hidden md:inline-flex items-center max-w-[10rem] truncate px-2.5 py-1 text-xs leading-4 border rounded-[var(--g-radius-control)] border-[var(--g-border)] text-[var(--g-text-muted)]"
+      >
+        {{ assigneeName }}
+      </span>
       <MoreActions :conversation-id="currentChat.id" />
     </div>
   </div>

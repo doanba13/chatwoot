@@ -283,8 +283,9 @@ export default {
         v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_EMOJI_ICON')"
         icon="i-ph-smiley-sticker"
         slate
-        faded
+        ghost
         sm
+        class="toolbar-icon"
         @click="toggleEmojiPicker"
       />
       <FileUpload
@@ -308,8 +309,9 @@ export default {
           v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON')"
           icon="i-ph-paperclip"
           slate
-          faded
+          ghost
           sm
+          class="toolbar-icon"
         />
       </FileUpload>
       <NextButton
@@ -317,16 +319,18 @@ export default {
         v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_AUDIORECORDER_ICON')"
         :icon="!isRecordingAudio ? 'i-ph-microphone' : 'i-ph-microphone-slash'"
         slate
-        faded
+        ghost
         sm
+        class="toolbar-icon"
         @click="toggleAudioRecorder"
       />
       <NextButton
         v-if="showAudioPlayStopButton"
         :icon="audioRecorderPlayStopIcon"
         slate
-        faded
+        ghost
         sm
+        class="toolbar-icon"
         :label="recordingAudioDurationText"
         @click="toggleAudioRecorderPlayPause"
       />
@@ -335,17 +339,20 @@ export default {
         v-tooltip.top-end="signatureToggleTooltip"
         icon="i-ph-signature"
         slate
-        faded
+        ghost
         sm
+        class="toolbar-icon"
         @click="toggleMessageSignature"
       />
       <NextButton
         v-if="showQuotedReplyToggle"
         v-tooltip.top-end="quotedReplyToggleTooltip"
         icon="i-ph-quotes"
-        :variant="quotedReplyEnabled ? 'solid' : 'faded'"
+        variant="ghost"
         color="slate"
         sm
+        class="toolbar-icon"
+        :class="{ 'is-active': quotedReplyEnabled }"
         :aria-pressed="quotedReplyEnabled"
         @click="$emit('toggleQuotedReply')"
       />
@@ -354,8 +361,9 @@ export default {
         v-tooltip.top-end="$t('CONVERSATION.FOOTER.WHATSAPP_TEMPLATES')"
         icon="i-ph-whatsapp-logo"
         slate
-        faded
+        ghost
         sm
+        class="toolbar-icon"
         @click="$emit('selectWhatsappTemplate')"
       />
       <NextButton
@@ -363,8 +371,9 @@ export default {
         v-tooltip.top-end="'Content Templates'"
         icon="i-ph-whatsapp-logo"
         slate
-        faded
+        ghost
         sm
+        class="toolbar-icon"
         @click="$emit('selectContentTemplate')"
       />
       <VideoCallButton
@@ -391,8 +400,9 @@ export default {
         v-tooltip.top-end="$t('HELP_CENTER.ARTICLE_SEARCH.OPEN_ARTICLE_SEARCH')"
         icon="i-ph-article-ny-times"
         slate
-        faded
+        ghost
         sm
+        class="toolbar-icon"
         @click="toggleInsertArticle"
       />
     </div>
@@ -401,7 +411,7 @@ export default {
         :label="sendButtonText"
         type="submit"
         sm
-        :color="isNote ? 'amber' : 'blue'"
+        :color="'blue'"
         :disabled="isSendDisabled"
         class="flex-shrink-0"
         @click="onSend"
@@ -415,6 +425,21 @@ export default {
   @apply items-center flex gap-2;
 }
 
+// Toolbar icons sit on no ground and hover to the tank. `sm` already resolves
+// to h-8 w-8 and Button's base already rounds to --g-radius-control, so only
+// the colours move.
+.toolbar-icon {
+  @apply text-[var(--g-text-muted)];
+
+  &:hover:enabled {
+    @apply bg-[var(--g-surface-tank)];
+  }
+
+  &.is-active {
+    @apply bg-[var(--g-surface-tank)] text-[var(--g-text)];
+  }
+}
+
 .right-wrap {
   @apply flex;
 }
@@ -425,7 +450,7 @@ export default {
   }
 
   &:hover button {
-    @apply enabled:bg-n-slate-9/20;
+    @apply enabled:bg-[var(--g-surface-tank)];
   }
 }
 </style>

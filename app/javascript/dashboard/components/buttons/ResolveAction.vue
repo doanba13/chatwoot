@@ -177,17 +177,33 @@ useEmitter(CMD_RESOLVE_CONVERSATION, onCmdResolveConversation);
 
 <template>
   <div class="flex relative justify-end items-center resolve-actions">
-    <ButtonGroup
-      class="flex-shrink-0 rounded-lg shadow outline-1 outline"
-      :class="!showOpenButton ? 'outline-n-container' : 'outline-transparent'"
-    >
+    <!--
+      Nothing in this screen casts a shadow, and the design's radius for a
+      control is 6px, so the group sheds the `shadow rounded-lg` it used to
+      carry. Its shared 1px ring goes with them: it traced the whole pair, which
+      would put a border around the brand button that the design does not have.
+      Each half now carries its own instead — `slate/solid` already ships
+      `outline-n-container`, which is what the Open button in this same group has
+      always relied on, so the halves that stay slate look exactly as before and
+      the brand half opts out with `!outline-transparent`.
+    -->
+    <ButtonGroup class="flex-shrink-0">
+      <!--
+        The one axolotl element on the screen. `size="sm"` already gives the
+        design's 12px horizontal padding on a 32px (`--g-control-sm`) control, so
+        only the colour, the weight and the ring are overridden here; `!` is
+        needed because these fight `slate/solid`'s own utilities at equal
+        specificity. `!brightness-100` cancels the solid variant's hover
+        lightening — the design's hover is a named colour, `--g-brand-hover`, not
+        a filter on top of `--g-brand`.
+      -->
       <Button
         v-if="isOpen"
         :label="t('CONVERSATION.HEADER.RESOLVE_ACTION')"
         size="sm"
         color="slate"
         no-animation
-        class="ltr:rounded-r-none rtl:rounded-l-none !outline-0"
+        class="ltr:rounded-r-none rtl:rounded-l-none !bg-n-axolotl !text-n-on-axolotl !font-semibold !outline-transparent hover:enabled:!bg-n-axolotl-hover focus-visible:!bg-n-axolotl-hover hover:enabled:!brightness-100 focus-visible:!brightness-100"
         :is-loading="isLoading"
         @click="onCmdResolveConversation"
       />
@@ -197,7 +213,7 @@ useEmitter(CMD_RESOLVE_CONVERSATION, onCmdResolveConversation);
         size="sm"
         color="slate"
         no-animation
-        class="ltr:rounded-r-none rtl:rounded-l-none !outline-0"
+        class="ltr:rounded-r-none rtl:rounded-l-none"
         :is-loading="isLoading"
         @click="onCmdOpenConversation"
       />
@@ -217,7 +233,7 @@ useEmitter(CMD_RESOLVE_CONVERSATION, onCmdResolveConversation);
         :disabled="isLoading"
         size="sm"
         no-animation
-        class="ltr:rounded-l-none rtl:rounded-r-none !outline-0"
+        class="ltr:rounded-l-none rtl:rounded-r-none"
         color="slate"
         trailing-icon
         @click="openDropdown"

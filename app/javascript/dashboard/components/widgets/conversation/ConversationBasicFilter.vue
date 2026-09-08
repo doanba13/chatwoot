@@ -143,8 +143,9 @@ const handleSortChange = value => {
     <NextButton
       v-tooltip.right="$t('CHAT_LIST.SORT_TOOLTIP_LABEL')"
       icon="i-lucide-arrow-up-down"
+      class="!text-[var(--g-text-muted)]"
       slate
-      faded
+      ghost
       xs
       @click="toggleDropdown()"
     />

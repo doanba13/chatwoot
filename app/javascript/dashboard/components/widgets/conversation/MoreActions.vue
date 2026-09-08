@@ -91,7 +91,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative flex items-center gap-2 actions--container">
+  <!--
+    The resolve control and the 32px overflow button are two separate items of
+    the thread header's own row, so they sit on its 12px gap rather than an
+    8px one of their own. No group styling lives here — the ButtonGroup and its
+    ring are ResolveAction's.
+  -->
+  <div class="relative flex items-center gap-3 actions--container">
     <ResolveAction
       :conversation-id="currentChat.id"
       :status="currentChat.status"

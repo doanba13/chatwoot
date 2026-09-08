@@ -138,14 +138,14 @@ onMounted(() => {
       @close="closeContactPanel"
     />
     <ContactInfo :contact="contact" :channel-type="channelType" />
-    <div class="px-2 pb-8 list-group">
+    <div class="pb-8 list-group">
       <Draggable
         :list="conversationSidebarItems"
         animation="200"
         ghost-class="ghost"
         handle=".drag-handle"
         item-key="name"
-        class="flex flex-col gap-3"
+        class="flex flex-col"
         @start="dragging = true"
         @end="onDragEnd"
       >
@@ -156,6 +156,7 @@ onMounted(() => {
           >
             <AccordionItem
               :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONVERSATION_ACTIONS')"
+              icon="flash-on"
               :is-open="isContactSidebarItemOpen('is_conv_actions_open')"
               @toggle="
                 value => toggleSidebarUIState('is_conv_actions_open', value)
@@ -173,6 +174,7 @@ onMounted(() => {
           >
             <AccordionItem
               :title="$t('CONVERSATION_PARTICIPANTS.SIDEBAR_TITLE')"
+              icon="people"
               :is-open="isContactSidebarItemOpen('is_conv_participants_open')"
               @toggle="
                 value =>
@@ -188,6 +190,7 @@ onMounted(() => {
           <div v-else-if="element.name === 'conversation_info'">
             <AccordionItem
               :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONVERSATION_INFO')"
+              icon="info"
               :is-open="isContactSidebarItemOpen('is_conv_details_open')"
               compact
               @toggle="
@@ -203,6 +206,7 @@ onMounted(() => {
           <div v-else-if="element.name === 'contact_attributes'">
             <AccordionItem
               :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONTACT_ATTRIBUTES')"
+              icon="list"
               :is-open="isContactSidebarItemOpen('is_contact_attributes_open')"
               compact
               @toggle="
@@ -226,6 +230,7 @@ onMounted(() => {
               :title="
                 $t('CONVERSATION_SIDEBAR.ACCORDION.PREVIOUS_CONVERSATION')
               "
+              icon="chat-multiple"
               :is-open="isContactSidebarItemOpen('is_previous_conv_open')"
               compact
               @toggle="
@@ -244,6 +249,7 @@ onMounted(() => {
           >
             <AccordionItem
               :title="$t('CONVERSATION_SIDEBAR.ACCORDION.MACROS')"
+              icon="wand"
               :is-open="isContactSidebarItemOpen('is_macro_open')"
               compact
               @toggle="value => toggleSidebarUIState('is_macro_open', value)"
@@ -260,6 +266,7 @@ onMounted(() => {
           >
             <AccordionItem
               :title="$t('CONVERSATION_SIDEBAR.ACCORDION.LINEAR_ISSUES')"
+              icon="linear"
               :is-open="isContactSidebarItemOpen('is_linear_issues_open')"
               compact
               @toggle="
@@ -277,6 +284,7 @@ onMounted(() => {
           >
             <AccordionItem
               :title="$t('CONVERSATION_SIDEBAR.ACCORDION.SHOPIFY_ORDERS')"
+              icon="briefcase"
               :is-open="isContactSidebarItemOpen('is_shopify_orders_open')"
               compact
               @toggle="
@@ -289,6 +297,7 @@ onMounted(() => {
           <div v-else-if="element.name === 'contact_notes'">
             <AccordionItem
               :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONTACT_NOTES')"
+              icon="draft"
               :is-open="isContactSidebarItemOpen('is_contact_notes_open')"
               compact
               @toggle="
@@ -301,6 +310,7 @@ onMounted(() => {
           <div v-else-if="element.name === 'shared_files'">
             <AccordionItem
               :title="$t('CONVERSATION_SIDEBAR.ACCORDION.SHARED_FILES')"
+              icon="attach"
               :is-open="isContactSidebarItemOpen('is_shared_files_open')"
               compact
               @toggle="

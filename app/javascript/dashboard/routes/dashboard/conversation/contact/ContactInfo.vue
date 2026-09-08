@@ -189,7 +189,9 @@ export default {
 </script>
 
 <template>
-  <div class="relative items-center w-full p-4">
+  <div
+    class="relative items-center w-full p-4 border-b border-[var(--g-border)]"
+  >
     <div class="flex flex-col w-full gap-2 text-left rtl:text-right">
       <div class="flex flex-row justify-between">
         <Avatar
@@ -197,7 +199,7 @@ export default {
           :src="contact.thumbnail"
           :name="contact.name"
           :status="contact.availability_status"
-          :size="48"
+          :size="36"
           hide-offline-status
         />
       </div>
@@ -217,7 +219,7 @@ export default {
             />
             <h3
               v-else
-              class="flex-shrink max-w-full min-w-0 my-0 text-base capitalize break-words text-n-slate-12 cursor-pointer hover:text-n-slate-12/80"
+              class="flex-shrink max-w-full min-w-0 my-0 text-base font-semibold capitalize break-words text-n-slate-12 cursor-pointer hover:text-n-slate-12/80"
               :title="$t('CONTACT_PANEL.CLICK_TO_EDIT')"
               @click="startEditingName"
             >
@@ -246,7 +248,7 @@ export default {
                   contact.created_at
                 )}`
               "
-              class="i-lucide-info text-sm text-n-slate-10"
+              class="i-lucide-info text-sm text-n-slate-11"
             />
             <a
               :href="contactProfileLink"
@@ -254,12 +256,15 @@ export default {
               rel="noopener nofollow noreferrer"
               class="leading-3"
             >
-              <span class="i-lucide-external-link text-sm text-n-slate-10" />
+              <span class="i-lucide-external-link text-sm text-n-slate-11" />
             </a>
           </div>
         </div>
 
-        <p v-if="additionalAttributes.description" class="break-words mb-0.5">
+        <p
+          v-if="additionalAttributes.description"
+          class="break-words mb-0.5 text-sm text-n-slate-11"
+        >
           {{ additionalAttributes.description }}
         </p>
         <div class="flex flex-col items-start w-full gap-2">
@@ -293,6 +298,7 @@ export default {
           />
           <ContactInfoRow
             v-if="contact.identifier"
+            class="font-[family-name:var(--g-font-mono)]"
             :value="contact.identifier"
             icon="contact-identify"
             emoji="🪪"

@@ -67,7 +67,6 @@ defineExpose({ conversationListRef });
       ref="virtualListRef"
       v-slot="{ item }"
       :data="conversationList"
-      class="[&>div:has(+_div_.active)>*]:!border-n-surface-1 [&>div:has(+_div_.selected)>*]:!border-n-surface-1"
     >
       <ConversationItem
         :source="item"
@@ -80,7 +79,7 @@ defineExpose({ conversationListRef });
       />
     </Virtualizer>
     <div v-if="isLoading" class="flex justify-center my-4">
-      <Spinner class="text-n-brand" />
+      <Spinner />
     </div>
     <p v-else-if="showEndOfListMessage" class="p-4 text-center text-n-slate-11">
       {{ $t('CHAT_LIST.EOF') }}

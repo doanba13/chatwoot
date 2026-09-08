@@ -32,11 +32,9 @@ const isCaptainMessage = computed(
     (sender.value?.type ?? senderType.value) === SENDER_TYPES.CAPTAIN_ASSISTANT
 );
 
-const metaColorClass = computed(() =>
-  variant.value === MESSAGE_VARIANTS.PRIVATE
-    ? 'text-n-amber-12/50'
-    : 'text-n-slate-11'
-);
+// Meta is muted under every variant: `n-slate-11` resolves to `--g-text-muted`
+// in both themes, and the private note no longer carries an amber of its own.
+const metaColorClass = 'text-n-slate-11';
 
 const emailMetaClass = computed(() =>
   variant.value === MESSAGE_VARIANTS.EMAIL ? 'px-3 pb-3' : ''
@@ -45,8 +43,8 @@ const emailMetaClass = computed(() =>
 const varaintBaseMap = {
   [MESSAGE_VARIANTS.AGENT]: 'bg-n-solid-blue text-n-slate-12',
   [MESSAGE_VARIANTS.PRIVATE]:
-    'bg-n-solid-amber text-n-amber-12 [&_.prosemirror-mention-node]:font-semibold',
-  [MESSAGE_VARIANTS.USER]: 'bg-n-slate-4 text-n-slate-12',
+    'bg-[var(--g-surface)] border border-dashed border-[var(--g-border-strong)] text-n-slate-11 [&_.prosemirror-mention-node]:font-semibold',
+  [MESSAGE_VARIANTS.USER]: 'bg-[var(--g-bubble-customer)] text-n-slate-12',
   [MESSAGE_VARIANTS.ACTIVITY]: 'bg-n-alpha-1 text-n-slate-11 text-sm',
   [MESSAGE_VARIANTS.BOT]: 'bg-n-solid-iris text-n-slate-12',
   [MESSAGE_VARIANTS.TEMPLATE]: 'bg-n-solid-iris text-n-slate-12',
@@ -58,9 +56,9 @@ const varaintBaseMap = {
 
 const orientationMap = {
   [ORIENTATION.LEFT]:
-    'left-bubble rounded-xl ltr:rounded-bl-sm rtl:rounded-br-sm',
+    'left-bubble rounded-[var(--g-radius-card)] ltr:rounded-bl-[4px] rtl:rounded-br-[4px]',
   [ORIENTATION.RIGHT]:
-    'right-bubble rounded-xl ltr:rounded-br-sm rtl:rounded-bl-sm',
+    'right-bubble rounded-[var(--g-radius-card)] ltr:rounded-br-[4px] rtl:rounded-bl-[4px]',
   [ORIENTATION.CENTER]: 'rounded-md',
 };
 
@@ -69,6 +67,16 @@ const flexOrientationClass = computed(() => {
     [ORIENTATION.LEFT]: 'justify-start',
     [ORIENTATION.RIGHT]: 'justify-end',
     [ORIENTATION.CENTER]: 'justify-center',
+  };
+
+  return map[orientation.value];
+});
+
+const maxWidthClass = computed(() => {
+  const map = {
+    [ORIENTATION.LEFT]: 'max-w-[640px]',
+    [ORIENTATION.RIGHT]: 'max-w-[560px]',
+    [ORIENTATION.CENTER]: 'max-w-lg',
   };
 
   return map[orientation.value];
@@ -121,9 +129,7 @@ const replyToPreview = computed(() => {
     class="text-sm min-w-0"
     :class="[
       messageClass,
-      {
-        'max-w-lg': variant !== MESSAGE_VARIANTS.EMAIL,
-      },
+      variant !== MESSAGE_VARIANTS.EMAIL ? maxWidthClass : '',
     ]"
   >
     <div

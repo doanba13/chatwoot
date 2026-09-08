@@ -235,6 +235,20 @@ export const colors = {
     // fallback reasoning as `brand` above: undefined outside the dashboard
     // stylesheet, where the surface is still the original blue.
     'on-ink': 'var(--g-on-ink, #ffffff)',
+    // Axolotl — the design's `--g-brand`. It cannot be called `brand` here:
+    // that name is already taken above by Chatwoot's primary role, which Gotchu
+    // maps onto ink, so the palette's own name for the colour is used instead.
+    // Spent at most once per screen; today that is the resolve button in the
+    // conversation header. Same fallback reasoning as `brand` and `on-ink`
+    // above — the `--g-*` variables exist only where the dashboard stylesheet
+    // loads, and the widget and v3 packs have no axolotl role to inherit, so
+    // they fall back to the literal palette values rather than to a Chatwoot
+    // colour that would mean something else. `--g-on-brand` resolves through
+    // `--g-ink`, which inverts in dark mode, so this pairing must never be
+    // replaced with a hardcoded `text-white`.
+    axolotl: 'var(--g-brand, #ff6b8b)',
+    'axolotl-hover': 'var(--g-brand-hover, #f55a7c)',
+    'on-axolotl': 'var(--g-on-brand, #14213d)',
     portal: 'var(--dynamic-portal-color)',
     'portal-soft': 'var(--dynamic-portal-color-soft)',
     'portal-faint': 'var(--dynamic-portal-color-faint)',

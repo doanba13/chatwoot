@@ -1561,10 +1561,14 @@ export default {
 }
 
 .reply-box {
-  @apply relative mb-2 mx-2 border border-n-weak rounded-xl bg-n-solid-1;
+  @apply relative mb-2 mx-2 border border-[var(--g-border)] rounded-[var(--g-radius-card)] bg-[var(--g-surface)];
 
+  // A private note is signalled the way the note bubble signals it — a dashed
+  // outline on the ordinary surface — not by flooding the composer. The design
+  // has no amber, and a whole-container fill is the loudest thing on the screen
+  // for a mode the toggle above already states in words.
   &.is-private {
-    @apply bg-n-solid-amber dark:border-n-amber-3/10 border-n-amber-12/5;
+    @apply border-dashed border-[var(--g-border-strong)];
   }
 }
 
@@ -1573,7 +1577,14 @@ export default {
 }
 
 .reply-box__top {
-  @apply relative py-0 px-3 -mt-px;
+  @apply relative p-3 -mt-px min-h-[2.75rem];
+
+  // Placeholder is muted, like every other resting hint in the system. The
+  // editor itself already floors its own height well above 44px; the min-height
+  // here is the floor for the area when the editor is not the only child.
+  :deep(.ProseMirror-woot-style .empty-node::before) {
+    @apply text-[var(--g-text-muted)];
+  }
 }
 
 .emoji-dialog {

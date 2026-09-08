@@ -7,14 +7,12 @@ import { vOnClickOutside } from '@vueuse/components';
 import { REPLY_EDITOR_MODES, CHAR_LENGTH_WARNING } from './constants';
 import { CAPTAIN_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
 import NextButton from 'dashboard/components-next/button/Button.vue';
-import EditorModeToggle from './EditorModeToggle.vue';
 import CopilotMenuBar from './CopilotMenuBar.vue';
 
 export default {
   name: 'ReplyTopPanel',
   components: {
     NextButton,
-    EditorModeToggle,
     CopilotMenuBar,
   },
   directives: {
@@ -70,13 +68,6 @@ export default {
     const handleNoteClick = () => {
       setReplyMode(REPLY_EDITOR_MODES.NOTE);
     };
-    const handleModeToggle = () => {
-      const newMode =
-        props.mode === REPLY_EDITOR_MODES.REPLY
-          ? REPLY_EDITOR_MODES.NOTE
-          : REPLY_EDITOR_MODES.REPLY;
-      setReplyMode(newMode);
-    };
 
     const { captainTasksEnabled } = useCaptain();
     const showCopilotMenu = ref(false);
@@ -102,6 +93,11 @@ export default {
       showCopilotMenu.value = false;
     };
 
+    // Key hints shown on the toggles. `⌥` is how the shortcuts modal writes
+    // Alt; these are the two bindings registered just below.
+    const replyKeyHint = '⌥L';
+    const noteKeyHint = '⌥P';
+
     const keyboardEvents = {
       'Alt+KeyP': {
         action: () => handleNoteClick(),
@@ -115,7 +111,6 @@ export default {
     useKeyboardEvents(keyboardEvents);
 
     return {
-      handleModeToggle,
       handleReplyClick,
       handleNoteClick,
       REPLY_EDITOR_MODES,
@@ -125,17 +120,23 @@ export default {
       copilotToggleRef,
       toggleCopilotMenu,
       handleClickOutside,
+      replyKeyHint,
+      noteKeyHint,
     };
   },
   computed: {
+    isOnNote() {
+      // A restricted reply forces note mode, as the previous toggle component did.
+      return this.isReplyRestricted || this.mode === REPLY_EDITOR_MODES.NOTE;
+    },
     replyButtonClass() {
       return {
-        'is-active': this.mode === REPLY_EDITOR_MODES.REPLY,
+        'is-active': !this.isOnNote,
       };
     },
     noteButtonClass() {
       return {
-        'is-active': this.mode === REPLY_EDITOR_MODES.NOTE,
+        'is-active': this.isOnNote,
       };
     },
     charLengthClass() {
@@ -154,12 +155,30 @@ export default {
   <div
     class="flex justify-between gap-2 h-[3.25rem] items-center ltr:pl-3 ltr:pr-2 rtl:pr-3 rtl:pl-2"
   >
-    <EditorModeToggle
-      :mode="mode"
-      :disabled="disabled"
-      :is-reply-restricted="isReplyRestricted"
-      @toggle-mode="handleModeToggle"
-    />
+    <div class="flex items-center gap-1.5">
+      <button
+        type="button"
+        class="mode-toggle"
+        :class="replyButtonClass"
+        :disabled="disabled || isReplyRestricted"
+        :aria-pressed="!isOnNote"
+        @click="handleReplyClick"
+      >
+        {{ $t('CONVERSATION.REPLYBOX.REPLY') }}
+        <kbd class="mode-toggle__key">{{ replyKeyHint }}</kbd>
+      </button>
+      <button
+        type="button"
+        class="mode-toggle"
+        :class="noteButtonClass"
+        :disabled="disabled"
+        :aria-pressed="isOnNote"
+        @click="handleNoteClick"
+      >
+        {{ $t('CONVERSATION.REPLYBOX.PRIVATE_NOTE') }}
+        <kbd class="mode-toggle__key">{{ noteKeyHint }}</kbd>
+      </button>
+    </div>
     <div class="flex items-center mx-4 my-0">
       <div v-if="isMessageLengthReachingThreshold" class="text-xs">
         <span :class="charLengthClass">
@@ -204,3 +223,32 @@ export default {
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+// Reply / Private note are two bordered toggles rather than one sliding pill:
+// 4px 10px, control radius, weight 500, active taking the tank ground.
+.mode-toggle {
+  @apply inline-flex items-center gap-1.5 py-1 px-2.5 text-sm font-medium border rounded-[var(--g-radius-control)] border-[var(--g-border)] text-[var(--g-text-muted)] transition-colors duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)];
+
+  &:hover:not(:disabled) {
+    @apply bg-[var(--g-surface-tank)];
+  }
+
+  &.is-active {
+    @apply bg-[var(--g-surface-tank)] border-[var(--g-border-strong)] text-[var(--g-text)];
+  }
+
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}
+
+// The design draws `R` and `N` here. Those shortcuts do not exist; the ones
+// that do are Alt+L and Alt+P, registered in this component's setup and listed
+// in the shortcuts modal as SWITCH_TO_REPLY / SWITCH_TO_PRIVATE_NOTE. The hint
+// names the real binding rather than the drawn one.
+.mode-toggle__key {
+  font: var(--g-text-key);
+  @apply px-1 border rounded border-[var(--g-border)] opacity-60;
+}
+</style>

@@ -50,17 +50,11 @@ later pass once the primitives underneath them are settled.
 
 ## Phase 1 — Token layer
 
-- [x] `app/javascript/dashboard/assets/scss/_gotchu-tokens.scss` (new)
-      - the six-colour base palette, semantic light set, `.dark` set
-      - spacing / radius / shadow / control heights
-      - motion durations + easing + `g-in` / `g-pop` / `g-pulse` / `g-spin`
-        keyframes + the `prefers-reduced-motion` block
-      - the Radix compat overrides (`--blue-9`, `--teal-9`, `--ruby-9`,
-        `--slate-11/12`, `--solid-blue`, `--solid-iris`, `--background-color`)
-        rewritten from `[data-theme="dark"]` to `.dark`
-      - `--brand-rgb` for the `n-brand` bridge
-      - **verify:** all 12 compat variable names exist in `_next-colors.scss`
-        (already confirmed — 2 occurrences each, `:root` + `.dark`)
+- [x] `app/javascript/dashboard/assets/scss/_gotchu-tokens.scss` (new) - the six-colour base palette, semantic light set, `.dark` set - spacing / radius / shadow / control heights - motion durations + easing + `g-in` / `g-pop` / `g-pulse` / `g-spin`
+      keyframes + the `prefers-reduced-motion` block - the Radix compat overrides (`--blue-9`, `--teal-9`, `--ruby-9`,
+      `--slate-11/12`, `--solid-blue`, `--solid-iris`, `--background-color`)
+      rewritten from `[data-theme="dark"]` to `.dark` - `--brand-rgb` for the `n-brand` bridge - **verify:** all 12 compat variable names exist in `_next-colors.scss`
+      (already confirmed — 2 occurrences each, `:root` + `.dark`)
 - [x] Import it in `_woot.scss` **after** `_next-colors` so the overrides win at
       equal specificity, and before `_base`.
 - [x] `theme/colors.js:229` — `brand: 'rgb(var(--brand-rgb, 39 129 246) / <alpha-value>)'`.
@@ -100,7 +94,7 @@ in each case: they do not own their own presence.
 
 - **Banner and DropdownMenu** are mounted behind a consumer's `v-if` — all 20
   toggled DropdownMenu call sites, every Banner call site. An exit animation
-  needs `AnimatePresence` at the *call site* to hold the element, which would
+  needs `AnimatePresence` at the _call site_ to hold the element, which would
   mean touching every consumer. So the preset was only ever producing an enter,
   and an enter is what the `g-in` keyframe already does. Wrapping them cost
   real breakage: `<Motion>` inside a `shallowMount` drops its default slot, and
@@ -115,7 +109,7 @@ in each case: they do not own their own presence.
 The one place it earns its keep is **`SnackbarContainer.vue`**, which was
 already broken: it used `<transition-group name="toast-fade">` and `toast-fade`
 is defined nowhere in the repo, so toasts have never animated and an expiring
-toast made the ones below it jump. Messages are removed from the *front* of the
+toast made the ones below it jump. Messages are removed from the _front_ of the
 list while later ones are still on screen, so this genuinely needs
 `AnimatePresence mode="popLayout"` — an exiting toast must leave the layout flow
 before the survivors move, or they animate from a position that no longer
@@ -181,3 +175,60 @@ first thing to rule out.
   (design files `Gotchu Inbox v2/v3`)
 - `widget/` and `v3/` packs — held on today's blue by the `--brand-rgb` fallback
 - The icon set (`components/gotchu-icons.js`) — Chatwoot has its own
+
+---
+
+# Phase 5 — The inbox screen (V1)
+
+Spec: `docs/gotchu/inbox-spec.md`, transcribed from `Gotchu System.dc.html` §1b.
+
+**V1, not `Gotchu Inbox v3`.** They are different designs. v3 is labelled
+"simplified" and carries its own OKLCH palette with a four-hue signal system
+(teal 175 / amber 70 / red 25 / neutral 260) that contradicts the shipped token
+sheet — most importantly it adds an amber "a human should look" role the System
+palette has no equivalent for, which would also reverse the Banner amber
+decision from Phase 3. V1 is authored in the System tokens already shipped, so
+the theme layer is untouched by this phase.
+
+## Panes
+
+- [ ] Conversation rows — `ConversationCard.vue`, `ConversationCardExpanded.vue`,
+      `UnreadBadge.vue`. 3px `--g-agent` left edge replaces today's top-border
+      selection; `13px` left padding is deliberate (13 + 3 = 16).
+- [ ] List header — `ChatListHeader.vue`, `ConversationList.vue`,
+      `ConversationBasicFilter`. Filters become chips with no track behind them.
+- [ ] Bubbles — `message/bubbles/Base.vue`, `MessageMeta.vue`. The private note
+      loses its amber flood for a dashed outline on `--g-surface`; that is the
+      biggest visual change in the thread.
+- [ ] Thread header — `ConversationHeader.vue`, `ResolveAction.vue`. **The
+      resolve button becomes the one axolotl element on the screen.**
+- [ ] Composer — `ReplyBox.vue`, `ReplyTopPanel.vue`, `ReplyBottomPanel.vue`.
+- [ ] Context rail — `ContactPanel.vue`, its `AccordionItem`, `ContactInfo`.
+
+## Two things deliberately not done
+
+1. **The nav rail keeps its structure.** V1 draws a 56px rail of per-store
+   avatars with a `--g-agent` ring on the active store. Chatwoot's sidebar does
+   collapse to exactly 56px (`MIN_WIDTH` in `sidebar/provider.js`), so the width
+   is not the problem — the mapping is. In Chatwoot the four stores are
+   **inboxes**, not accounts, so a store rail is a navigation decision about what
+   the top level of the product is, not a re-theme. Needs a product answer before
+   anyone builds it.
+
+2. **`ContactPanel` stays a draggable accordion.** V1 draws fixed stacked
+   sections. The panel's order is reorderable and persisted in UI settings via
+   vuedraggable. Matching the mock exactly would mean deleting that, which is
+   trading a feature for a resemblance.
+
+## Known collision
+
+`UnreadBadge` is `bg-n-teal-9`, which the bridge now resolves to `--g-agent`. In
+this system teal means _the assistant wrote or did this_, so an unread count in
+teal says something the design does not intend. Moved to `--g-ink`, matching the
+count pill in the spec's "Needs approval" control.
+
+## Still out of scope
+
+The AI surfaces, as from the start: the trace ("Gotchu checked 3 things"), the
+draft dock inside the composer, and the confidence chip. Specified in
+`gotchu-spine.js`; they belong with the Captain work.
