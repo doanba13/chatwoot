@@ -91,9 +91,14 @@ defineEmits(['insert', 'send', 'discard', 'stop', 'adjust']);
           :label="$t('GOTCHU.DRAFT.SEND')"
           @click="$emit('send')"
         />
+        <!-- `link`, not the spine's `ghost`: Chatwoot's slate ghost is
+          `text-n-slate-12`, the strongest text on the card, which made discard
+          the loudest label in the dock and louder still in dark mode. Slate
+          link is the muted one, and dropping the box leaves the two paths that
+          reach a customer as the only things shaped like buttons. -->
         <Button
           color="slate"
-          variant="ghost"
+          variant="link"
           size="sm"
           :label="$t('GOTCHU.DRAFT.DISCARD')"
           @click="$emit('discard')"
@@ -104,15 +109,18 @@ defineEmits(['insert', 'send', 'discard', 'stop', 'adjust']);
         class="inline-flex flex-wrap items-center gap-1.5 text-xs text-[var(--g-text-muted)]"
       >
         {{ $t('GOTCHU.DRAFT.ADJUST') }}
-        <button
-          v-for="option in adjust"
-          :key="option"
-          type="button"
-          class="p-0 text-xs bg-transparent border-0 cursor-pointer text-[var(--g-agent)]"
-          @click="$emit('adjust', option)"
-        >
-          {{ option }}
-        </button>
+        <!-- The middots are the spine's: with gaps alone, three adjustments
+          read as one phrase rather than three separate things to press. -->
+        <template v-for="(option, index) in adjust" :key="option">
+          <span v-if="index" aria-hidden="true">·</span>
+          <button
+            type="button"
+            class="p-0 text-xs bg-transparent border-0 cursor-pointer text-[var(--g-agent)] hover:underline"
+            @click="$emit('adjust', option)"
+          >
+            {{ option }}
+          </button>
+        </template>
       </span>
     </div>
   </div>
