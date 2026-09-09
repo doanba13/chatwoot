@@ -56,11 +56,16 @@ describe('DraftDock', () => {
     const wrapper = mountComponent({
       state: 'streaming',
       streamingText: 'Reading the order…',
+      confidence: 'probably',
     });
 
     expect(wrapper.text()).toContain('Reading the order…');
     expect(buttonLabelled(wrapper, 'Send draft')).toBeUndefined();
     expect(buttonLabelled(wrapper, 'Insert')).toBeUndefined();
+
+    // Streaming and ready share a header, so the chip has a slot to appear in
+    // before there is a draft to be confident about. It must not take it.
+    expect(wrapper.text()).not.toContain('probably');
 
     await buttonLabelled(wrapper, 'stop and edit').trigger('click');
 

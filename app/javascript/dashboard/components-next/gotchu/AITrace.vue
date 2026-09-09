@@ -57,6 +57,10 @@ const summary = computed(() =>
 
 const iconFor = step => STEP_ICONS[step.kind] ?? FALLBACK_ICON;
 
+// `|| undefined` on the binding below, not `false`: Vue does not treat `inert`
+// as a boolean attribute, so a false renders `inert="false"` — which is inert.
+const isCollapsed = computed(() => !isOpen.value || Boolean(props.streaming));
+
 const toggle = () => {
   if (props.streaming) return;
   isOpen.value = !isOpen.value;
@@ -87,20 +91,33 @@ const toggle = () => {
         />
       </template>
     </button>
+    <!-- The steps stay mounted so the shell can animate its own height: a
+      `v-if` gives the browser nothing to transition from, and the thread below
+      jumps by the height of the trace on every expand. Collapsed, the shell is
+      zero-height and `inert`, so nothing inside it is focusable or read out. -->
     <div
-      v-if="isOpen && !streaming"
-      class="trace-steps flex flex-col gap-2 px-3 pt-1 pb-2.5"
+      class="trace-reveal grid"
+      :class="{ 'trace-reveal--open': !isCollapsed }"
+      :inert="isCollapsed || undefined"
+      :aria-hidden="isCollapsed ? 'true' : undefined"
     >
-      <div v-for="(step, index) in steps" :key="index" class="flex gap-2.5">
-        <Icon
-          :icon="iconFor(step)"
-          class="mt-0.5 size-3.5 flex-shrink-0 text-[var(--g-agent)]"
-        />
-        <div class="flex flex-col gap-px min-w-0">
-          <span class="text-sm text-[var(--g-agent)]">{{ step.did }}</span>
-          <span v-if="step.result" class="text-xs text-[var(--g-text-muted)]">
-            {{ step.result }}
-          </span>
+      <div class="overflow-hidden">
+        <div class="flex flex-col gap-2 px-3 pt-1 pb-2.5">
+          <div v-for="(step, index) in steps" :key="index" class="flex gap-2.5">
+            <Icon
+              :icon="iconFor(step)"
+              class="mt-0.5 size-3.5 flex-shrink-0 text-[var(--g-agent)]"
+            />
+            <div class="flex flex-col gap-px min-w-0">
+              <span class="text-sm text-[var(--g-agent)]">{{ step.did }}</span>
+              <span
+                v-if="step.result"
+                class="text-xs text-[var(--g-text-muted)]"
+              >
+                {{ step.result }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -108,7 +125,23 @@ const toggle = () => {
 </template>
 
 <style scoped>
-.trace-steps {
-  animation: g-in var(--g-dur-reveal) var(--g-ease-out);
+/* Height and opacity rather than the `g-in` keyframe: `g-in` faded and slid the
+   steps in over a container that had already snapped to its full height. */
+.trace-reveal {
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--g-dur-reveal) var(--g-ease-out);
+}
+
+.trace-reveal > * {
+  opacity: 0;
+  transition: opacity var(--g-dur-reveal) var(--g-ease-out);
+}
+
+.trace-reveal--open {
+  grid-template-rows: 1fr;
+}
+
+.trace-reveal--open > * {
+  opacity: 1;
 }
 </style>

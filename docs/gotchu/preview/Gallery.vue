@@ -88,6 +88,19 @@ const lastDockAction = ref('—');
 const noteDockAction = action => {
   lastDockAction.value = action;
 };
+
+// The shared header only proves itself in motion: the point is that becoming
+// ready reveals a body under a header that has not moved.
+const dockState = ref('streaming');
+const replayDock = () => {
+  dockState.value = 'none';
+  setTimeout(() => {
+    dockState.value = 'streaming';
+  }, 300);
+  setTimeout(() => {
+    dockState.value = 'ready';
+  }, 2000);
+};
 </script>
 
 <template>
@@ -317,13 +330,30 @@ const noteDockAction = action => {
           The reply box goes here.
         </div>
       </div>
+      <div class="flex items-center gap-3">
+        <Button
+          label="Replay streaming → ready"
+          color="slate"
+          variant="outline"
+          size="sm"
+          @click="replayDock"
+        />
+        <span class="text-xs text-n-slate-11">
+          the header must not move when the body arrives
+        </span>
+      </div>
       <div
         class="overflow-hidden border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
       >
         <DraftDock
-          state="streaming"
+          :state="dockState"
           streaming-text="Reading the order…"
+          :text="draftText"
+          confidence="sure"
           @stop="noteDockAction('stop')"
+          @insert="noteDockAction('insert')"
+          @send="noteDockAction('send')"
+          @discard="noteDockAction('discard')"
         />
         <div class="px-3 py-6 text-sm text-[var(--g-text-muted)]">
           The reply box goes here.

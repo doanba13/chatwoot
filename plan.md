@@ -294,3 +294,65 @@ read path lands.
 **Verify:** `pnpm exec vite --config docs/gotchu/preview/vite.config.mjs`
 (`story:build` is broken on this fork independently of this work), light and
 dark; `pnpm test` for the two specs; `pnpm eslint` on the new files.
+
+---
+
+# Phase 7 — Motion on the AI surfaces
+
+Written after looking at Phase 6 in the browser. The token sheet already carried
+durations named for these components (`--g-dur-reveal` "trace expand",
+`--g-dur-arrive` "draft dock"); this phase spends them.
+
+- [x] **The trace animates its own height.** It faded its steps in over a
+      container that had already snapped to full height, so the thread below
+      jumped on every expand. The shell is now a `display: grid` whose
+      `grid-template-rows` transitions `0fr → 1fr` over `--g-dur-reveal`, with
+      the steps fading in alongside. CSS only, no dependency.
+
+      The steps stay mounted, because a `v-if` gives the browser nothing to
+      transition from. Collapsed, the shell is zero-height and `inert`, so
+      nothing inside it is focusable or read out — and the spec asserts that
+      rather than asserting the text is absent from the DOM, which it no longer
+      is. Note `:inert="isCollapsed || undefined"`: Vue does not treat `inert`
+      as a boolean attribute, so binding `false` renders `inert="false"`, which
+      is inert.
+- [x] **Streaming and ready share one header row.** They were two differently
+      shaped bands, so becoming ready swapped the whole thing mid-generation.
+      One header now — same height, same dot, same position — and the body
+      appears under it.
+
+      The body is still `v-if`, not a collapsed shell: a shell keeps *Send
+      draft* in the DOM while the draft is arriving, one Tab away from sending a
+      reply nobody has read. A header that does not move is worth an animation;
+      a reachable send button is not. The chip has the same slot available and
+      is held back the same way, with its own assertion.
+- [x] **Hover transitions pinned to `--g-dur-hover`** on the adjust links and
+      the stop control, which were inheriting Tailwind's default.
+- [ ] **The dock has no exit, and `g-pop` is still unused.** Held deliberately.
+      `--g-dur-pop` (240ms, the only overshoot in the sheet) is reserved for
+      "the handled moment" and the send is that moment: the dot should turn
+      axolotl and pop before the band collapses, with discard collapsing
+      silently because nothing was handled. This is the one place `motion-v`
+      earns its keep — `DraftDock` owns its own presence, so `AnimatePresence`
+      can hold the element without touching a call site, which is exactly the
+      test Dialog, Banner and DropdownMenu failed in Phase 2. It also needs
+      `<MotionConfig reduced-motion="user">` added to the preview harness, which
+      only `App.vue` has today.
+
+**The rule this phase adds:** no motion that asserts a state the system cannot
+observe. Concretely, the streaming text gets no typewriter effect. There is no
+push, so tokens do not arrive; a typewriter would animate a fixed string and
+read as live progress nothing is measuring. The pulsing dot says "working"
+without claiming to know how far along.
+
+**Verified** against the running preview, by measurement rather than by eye:
+
+- trace height `0 → 24.3 → 115.2 → 141.0` over ~160ms, i.e. it interpolates
+  rather than snapping;
+- the dock's header row sits at the same `y` and the same height in streaming
+  and in ready (`y: 1083.0, h: 20.0` in both);
+- under `prefers-reduced-motion: reduce` the trace is at its full 141.0 at 40ms,
+  so the token sheet's global block covers the new transitions too.
+
+The gallery has a **Replay streaming → ready** control, because a shared header
+only proves itself in motion.

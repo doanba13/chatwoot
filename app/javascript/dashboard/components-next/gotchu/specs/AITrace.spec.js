@@ -37,11 +37,19 @@ describe('AITrace', () => {
 
   it('starts collapsed and reveals the steps in place', async () => {
     const wrapper = mountComponent({ steps });
-    expect(wrapper.text()).not.toContain('Looked up #PL-1095');
+    const reveal = wrapper.find('.trace-reveal');
+
+    // The steps stay mounted so the shell can animate its own height, so
+    // "collapsed" is asserted on the shell being inert and zero-height rather
+    // than on the text being absent from the DOM.
+    expect(reveal.attributes('inert')).toBeDefined();
+    expect(reveal.classes()).not.toContain('trace-reveal--open');
     expect(wrapper.find('button').attributes('aria-expanded')).toBe('false');
 
     await wrapper.find('button').trigger('click');
 
+    expect(reveal.attributes('inert')).toBeUndefined();
+    expect(reveal.classes()).toContain('trace-reveal--open');
     expect(wrapper.text()).toContain('Looked up #PL-1095');
     expect(wrapper.text()).toContain('Last scan Leipzig');
     expect(wrapper.find('button').attributes('aria-expanded')).toBe('true');
@@ -62,7 +70,10 @@ describe('AITrace', () => {
     await wrapper.find('button').trigger('click');
 
     expect(wrapper.text()).toContain('Reading the order…');
-    expect(wrapper.text()).not.toContain('Looked up #PL-1095');
+    expect(wrapper.find('.trace-reveal').classes()).not.toContain(
+      'trace-reveal--open'
+    );
+    expect(wrapper.find('.trace-reveal').attributes('inert')).toBeDefined();
     expect(wrapper.find('button').attributes('aria-expanded')).toBeUndefined();
   });
 });
