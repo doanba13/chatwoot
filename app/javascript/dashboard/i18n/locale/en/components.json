@@ -95,7 +95,9 @@
       "SEND": "Send draft",
       "DISCARD": "Discard",
       "ADJUST": "Adjust:",
-      "STOP": "stop and edit"
+      "STOP": "stop and edit",
+      "INSTRUCT_PLACEHOLDER": "Tell Gotchu what to change…",
+      "INSTRUCT_SUBMIT": "Send instruction to Gotchu"
     }
   }
 }

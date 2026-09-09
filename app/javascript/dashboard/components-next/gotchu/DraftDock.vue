@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import Button from 'dashboard/components-next/button/Button.vue';
+import Input from 'dashboard/components-next/input/Input.vue';
 import AgentDot from 'dashboard/components-next/gotchu/AgentDot.vue';
 import ConfidenceChip from 'dashboard/components-next/gotchu/ConfidenceChip.vue';
 
@@ -40,7 +41,27 @@ const props = defineProps({
   },
 });
 
-defineEmits(['insert', 'send', 'discard', 'stop', 'adjust']);
+const emit = defineEmits([
+  'insert',
+  'send',
+  'discard',
+  'stop',
+  'adjust',
+  'instruct',
+]);
+
+// Free text to the agent, and only ever that. Typing "send it" here emits
+// `instruct` like anything else — the dock has no path from a typed string to
+// `send`, which is the whole of invariant 5 expressed as a component: a
+// classifier can be wrong about what a sentence meant, a button press cannot.
+const instruction = ref('');
+
+const submitInstruction = () => {
+  const text = instruction.value.trim();
+  if (!text) return;
+  emit('instruct', text);
+  instruction.value = '';
+};
 
 // Streaming and ready share one header row — same height, same dot, same
 // position — so becoming ready reveals a body under a header that has not
@@ -82,17 +103,24 @@ const isStreaming = computed(() => props.state === 'streaming');
       <div class="text-sm text-pretty text-[var(--g-text)]">{{ text }}</div>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex gap-2">
+          <!-- These two were the same button twice — same colour, same
+            variant, same size — and only one of them reaches a customer.
+            Insert puts the draft in the editor and is reversible; Send draft
+            is not. So Send is the solid one, and each carries its own glyph:
+            an arrow into the composer, and a paper plane out. -->
           <Button
             color="teal"
             variant="outline"
             size="sm"
+            icon="i-lucide-corner-down-left"
             :label="$t('GOTCHU.DRAFT.INSERT')"
             @click="$emit('insert')"
           />
           <Button
             color="teal"
-            variant="outline"
+            variant="solid"
             size="sm"
+            icon="i-lucide-send"
             :label="$t('GOTCHU.DRAFT.SEND')"
             @click="$emit('send')"
           />
@@ -127,6 +155,31 @@ const isStreaming = computed(() => props.state === 'streaming');
             </button>
           </template>
         </span>
+      </div>
+      <!-- The adjustments above are shortcuts for the common cases; this is the
+        channel the desk actually works in. Every instruction the reply loop
+        handles today arrives as German or French prose in a Lark thread, so a
+        dock with only fixed chips cannot express "add the tracking number
+        first" — and that instruction is precisely the one the deployed model
+        mis-reads as a send. Here it cannot be one. -->
+      <div class="flex items-center gap-2">
+        <Input
+          v-model="instruction"
+          size="sm"
+          class="flex-1 min-w-0"
+          custom-input-class="!bg-[var(--g-surface)]"
+          :placeholder="$t('GOTCHU.DRAFT.INSTRUCT_PLACEHOLDER')"
+          @enter="submitInstruction"
+        />
+        <Button
+          color="teal"
+          variant="outline"
+          size="sm"
+          icon="i-lucide-arrow-up"
+          :aria-label="$t('GOTCHU.DRAFT.INSTRUCT_SUBMIT')"
+          :disabled="!instruction.trim()"
+          @click="submitInstruction"
+        />
       </div>
     </template>
   </div>

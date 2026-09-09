@@ -84,9 +84,12 @@ const toggle = () => {
       <span v-if="streaming">{{ streaming }}</span>
       <template v-else>
         <span>{{ summary }}</span>
+        <!-- The chevron sits at the end of the row, not against the summary:
+          the whole header is the hit area, so the affordance belongs at its
+          edge rather than floating mid-row. -->
         <Icon
           icon="i-lucide-chevron-down"
-          class="size-3.5 transition-transform duration-[var(--g-dur-hover)]"
+          class="ml-auto size-3.5 transition-transform duration-[var(--g-dur-hover)]"
           :class="{ 'rotate-180': isOpen }"
         />
       </template>
@@ -104,10 +107,16 @@ const toggle = () => {
       <div class="overflow-hidden">
         <div class="flex flex-col gap-2 px-3 pt-1 pb-2.5">
           <div v-for="(step, index) in steps" :key="index" class="flex gap-2.5">
-            <Icon
-              :icon="iconFor(step)"
-              class="mt-0.5 size-3.5 flex-shrink-0 text-[var(--g-agent)]"
-            />
+            <!-- A 20px box, the line height of `did`, so the icon is centred
+              on the first line whatever its own optical centre is. A bare
+              margin drifts per icon: lucide's truck and book sit differently
+              inside their viewBox than the magnifier does. -->
+            <span class="flex items-center flex-shrink-0 h-5">
+              <Icon
+                :icon="iconFor(step)"
+                class="size-3.5 text-[var(--g-agent)]"
+              />
+            </span>
             <div class="flex flex-col gap-px min-w-0">
               <span class="text-sm text-[var(--g-agent)]">{{ step.did }}</span>
               <span

@@ -356,3 +356,46 @@ without claiming to know how far along.
 
 The gallery has a **Replay streaming → ready** control, because a shared header
 only proves itself in motion.
+
+---
+
+# Phase 8 — Desk feedback on the AI surfaces
+
+Four things from the first real look at the running preview. The first two are
+alignment, the second two are product.
+
+- [x] **The chevron sits at the end of the trace header**, not against the
+      summary text. The whole header is the hit area, so the affordance belongs
+      at its edge. (`ml-auto`; measured 10px from the right edge, which is the
+      header's own padding.)
+- [x] **Step icons are centred on the first line of their step.** They hung from
+      a `mt-0.5`, which drifts per icon because lucide's truck and book sit
+      differently inside their viewBox than the magnifier does. Each icon now
+      sits in a 20px box — the line height of `did` — so centring is
+      structural. Measured: icon centre minus text centre is 0.0px on all three
+      steps.
+- [x] **Insert and Send draft no longer look identical.** They were the same
+      colour, variant and size, and only one of them reaches a customer. Send
+      is solid, Insert is outline, and each carries its own glyph. This is a
+      safety fix wearing a visual-design hat: two identical buttons where one is
+      irreversible is a misclick waiting to happen, and the dock's whole reason
+      for existing is that approval should be attributable.
+- [x] **The dock has an instruct field.** The desk works in prose — every
+      instruction the reply loop handles today arrives as German or French
+      sentences in a Lark thread — so a dock offering only three fixed
+      adjustments could not express "add the tracking number first", which is
+      exactly the instruction the deployed model mis-reads as a send (invariant
+      5's measured residual). Typing it here emits `instruct` and nothing else.
+
+      **The component has no path from typed text to `send`.** That is invariant
+      5 expressed as structure rather than as a prompt: a classifier can be
+      wrong about what a sentence meant, a button press cannot. Enforced by
+      `DraftDock.spec.js` "routes a typed instruction to the agent and never to
+      the customer", which types the literal words *send it* and asserts
+      `instruct` fired and `send` did not, and by "offers no way to send a draft
+      that is still arriving", which now also asserts the field itself is absent
+      while streaming.
+
+The field takes the card surface rather than Input's default `--g-slate-tint`,
+which renders as a grey wash over the tank ground. All four controls in the
+dock measure 32px.

@@ -325,6 +325,7 @@ const replayDock = () => {
           @send="noteDockAction('send')"
           @discard="noteDockAction('discard')"
           @adjust="noteDockAction(`adjust: ${$event}`)"
+          @instruct="noteDockAction(`instruct: ${$event}`)"
         />
         <div class="px-3 py-6 text-sm text-[var(--g-text-muted)]">
           The reply box goes here.
@@ -354,6 +355,7 @@ const replayDock = () => {
           @insert="noteDockAction('insert')"
           @send="noteDockAction('send')"
           @discard="noteDockAction('discard')"
+          @instruct="noteDockAction(`instruct: ${$event}`)"
         />
         <div class="px-3 py-6 text-sm text-[var(--g-text-muted)]">
           The reply box goes here.
