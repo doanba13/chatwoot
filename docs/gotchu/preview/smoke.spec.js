@@ -3,6 +3,8 @@ import { createI18n } from 'vue-i18n';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import Gallery from './Gallery.vue';
 
+import components from 'dashboard/i18n/locale/en/components.json';
+
 // A compile is not a render. This mounts every re-themed primitive together and
 // fails on a bad prop, a missing slot contract or a runtime error — the class of
 // mistake that would otherwise only show up as a blank area in the browser.
@@ -16,6 +18,9 @@ describe('Gotchu preview gallery', () => {
             locale: 'en',
             messages: {
               en: {
+                // The real catalogue, as main.js loads it: the AI surfaces
+                // carry copy, and a bare instance would render their keys.
+                ...components,
                 SWITCH: { TOGGLE: 'Toggle' },
                 BREADCRUMB: { ARIA_LABEL: 'Breadcrumb' },
               },
@@ -56,6 +61,17 @@ describe('Gotchu preview gallery', () => {
     // thing assertable here is that the flag survived into the rendered table.
     const table = mountGallery().find('table');
     expect(table.attributes('data-identifier-columns')).toBeTruthy();
+  });
+
+  it('renders the AI surfaces against their real copy', () => {
+    const text = mountGallery().text();
+
+    // The trace summary is a plural assembled from the catalogue; a bare i18n
+    // instance renders the keypath instead, which is the failure this catches.
+    expect(text).toContain('Gotchu checked 3 things');
+    expect(text).toContain('Gotchu checked 1 thing');
+    expect(text).toContain('Draft from Gotchu');
+    expect(text).toContain('check this');
   });
 
   it('renders a button for every colour and variant', () => {

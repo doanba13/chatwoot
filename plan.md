@@ -232,3 +232,65 @@ count pill in the spec's "Needs approval" control.
 The AI surfaces, as from the start: the trace ("Gotchu checked 3 things"), the
 draft dock inside the composer, and the confidence chip. Specified in
 `gotchu-spine.js`; they belong with the Captain work.
+
+---
+
+# Phase 6 — The AI surfaces (props-only)
+
+Spec: `components/gotchu-spine.js` in the design project. This phase takes the
+three surfaces named as out of scope from the start — the trace, the draft dock
+and the confidence chip — plus the dot the first two share.
+
+## Why props-only, and not wired
+
+The data behind all three is absent from this fork and from the gateway it
+would read:
+
+- **No browser can read a draft.** The gateway exposes three routes (order
+  context, precedent search, feedback). Cycle and draft state live in Postgres
+  reachable only from inside worker jobs. The draft dock, the trace, the
+  approval card and the metrics page all wait on that one authenticated read
+  path.
+- **There is no push anywhere.** Panel to gateway is request/response; worker to
+  Lark is an outbound socket. So `DraftDock`'s `streaming` state is a design
+  state this phase renders, not a behaviour it can produce.
+- **`reply_draft.confidence` is a real column written `null` on every draft.**
+  The chip has a schema slot and no signal.
+- **The trace has no ordered steps.** Only the finished `rendered_context` is
+  stored — never "looked up #PL-1095 → unfulfilled".
+
+So these are pure presentation components, driven entirely by props and
+exercised in the preview gallery, exactly as the Phase 3 primitives were. No
+call site in `ReplyBox`, the message list or the conversation header is
+touched; wiring them to a fixture store would only be wiring to delete once the
+read path lands.
+
+## Files
+
+- [x] `components-next/gotchu/AgentDot.vue` — the spine ships `AgentDot` and
+      `StreamingDot`, identical but for the pulse. One component, one prop.
+- [x] `components-next/gotchu/ConfidenceChip.vue` — three plain words, teal
+      outline, never a percentage.
+- [x] `components-next/gotchu/AITrace.vue` — collapsed to a count, expands
+      inline on `--g-dur-reveal`. Never a modal.
+- [x] `components-next/gotchu/DraftDock.vue` — `none` / `streaming` / `ready`.
+      Two paths plus discard.
+- [x] `GOTCHU` block in `i18n/locale/en/components.json`, and the same keys in
+      the preview harness's bare i18n instance.
+- [x] Gallery sections for all four, light and dark.
+- [x] Specs for `AITrace` and `DraftDock` — the two with branching. The chip and
+      the dot are covered by the gallery.
+
+## Deliberate departures from the spine
+
+1. **No keyboard hint on "stop and edit".** The spine draws a `S` key. No such
+   shortcut exists, and `ReplyTopPanel` already set the precedent in Phase 5 of
+   naming the real binding rather than the drawn one. Drawing a key that does
+   nothing is worse than drawing none.
+2. **The confidence chip takes no default level.** A caller that has no signal
+   must render no chip rather than a chip that says `probably` about nothing —
+   which is what a default would produce today, on every draft in production.
+
+**Verify:** `pnpm exec vite --config docs/gotchu/preview/vite.config.mjs`
+(`story:build` is broken on this fork independently of this work), light and
+dark; `pnpm test` for the two specs; `pnpm eslint` on the new files.

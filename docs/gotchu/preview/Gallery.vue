@@ -15,6 +15,10 @@ import Banner from 'dashboard/components-next/banner/Banner.vue';
 import Breadcrumb from 'dashboard/components-next/breadcrumb/Breadcrumb.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import BaseTable from 'dashboard/components-next/table/BaseTable.vue';
+import AgentDot from 'dashboard/components-next/gotchu/AgentDot.vue';
+import ConfidenceChip from 'dashboard/components-next/gotchu/ConfidenceChip.vue';
+import AITrace from 'dashboard/components-next/gotchu/AITrace.vue';
+import DraftDock from 'dashboard/components-next/gotchu/DraftDock.vue';
 
 // SidebarGroupLeaf is deliberately absent. It calls useSidebarContext(), which
 // injects a Symbol private to sidebar/provider.js and additionally needs
@@ -56,6 +60,34 @@ const rows = [
   { order: '#CU-2213', tracking: 'YT2519021088871234', store: 'cadeauniq' },
   { order: '#GE-0447', tracking: 'S34100222917', store: 'giftera' },
 ];
+
+// Fixtures, not signal. Nothing in the system produces ordered trace steps or a
+// confidence level yet — see plan.md Phase 6.
+const traceSteps = [
+  {
+    kind: 'order',
+    did: 'Looked up #PL-1095',
+    result: 'Paid, fulfilled 12 days ago',
+  },
+  {
+    kind: 'fulfillment',
+    did: 'Checked the tracking',
+    result: 'YWBZ2401882394 — last scan Leipzig, 4 days ago',
+  },
+  {
+    kind: 'policy',
+    did: 'Read the shipping policy',
+    result: '14–21 days to Germany',
+  },
+];
+
+const draftText =
+  'Hallo Frau Weber, Ihre Sendung ist unterwegs und wurde zuletzt am 4. September in Leipzig gescannt. Für Deutschland rechnen wir mit 14–21 Tagen ab Versand.';
+
+const lastDockAction = ref('—');
+const noteDockAction = action => {
+  lastDockAction.value = action;
+};
 </script>
 
 <template>
@@ -218,6 +250,92 @@ const rows = [
           </template>
         </BaseTable>
       </div>
+    </section>
+
+    <h2
+      class="mt-4 mb-3 text-lg font-bold text-n-slate-12"
+      style="font-family: var(--g-font-display)"
+    >
+      AI surfaces
+    </h2>
+    <p class="mb-6 text-sm text-n-slate-11 max-w-2xl">
+      Props only. Nothing below is fed by the system: there is no
+      browser-readable draft, no push for the streaming states, no ordered trace
+      steps and
+      <code>reply_draft.confidence</code> is null on every row.
+    </p>
+
+    <section class="mb-10">
+      <h2 class="mb-3 text-sm font-medium text-n-slate-11">
+        Confidence chip — and the dot
+      </h2>
+      <div class="flex items-center gap-3">
+        <ConfidenceChip level="sure" />
+        <ConfidenceChip level="probably" />
+        <ConfidenceChip level="check" title="No scan since 4 September" />
+        <span
+          class="ml-4 inline-flex items-center gap-2 text-xs text-n-slate-11"
+        >
+          <AgentDot />
+          resting
+        </span>
+        <span class="inline-flex items-center gap-2 text-xs text-n-slate-11">
+          <AgentDot streaming />
+          streaming
+        </span>
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-4 mb-10 max-w-xl">
+      <h2 class="text-sm font-medium text-n-slate-11">
+        AI trace — collapsed, open, streaming
+      </h2>
+      <AITrace :steps="traceSteps" />
+      <AITrace :steps="traceSteps" default-open />
+      <AITrace :steps="traceSteps" streaming="Reading the order…" />
+      <AITrace :steps="[traceSteps[0]]" default-open />
+    </section>
+
+    <section class="flex flex-col gap-6 mb-10 max-w-xl">
+      <h2 class="text-sm font-medium text-n-slate-11">
+        Draft dock — above a composer, as it sits in the thread
+      </h2>
+      <div
+        class="overflow-hidden border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
+      >
+        <DraftDock
+          state="ready"
+          :text="draftText"
+          confidence="probably"
+          :adjust="['shorter', 'warmer', 'in French']"
+          @insert="noteDockAction('insert')"
+          @send="noteDockAction('send')"
+          @discard="noteDockAction('discard')"
+          @adjust="noteDockAction(`adjust: ${$event}`)"
+        />
+        <div class="px-3 py-6 text-sm text-[var(--g-text-muted)]">
+          The reply box goes here.
+        </div>
+      </div>
+      <div
+        class="overflow-hidden border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
+      >
+        <DraftDock
+          state="streaming"
+          streaming-text="Reading the order…"
+          @stop="noteDockAction('stop')"
+        />
+        <div class="px-3 py-6 text-sm text-[var(--g-text-muted)]">
+          The reply box goes here.
+        </div>
+      </div>
+      <p class="text-xs text-n-slate-11">
+        Last emitted: <span class="font-medium">{{ lastDockAction }}</span
+        >. A dock with no confidence renders no chip, and
+        <code>state="none"</code> renders nothing at all.
+      </p>
+      <DraftDock state="ready" :text="draftText" />
+      <DraftDock state="none" />
     </section>
   </div>
 </template>

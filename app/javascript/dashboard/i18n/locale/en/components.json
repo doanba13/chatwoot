@@ -79,5 +79,23 @@
     "UPLOAD_ERROR": "Only MP4 files can be uploaded",
     "ADD": "Embed",
     "CANCEL": "Cancel"
+  },
+  "GOTCHU": {
+    "CONFIDENCE": {
+      "SURE": "sure",
+      "PROBABLY": "probably",
+      "CHECK": "check this"
+    },
+    "TRACE": {
+      "CHECKED": "{name} checked {count} thing | {name} checked {count} things"
+    },
+    "DRAFT": {
+      "TITLE": "Draft from Gotchu",
+      "INSERT": "Insert",
+      "SEND": "Send draft",
+      "DISCARD": "Discard",
+      "ADJUST": "Adjust:",
+      "STOP": "stop and edit"
+    }
   }
 }
