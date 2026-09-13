@@ -163,9 +163,15 @@ const copyConversationId = async () => {
 </script>
 
 <template>
+  <!-- h-16, not h-14: this header carries TWO lines (the name and subject,
+    then the order code and inbox) inside a row that `items-center` centres, so
+    56px left 8px above the first line while the list header beside it starts
+    at 14px. It read as the title being stuck to the top of the window, because
+    it was the topmost thing in the pane and the only one without breathing
+    room. 64px restores the rhythm the other two panes already had. -->
   <div
     ref="conversationHeader"
-    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-5 pt-3 pb-2 xl:py-0 h-24 xl:h-14"
+    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-5 pt-3 pb-2 xl:py-0 h-24 xl:h-16"
   >
     <div
       class="flex items-center justify-start w-full xl:w-auto max-w-full min-w-0 xl:flex-1"
