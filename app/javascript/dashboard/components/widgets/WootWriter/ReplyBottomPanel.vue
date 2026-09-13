@@ -411,7 +411,7 @@ export default {
         :label="sendButtonText"
         type="submit"
         sm
-        :color="'blue'"
+        color="blue"
         :disabled="isSendDisabled"
         class="flex-shrink-0"
         @click="onSend"
