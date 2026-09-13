@@ -94,15 +94,18 @@ export default {
 
 <template>
   <div
-    class="conversation-details-wrap flex flex-col min-w-0 w-full bg-n-surface-1 relative"
+    class="conversation-details-wrap flex flex-col min-w-0 w-full bg-n-surface-1 pt-2 relative"
     :class="{
       'border-l rtl:border-l-0 rtl:border-r border-n-weak': !isOnExpandedLayout,
     }"
   >
-    <!-- The `!pt-2` that briefly lived here is gone with the second header
-      line it was compensating for. The design's header is one line in a 56px
-      row, which has room of its own; padding on top of that pushed the title
-      BELOW its neighbours instead of above them. -->
+    <!-- `pt-2` on the WRAPPER, not on the header, and paired with the list
+      header dropping from `pt-[14px]` to `pt-2`. The two titles have to share
+      a baseline across the divider, which is a relationship between two panes
+      — so it is set once on each pane's outer box rather than tuned inside
+      whichever component was complained about last. Measured in the browser,
+      not derived: every attempt to reason it out from one component's classes
+      got it wrong, because neither component can see the other. -->
     <ConversationHeader
       v-if="currentChat.id"
       :chat="currentChat"
