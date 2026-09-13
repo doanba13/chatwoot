@@ -154,11 +154,20 @@ against them.
 
 ## Phase 4 — Gate
 
-- [ ] `pnpm eslint`
-- [ ] `pnpm test` — existing specs: Avatar, SidebarGroupLeaf, Popover,
-      DurationInput
-- [ ] `pnpm story:build` — proves every story still compiles
-- [ ] Screenshot pass over the 15 primitive stories, light + dark
+Run in full for the first time on 2026-09-13, against the whole branch rather
+than one commit at a time.
+
+- [x] `pnpm eslint` over every app file the branch touches — **0 errors**. It
+      found one, `:color="'blue'"` in `ReplyBottomPanel.vue`
+      (`vue/no-useless-v-bind`), now fixed. Warnings on the 42 modified files:
+      **16, against 13 for the same files on `develop`** — three new, all of
+      classes that already fail there (dynamic i18n keys, raw text).
+- [x] `pnpm test` — **433 files, 4475 tests, all passing.**
+- [ ] `pnpm story:build` — still broken, and broken on `develop` too. Not this
+      branch's to fix; the preview harness exists because of it.
+- [x] Screenshot pass, light and dark — over the primitives and the AI
+      surfaces, in the preview harness. **Not over the real inbox screen with
+      real conversations**, which is the gap that matters for shipping.
 - [ ] `code-reviewer` agent on the diff
 
 **Known environment risk:** `.nvmrc` pins node `24.13.0`; this host has
