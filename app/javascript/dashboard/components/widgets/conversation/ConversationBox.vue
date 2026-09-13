@@ -99,12 +99,19 @@ export default {
       'border-l rtl:border-l-0 rtl:border-r border-n-weak': !isOnExpandedLayout,
     }"
   >
+    <!-- `!pt-2` used to ride along with the bottom border, so it only applied
+      when there were NO dashboard apps. This deployment has one (the order
+      panel), so the header never got its top padding and sat flush against the
+      top of the window — `conversation-details-wrap` has none of its own to
+      fall back on. The border still belongs to the no-apps case, because with
+      apps the tab row underneath draws that line; the padding does not. -->
     <ConversationHeader
       v-if="currentChat.id"
       :chat="currentChat"
       :show-back-button="isOnExpandedLayout && !isInboxView"
+      class="!pt-2"
       :class="{
-        'border-b border-b-n-weak !pt-2': !dashboardApps.length,
+        'border-b border-b-n-weak': !dashboardApps.length,
       }"
     />
     <woot-tabs
