@@ -6,7 +6,6 @@ import { useElementSize } from '@vueuse/core';
 import BackButton from '../BackButton.vue';
 import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
-import Avatar from 'next/avatar/Avatar.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
 import wootConstants from 'dashboard/constants/globals';
@@ -163,15 +162,14 @@ const copyConversationId = async () => {
 </script>
 
 <template>
-  <!-- h-16, not h-14: this header carries TWO lines (the name and subject,
-    then the order code and inbox) inside a row that `items-center` centres, so
-    56px left 8px above the first line while the list header beside it starts
-    at 14px. It read as the title being stuck to the top of the window, because
-    it was the topmost thing in the pane and the only one without breathing
-    room. 64px restores the rhythm the other two panes already had. -->
+  <!-- inbox-spec.md "Thread / Header": 56px, `border-bottom`, padding `0 20px`,
+    gap 12 — ONE line. The two-line version this replaces is what made the
+    title read as stuck to the top of the window: a 40px block centred in 56px
+    leaves 8px, where the list header beside it starts at 14px. A single 20px
+    line in the same row sits at 18px and needs no padding bolted on. -->
   <div
     ref="conversationHeader"
-    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-5 pt-3 pb-2 xl:py-0 h-24 xl:h-16"
+    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-5 pt-3 pb-2 xl:py-0 h-24 xl:h-14"
   >
     <div
       class="flex items-center justify-start w-full xl:w-auto max-w-full min-w-0 xl:flex-1"
@@ -181,58 +179,53 @@ const copyConversationId = async () => {
         :back-url="backButtonUrl"
         class="me-2"
       />
-      <Avatar
-        :name="currentContact.name"
-        :src="currentContact.thumbnail"
-        :size="32"
-        :status="currentContact.availability_status"
-        hide-offline-status
-      />
-      <div class="flex flex-col items-start min-w-0 ms-2 overflow-hidden">
-        <div
-          class="flex flex-row items-center max-w-full min-w-0 gap-1 p-0 m-0"
+      <!-- No avatar here. The spec's header line is the contact, a `›`, and
+        the subject — the face belongs to the list row, where it distinguishes
+        one conversation from another; in a thread there is only one person and
+        it is repeating information. -->
+      <div class="flex flex-row items-center min-w-0 gap-1.5 flex-1">
+        <span
+          class="text-sm font-semibold truncate leading-tight text-n-slate-12"
         >
+          {{ currentContact.name }}
+        </span>
+        <fluent-icon
+          v-if="!isHMACVerified"
+          v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
+          size="14"
+          class="text-n-amber-10 my-0 mx-0 min-w-[14px] flex-shrink-0"
+          icon="warning"
+        />
+        <template v-if="subjectParts.length">
           <span
-            class="text-sm font-semibold truncate leading-tight text-n-slate-12"
+            aria-hidden="true"
+            class="flex-shrink-0 text-sm leading-tight text-[var(--g-text-muted)]"
           >
-            {{ currentContact.name }}
+            {{ SUBJECT_SEPARATOR }}
           </span>
-          <fluent-icon
-            v-if="!isHMACVerified"
-            v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
-            size="14"
-            class="text-n-amber-10 my-0 mx-0 min-w-[14px] flex-shrink-0"
-            icon="warning"
-          />
-          <template v-if="subjectParts.length">
+          <span
+            :title="mailSubject"
+            class="flex-1 min-w-0 text-sm leading-tight truncate text-[var(--g-text-muted)]"
+          >
             <span
-              aria-hidden="true"
-              class="flex-shrink-0 text-sm leading-tight text-[var(--g-text-muted)]"
+              v-for="part in subjectParts"
+              :key="part.id"
+              :class="part.mono ? 'font-[family-name:var(--g-font-mono)]' : ''"
+              >{{ part.text }}</span
             >
-              {{ SUBJECT_SEPARATOR }}
-            </span>
-            <span
-              :title="mailSubject"
-              class="flex-1 min-w-0 text-sm leading-tight truncate text-[var(--g-text-muted)]"
-            >
-              <span
-                v-for="part in subjectParts"
-                :key="part.id"
-                :class="
-                  part.mono ? 'font-[family-name:var(--g-font-mono)]' : ''
-                "
-                >{{ part.text }}</span
-              >
-            </span>
-          </template>
-        </div>
-
+          </span>
+        </template>
+        <!-- The conversation id, the inbox and the snooze note used to be a
+          second line under the title, which is what made this header two rows
+          tall. They stay — each is a real affordance, the id is click-to-copy —
+          but inline and muted, after the subject rather than beneath it. The id
+          is mono, as every identifier in this design is. -->
         <div
-          class="flex items-center gap-1 overflow-hidden text-xs conversation--header--actions text-n-slate-11 text-ellipsis whitespace-nowrap"
+          class="flex items-center flex-shrink-0 gap-1 overflow-hidden text-xs conversation--header--actions text-[var(--g-text-muted)] text-ellipsis whitespace-nowrap"
         >
           <button
             type="button"
-            class="truncate text-label-small text-n-slate-11 hover:text-n-slate-12 !p-0 cucursor-pointer"
+            class="truncate font-[family-name:var(--g-font-mono)] text-xs text-[var(--g-text-muted)] hover:text-[var(--g-text)] !p-0 cursor-pointer"
             @click="copyConversationId"
           >
             {{ `#${chat.id}` }}

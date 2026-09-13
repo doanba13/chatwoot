@@ -99,17 +99,14 @@ export default {
       'border-l rtl:border-l-0 rtl:border-r border-n-weak': !isOnExpandedLayout,
     }"
   >
-    <!-- `!pt-2` used to ride along with the bottom border, so it only applied
-      when there were NO dashboard apps. This deployment has one (the order
-      panel), so the header never got its top padding and sat flush against the
-      top of the window — `conversation-details-wrap` has none of its own to
-      fall back on. The border still belongs to the no-apps case, because with
-      apps the tab row underneath draws that line; the padding does not. -->
+    <!-- The `!pt-2` that briefly lived here is gone with the second header
+      line it was compensating for. The design's header is one line in a 56px
+      row, which has room of its own; padding on top of that pushed the title
+      BELOW its neighbours instead of above them. -->
     <ConversationHeader
       v-if="currentChat.id"
       :chat="currentChat"
       :show-back-button="isOnExpandedLayout && !isInboxView"
-      class="!pt-2"
       :class="{
         'border-b border-b-n-weak': !dashboardApps.length,
       }"
