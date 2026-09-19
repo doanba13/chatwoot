@@ -65,8 +65,11 @@ const goToSuggestions = () => {
 </script>
 
 <template>
+  <!-- Formerly an amber callout. Amber is retired, so the ground goes neutral
+    and the text goes ink; the triangle icon carries the alarm, and the two
+    buttons step the same slate scale the ground sits on. -->
   <div
-    class="flex items-center justify-between gap-3 px-3 py-2 text-sm border rounded-xl bg-n-amber-3 border-n-amber-4 text-n-amber-11"
+    class="flex items-center justify-between gap-3 px-3 py-2 text-sm border rounded-xl bg-n-slate-3 border-n-slate-4 text-n-slate-12"
     :class="{ hidden: !showBanner }"
   >
     <div class="flex items-center gap-2 min-w-0">
@@ -83,14 +86,14 @@ const goToSuggestions = () => {
     <div class="flex items-center gap-1 shrink-0">
       <button
         type="button"
-        class="px-3 py-1 rounded-lg bg-n-amber-4 hover:bg-n-amber-5"
+        class="px-3 py-1 rounded-lg bg-n-slate-4 hover:bg-n-slate-5"
         @click="goToSuggestions"
       >
         {{ $t('CAPTAIN.OVERVIEW.COVERAGE_BANNER.ACTION') }}
       </button>
       <button
         type="button"
-        class="grid rounded-lg size-7 place-content-center hover:bg-n-amber-4"
+        class="grid rounded-lg size-7 place-content-center hover:bg-n-slate-4"
         :aria-label="$t('CAPTAIN.OVERVIEW.COVERAGE_BANNER.DISMISS')"
         @click="dismiss"
       >

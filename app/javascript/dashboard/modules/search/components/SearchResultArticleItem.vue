@@ -52,8 +52,10 @@ const statusTextColor = computed(() => {
   switch (props.status) {
     case ARTICLE_STATUSES.ARCHIVED:
       return 'text-n-slate-12';
+    // Same call as ArticleCard: ink is already `archived` in this map and both
+    // show in one result list, so a draft takes the muted slate.
     case ARTICLE_STATUSES.DRAFT:
-      return 'text-n-amber-11';
+      return 'text-n-slate-11';
     default:
       return 'text-n-teal-11';
   }

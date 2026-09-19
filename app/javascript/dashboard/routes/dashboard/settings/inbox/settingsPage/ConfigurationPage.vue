@@ -370,7 +370,7 @@ export default {
         />
         <div
           v-else
-          class="py-2 px-3 bg-n-amber-3 outline-n-amber-4 text-n-amber-11 outline outline-1 -outline-offset-1 rounded-xl"
+          class="py-2 px-3 bg-n-slate-3 outline-n-slate-4 text-n-slate-12 outline outline-1 -outline-offset-1 rounded-xl"
         >
           <p class="text-body-para mb-0">
             {{ $t('INBOX_MGMT.SETTINGS_POPUP.FORWARD_EMAIL_NOT_CONFIGURED') }}

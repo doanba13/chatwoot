@@ -112,16 +112,20 @@ const fullLabel = computed(() => {
   return t('CAPTAIN.DOCUMENTS.SYNC_STATUS.NEVER_SYNCED');
 });
 
+// Syncing, stale-sync and stale shared one amber tone. Amber is retired, so all
+// three go ink — the tone is renamed with them rather than left naming a colour
+// the palette no longer has. They keep sharing a tone: splitting in-progress off
+// from stale would be inventing a distinction this component never drew.
 const tone = computed(() => {
-  if (isSyncing.value) return 'amber';
-  if (isStaleSync.value) return 'amber';
+  if (isSyncing.value) return 'ink';
+  if (isStaleSync.value) return 'ink';
   if (isFailed.value) return 'ruby';
-  if (isStale.value) return 'amber';
+  if (isStale.value) return 'ink';
   return 'slate';
 });
 
 const textClass = computed(() => {
-  if (tone.value === 'amber') return 'text-n-amber-11';
+  if (tone.value === 'ink') return 'text-n-slate-12';
   if (tone.value === 'ruby') return 'text-n-ruby-11';
   return 'text-n-slate-11';
 });
@@ -140,7 +144,7 @@ const statusIcon = computed(() => {
     class="flex gap-1.5 items-center text-sm truncate shrink-0 tabular-nums"
     :class="textClass"
   >
-    <Spinner v-if="isSyncing" class="text-n-amber-11 size-3" />
+    <Spinner v-if="isSyncing" class="text-n-slate-12 size-3" />
     <Icon v-else :icon="statusIcon" class="shrink-0 size-3.5" />
     <span class="truncate">{{ label }}</span>
     <Button

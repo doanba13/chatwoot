@@ -215,8 +215,8 @@ defineExpose({ open, close });
           }}
         </p>
 
-        <div class="p-2.5 rounded-lg bg-n-amber-2 border border-n-amber-6">
-          <p class="text-sm text-n-amber-11">
+        <div class="p-2.5 rounded-lg bg-n-slate-2 border border-n-slate-6">
+          <p class="text-sm text-n-slate-12">
             {{ $t('BILLING_SETTINGS.TOPUP.CONFIRM.INSTANT_DEDUCTION_NOTE') }}
           </p>
         </div>

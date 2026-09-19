@@ -16,8 +16,12 @@ export default {
         return 'before:!border-t-n-brand';
       }
 
+      // `warning` was `amber-6`, a pale amber that went nearly black in dark
+      // mode — this is the semantic triplet primary/warning/success, not a
+      // decorative palette, so it retires to ink like every other `.warning` in
+      // the fork, and `n-slate-12` flips with the theme where `amber-6` did not.
       if (this.colorScheme === 'warning') {
-        return 'before:!border-t-n-amber-6';
+        return 'before:!border-t-n-slate-12';
       }
 
       if (this.colorScheme === 'success') {

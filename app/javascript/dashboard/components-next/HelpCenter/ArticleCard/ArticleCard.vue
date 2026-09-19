@@ -136,8 +136,11 @@ const statusTextColor = computed(() => {
   switch (props.status) {
     case 'archived':
       return 'text-n-slate-12';
+    // `draft` was amber. Ink is already taken by `archived` in this same map
+    // and both statuses are on screen together in a card grid, so a draft takes
+    // the muted slate instead — the least finished state, read as the quietest.
     case 'draft':
-      return 'text-n-amber-11';
+      return 'text-n-slate-11';
     default:
       return 'text-n-teal-11';
   }
@@ -223,7 +226,9 @@ const handleClick = id => {
           "
           class="text-xs font-medium inline-flex items-center gap-1 h-6 px-2 py-0.5 rounded-md text-n-slate-11 bg-n-alpha-2 whitespace-nowrap shrink-0"
         >
-          <span class="rounded-full size-1.5 bg-n-amber-9 shrink-0" />
+          <!-- Pending-edits dot, formerly amber. Ink so it still leads the
+            muted text of the chip it sits in. -->
+          <span class="rounded-full size-1.5 bg-n-slate-12 shrink-0" />
           {{ t('HELP_CENTER.ARTICLES_PAGE.ARTICLE_CARD.CARD.PENDING_EDITS') }}
         </span>
         <span

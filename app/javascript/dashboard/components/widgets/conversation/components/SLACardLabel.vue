@@ -31,8 +31,10 @@ const { slaStatus } = useSlaStatus({
 });
 const hasSlaThreshold = computed(() => slaStatus.value?.type);
 const isSlaMissed = computed(() => slaStatus.value?.isSlaMissed);
+// An SLA still due was amber, a missed one ruby. Amber is retired, so due goes
+// ink: breach stays the only thing on this card wearing a colour.
 const slaTextStyles = computed(() =>
-  isSlaMissed.value ? 'text-n-ruby-11' : 'text-n-amber-11'
+  isSlaMissed.value ? 'text-n-ruby-11' : 'text-n-slate-12'
 );
 
 const slaStatusText = computed(() => {

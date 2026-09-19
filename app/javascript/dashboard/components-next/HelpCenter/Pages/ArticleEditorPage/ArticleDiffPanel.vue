@@ -98,7 +98,10 @@ const blockClass = type => {
     <template #header>
       <div class="flex flex-col gap-1 min-w-0">
         <div class="flex items-center gap-2">
-          <span class="size-2 rounded-full bg-n-amber-9 shrink-0" />
+          <!-- The unsaved-changes dot was amber. Ink, not a mid slate: the dot
+            is the only thing marking the panel as pending and a grey one
+            disappears into the heading beside it. -->
+          <span class="size-2 rounded-full bg-n-slate-12 shrink-0" />
           <h3 class="text-base font-medium leading-6 text-n-slate-12">
             {{ t('HELP_CENTER.EDIT_ARTICLE_PAGE.DIFF_DIALOG.TITLE') }}
           </h3>

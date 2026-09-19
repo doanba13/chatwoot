@@ -290,7 +290,7 @@ const tableHeaders = computed(() => {
     <template #body>
       <div
         v-if="showDelayDisabledBanner"
-        class="px-4 py-3 mb-4 text-sm rounded-lg bg-n-amber-3 text-n-amber-12"
+        class="px-4 py-3 mb-4 text-sm rounded-lg bg-n-slate-3 text-n-slate-12"
       >
         {{ $t('AUTOMATION.LIST.DELAY_DISABLED_BANNER') }}
       </div>

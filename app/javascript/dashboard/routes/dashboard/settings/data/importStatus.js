@@ -78,11 +78,23 @@ export const formatDate = value => {
   }).format(new Date(value));
 };
 
+// `pending` and `completed_with_errors` were both amber, which Gotchu retired.
+// They do NOT go ink, which is the rule everywhere else: the Gotchu compat block
+// remaps `--blue-9` onto ink, so `processing` is already an ink dot, and several
+// imports are listed at once — ink here would collapse three of the six states
+// into one colour on screen. They take the palette's slate instead, which stays
+// apart from `abandoned`'s lighter `slate-9` in both themes.
+//
+// They remain indistinguishable from EACH OTHER, exactly as they were when both
+// were amber: this map has six states and, after the blue→ink remap, five
+// distinguishable values to spend. The dot sits beside `formatStatus(status)`,
+// so the state is still readable — but splitting them needs a sixth value the
+// palette does not have, not a different class here.
 const STATUS_DOT_CLASS = {
-  pending: 'bg-n-amber-9',
+  pending: 'bg-n-slate-11',
   processing: 'bg-n-blue-9',
   completed: 'bg-n-teal-9',
-  completed_with_errors: 'bg-n-amber-9',
+  completed_with_errors: 'bg-n-slate-11',
   failed: 'bg-n-ruby-9',
   abandoned: 'bg-n-slate-9',
 };

@@ -7,14 +7,14 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { useMessageContext } from './provider.js';
-import { MESSAGE_VARIANTS, ORIENTATION } from './constants';
+import { ORIENTATION } from './constants';
 
 const props = defineProps({
   messageId: { type: Number, required: true },
 });
 
 const { t } = useI18n();
-const { orientation, variant, createdAt } = useMessageContext();
+const { orientation, createdAt } = useMessageContext();
 const store = useStore();
 const { isCloudFeatureEnabled } = useAccount();
 
@@ -184,18 +184,14 @@ const rowLayoutClass = computed(() => {
     : 'justify-end';
 });
 
-// Blend the sparkle with the bubble background: amber on private notes,
-// slate everywhere else. Tokens adapt to dark mode on their own.
-const sparkleColorClass = computed(() => {
-  if (variant.value === MESSAGE_VARIANTS.PRIVATE) {
-    return isOpen.value
-      ? 'text-n-amber-12/80'
-      : 'text-n-amber-12/40 hover:text-n-amber-12/70';
-  }
-  return isOpen.value
-    ? 'text-n-slate-12'
-    : 'text-n-slate-11/60 hover:text-n-slate-12';
-});
+// Blend the sparkle with the bubble background. The private note used to need
+// its own amber branch here to match an amber bubble; bubbles/Base.vue made that
+// bubble dashed-slate and amber is retired, so there is nothing left for the
+// branch to do and every variant takes the same slate. Tokens adapt to dark mode
+// on their own.
+const sparkleColorClass = computed(() =>
+  isOpen.value ? 'text-n-slate-12' : 'text-n-slate-11/60 hover:text-n-slate-12'
+);
 
 const popoverAlign = computed(() =>
   orientation.value === ORIENTATION.LEFT ? 'start' : 'end'

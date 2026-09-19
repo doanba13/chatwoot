@@ -23,8 +23,11 @@ const colorClass = computed(() => {
   if (percent.value < 50) {
     return 'bg-n-teal-10';
   }
+  // The middle rung of the meter was amber. Ink, not a mid slate: the bar has to
+  // read against the slate track it sits in, and it is the only rung between
+  // healthy teal and over-budget ruby.
   if (percent.value < 80) {
-    return 'bg-n-amber-10';
+    return 'bg-n-slate-12';
   }
   return 'bg-n-ruby-10';
 });

@@ -39,7 +39,11 @@ const FLOW_NODE_COLORS = {
   reopened_within_7_days: 'rgb(var(--ruby-9))',
   closed_with_team: 'rgb(var(--slate-8))',
 };
-const DEFAULT_FLOW_NODE_COLOR = 'rgb(var(--amber-9))';
+// Every `handoff_reason_*` node falls through to this default — Captain could
+// not finish the conversation, which is the degraded outcome of the flow. Amber
+// is retired, so it is ink; nothing else in the map above holds ink, and it
+// separates cleanly from `closed_with_team`'s slate-8.
+const DEFAULT_FLOW_NODE_COLOR = 'rgb(var(--slate-12))';
 
 const reasonLabel = category =>
   t(

@@ -73,16 +73,20 @@ watch(
 <template>
   <li class="px-4 pt-3 pb-1 list-none" data-clarity-mask="True">
     <div class="flex justify-start">
+      <!-- An ad referral is a meta bubble — neither the customer's words nor
+        ours — so it takes the same dashed-slate treatment as a private note
+        rather than the amber it used to carry. The ad label stays ink so the
+        bubble still announces what it is. -->
       <div
-        class="w-full max-w-md overflow-hidden border border-dashed rounded-xl rounded-bl-sm bg-n-alpha-1 border-n-amber-7"
+        class="w-full max-w-md overflow-hidden border border-dashed rounded-xl rounded-bl-sm bg-n-alpha-1 border-n-slate-7"
       >
         <div
-          class="flex items-center gap-2 px-3 py-2 bg-n-amber-3 border-b border-n-amber-7/40"
+          class="flex items-center gap-2 px-3 py-2 bg-n-slate-3 border-b border-n-slate-7/40"
         >
           <span
-            class="i-lucide-megaphone size-4 text-n-amber-11 flex-shrink-0"
+            class="i-lucide-megaphone size-4 text-n-slate-11 flex-shrink-0"
           />
-          <span class="text-xs font-medium text-n-amber-12">
+          <span class="text-xs font-medium text-n-slate-12">
             {{ adLabel }}
           </span>
         </div>
@@ -130,7 +134,7 @@ watch(
             :href="sourceUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-1 mt-1 text-xs font-medium text-n-amber-11 hover:text-n-amber-12 hover:underline"
+            class="inline-flex items-center gap-1 mt-1 text-xs font-medium text-n-slate-11 hover:text-n-slate-12 hover:underline"
           >
             <span class="i-lucide-external-link size-3" />
             {{ t('CONVERSATION.REFERRAL.VIEW_AD') }}
@@ -139,7 +143,7 @@ watch(
 
         <div
           v-if="welcomeText"
-          class="px-3 pb-3 pt-1 text-xs text-n-slate-10 border-t border-n-amber-7/30 mt-0"
+          class="px-3 pb-3 pt-1 text-xs text-n-slate-10 border-t border-n-slate-7/30 mt-0"
         >
           <span class="font-medium text-n-slate-11">
             {{ t('CONVERSATION.REFERRAL.WELCOME_MESSAGE_LABEL') }}

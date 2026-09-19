@@ -139,10 +139,12 @@ export default {
     }
   }
 
+  // Amber is retired, so a warning banner is a neutral ground with ink text,
+  // one step heavier than `secondary` so the two are still distinguishable.
   &.warning {
-    @apply bg-n-amber-5 text-n-amber-12;
+    @apply bg-n-slate-5 text-n-slate-12;
     a {
-      @apply text-n-amber-12;
+      @apply text-n-slate-12;
     }
   }
 
@@ -150,8 +152,13 @@ export default {
     @apply text-n-gray-10 dark:text-n-gray-10;
   }
 
+  // The base link had `text-n-amber-12` hardcoded, which every scheme but
+  // `primary` then overrode — so a primary banner, whose ground is ink, drew its
+  // link in amber. Dropping the colour altogether lets the link inherit the
+  // banner's own text colour, which is what each scheme was overriding it back
+  // to anyway.
   a {
-    @apply ml-1 underline text-n-amber-12 text-xs;
+    @apply ml-1 underline text-xs;
   }
 
   .banner-message {

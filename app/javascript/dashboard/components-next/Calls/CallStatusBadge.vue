@@ -30,9 +30,12 @@ const KIND_CONFIG = {
     icon: 'i-lucide-phone-missed',
     class: 'bg-n-ruby-3 text-n-ruby-11',
   },
+  // NO_REPLY was the one amber badge here. Gotchu retired amber as a semantic
+  // role, so it takes the same neutral ground as the plain in/outgoing badges
+  // and separates from them on text weight — ink rather than muted slate.
   [CALL_KIND.NO_REPLY]: {
     icon: 'i-lucide-phone-outgoing',
-    class: 'bg-n-amber-3 text-n-amber-11',
+    class: 'bg-n-slate-3 text-n-slate-12',
   },
   [CALL_KIND.FAILED]: {
     icon: 'i-lucide-phone-off',

@@ -107,7 +107,9 @@ const templateApprovalStatus = computed(() => {
     PENDING: {
       text: t('INBOX_MGMT.CSAT.TEMPLATE_STATUS.PENDING'),
       icon: 'i-lucide-clock',
-      color: 'text-n-amber-11',
+      // Amber is retired; approved and rejected keep their hues, so a template
+      // still in review falls to ink.
+      color: 'text-n-slate-12',
     },
     REJECTED: {
       text: t('INBOX_MGMT.CSAT.TEMPLATE_STATUS.REJECTED'),
@@ -301,7 +303,8 @@ const getUtilityClassificationClass = classification => {
   if (classification === 'LIKELY_MARKETING') {
     return 'bg-n-ruby-3 text-n-ruby-11';
   }
-  return 'bg-n-amber-3 text-n-amber-11';
+  // `UNCLEAR` was the amber of these three. Ink on a neutral ground.
+  return 'bg-n-slate-3 text-n-slate-12';
 };
 
 const updateSurveyRuleOperator = operator => {

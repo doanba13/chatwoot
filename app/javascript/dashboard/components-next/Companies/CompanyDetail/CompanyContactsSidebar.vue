@@ -217,7 +217,7 @@ const handleContactSelect = contactId => {
             </label>
             <span
               v-if="row.badge"
-              class="px-2 py-0.5 text-xs rounded-md text-n-amber-11 bg-n-alpha-2"
+              class="px-2 py-0.5 text-xs rounded-md text-n-slate-12 bg-n-alpha-2"
             >
               {{ row.badge }}
             </span>

@@ -124,16 +124,24 @@ const STYLE_CONFIG = {
         'text-n-ruby-11 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
       link: 'text-n-ruby-9 dark:text-n-ruby-11 hover:enabled:underline focus-visible:underline outline-transparent',
     },
+    // Amber is retired as a semantic role. The `amber` prop stays so no call
+    // site changes, but a warning button is now an ink button on a neutral
+    // ground. It keeps its own entry rather than being aliased to `blue`,
+    // because an `amber` call site is the action inside a caution banner, not
+    // the screen's primary action, and the two should not share a definition.
+    // Amber was also the only colour whose hover walked the scale by hand
+    // (9 → 10); ink has no step to walk to, so it uses the brightness idiom
+    // every other colour here uses.
     amber: {
       solid:
-        'bg-n-amber-9 text-n-amber-12 dark:text-n-amber-3 hover:enabled:bg-n-amber-10 focus-visible:bg-n-amber-10 outline-transparent',
+        'bg-n-slate-12 text-n-on-ink hover:enabled:brightness-[1.08] focus-visible:brightness-[1.08] outline-transparent',
       faded:
-        'bg-n-amber-9/10 text-n-slate-12 hover:enabled:bg-n-amber-9/20 focus-visible:bg-n-amber-9/20 outline-transparent',
+        'bg-n-slate-12/10 text-n-slate-12 hover:enabled:brightness-[0.94] focus-visible:brightness-[0.94] outline-transparent',
       outline:
-        'text-n-amber-11 hover:enabled:bg-n-amber-9/10 focus-visible:bg-n-amber-9/10 outline-n-amber-9',
-      link: 'text-n-amber-9 hover:enabled:underline focus-visible:underline outline-transparent',
+        'text-n-slate-12 hover:enabled:bg-n-slate-12/10 focus-visible:bg-n-slate-12/10 outline-n-slate-12',
+      link: 'text-n-slate-12 hover:enabled:underline focus-visible:underline outline-transparent',
       ghost:
-        'text-n-amber-9 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 outline-transparent',
+        'text-n-slate-12 hover:enabled:bg-n-alpha-2 focus-visible:bg-n-alpha-2 outline-transparent',
     },
     slate: {
       solid:

@@ -50,8 +50,12 @@ const varaintBaseMap = {
   [MESSAGE_VARIANTS.TEMPLATE]: 'bg-n-solid-iris text-n-slate-12',
   [MESSAGE_VARIANTS.ERROR]: 'bg-n-ruby-4 text-n-ruby-12',
   [MESSAGE_VARIANTS.EMAIL]: 'w-full',
+  // Unsupported used to be the second amber bubble alongside the private note.
+  // Amber is retired, so it takes a neutral ground and ink text. The dashed
+  // border stays, but dashed-slate on its own is the private note's treatment —
+  // the filled ground and the full-strength text are what keep the two apart.
   [MESSAGE_VARIANTS.UNSUPPORTED]:
-    'bg-n-solid-amber/70 border border-dashed border-n-amber-12 text-n-amber-12',
+    'bg-n-slate-3 border border-dashed border-[var(--g-border-strong)] text-n-slate-12',
 };
 
 const orientationMap = {

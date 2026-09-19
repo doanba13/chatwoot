@@ -33,9 +33,13 @@ const emit = defineEmits(['registerWebhook', 'goToConfiguration']);
 const { t, te } = useI18n();
 const { resolvedLocale } = useLocale();
 
+// Meta names these ratings after colours, but amber is not one Gotchu has, so
+// YELLOW goes ink. That is the same class UNKNOWN already carries; the two are
+// mutually exclusive states of one field and never appear together, and the label
+// beside the class says which it is.
 const QUALITY_COLORS = {
   GREEN: 'text-n-teal-11',
-  YELLOW: 'text-n-amber-11',
+  YELLOW: 'text-n-slate-12',
   RED: 'text-n-ruby-11',
   UNKNOWN: 'text-n-slate-12',
 };
@@ -46,10 +50,12 @@ const STATUS_COLORS = {
   VERIFIED: 'text-n-teal-11',
   STANDARD: 'text-n-teal-11',
   ACTIVE: 'text-n-teal-11',
-  PENDING_REVIEW: 'text-n-amber-11',
+  // The three amber statuses go ink, which keeps them apart from
+  // AVAILABLE_WITHOUT_REVIEW — the one status here that genuinely needs nothing.
+  PENDING_REVIEW: 'text-n-slate-12',
   AVAILABLE_WITHOUT_REVIEW: 'text-n-slate-11',
-  EXPIRED: 'text-n-amber-11',
-  FLAGGED: 'text-n-amber-11',
+  EXPIRED: 'text-n-slate-12',
+  FLAGGED: 'text-n-slate-12',
   RESTRICTED: 'text-n-ruby-9',
   BANNED: 'text-n-ruby-9',
   DISCONNECTED: 'text-n-ruby-9',
@@ -654,7 +660,7 @@ const handleCopyWebhookUrl = async url => {
             </span>
             <span
               v-else
-              class="inline-flex items-center gap-1.5 px-2 py-0.5 min-h-6 text-label-small rounded-md bg-n-alpha-2 text-n-amber-11"
+              class="inline-flex items-center gap-1.5 px-2 py-0.5 min-h-6 text-label-small rounded-md bg-n-alpha-2 text-n-slate-12"
             >
               <Icon icon="i-lucide-alert-triangle" class="w-3.5 h-3.5" />
               {{
@@ -735,7 +741,7 @@ const handleCopyWebhookUrl = async url => {
           <div class="flex gap-3 items-start">
             <Icon
               icon="i-lucide-alert-triangle"
-              class="flex-shrink-0 mt-0.5 w-5 h-5 text-n-amber-11"
+              class="flex-shrink-0 mt-0.5 w-5 h-5 text-n-slate-12"
             />
             <div class="min-w-0">
               <h3 class="text-heading-4 text-n-slate-12">

@@ -122,7 +122,7 @@ const audioAttachments = computed(() => {
           <div v-if="isPrivate" class="w-px h-3 bg-n-strong" />
           <div
             v-if="isPrivate"
-            class="flex items-center text-n-amber-11 gap-1.5 flex-shrink-0"
+            class="flex items-center text-n-slate-11 gap-1.5 flex-shrink-0"
           >
             <Icon icon="i-lucide-lock-keyhole" class="flex-shrink-0 size-3.5" />
             <span class="text-sm leading-4">

@@ -274,10 +274,13 @@ const onDraftFailed = error => {
         v-if="hasPendingChanges"
         type="button"
         :title="t('HELP_CENTER.EDIT_ARTICLE_PAGE.HEADER.VIEW_CHANGES')"
-        class="flex items-center gap-1.5 px-2 py-1 text-xs font-medium transition-colors rounded-lg cursor-pointer text-n-amber-11 bg-n-amber-3 outline outline-1 outline-n-amber-5 hover:bg-n-amber-4"
+        class="flex items-center gap-1.5 px-2 py-1 text-xs font-medium transition-colors rounded-lg cursor-pointer text-n-slate-12 bg-n-slate-3 outline outline-1 outline-n-slate-5 hover:bg-n-slate-4"
         @click="emit('showDiff')"
       >
-        <span class="rounded-full size-1.5 bg-n-amber-9 shrink-0" />
+        <!-- Amber is retired, so unsaved changes are ink on a neutral ground.
+          The save status beside it stays muted slate, which is what keeps this
+          pill the louder of the two. -->
+        <span class="rounded-full size-1.5 bg-n-slate-12 shrink-0" />
         {{ t('HELP_CENTER.EDIT_ARTICLE_PAGE.HEADER.PENDING_CHANGES') }}
       </button>
       <span

@@ -17,7 +17,10 @@ const STATUS_CLASSES = {
   delivered: 'bg-n-teal-3 text-n-teal-11',
   read: 'bg-n-iris-3 text-n-iris-11',
   failed: 'bg-n-ruby-3 text-n-ruby-11',
-  skipped: 'bg-n-amber-3 text-n-amber-11',
+  // `skipped` was amber, which Gotchu retired. It goes ink on the neutral
+  // ground rather than muted slate, so it stays readable as a state that needs
+  // looking at next to `queued`, which is the genuinely uneventful one.
+  skipped: 'bg-n-slate-3 text-n-slate-12',
 };
 
 const badgeClass = computed(

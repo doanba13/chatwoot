@@ -27,6 +27,7 @@ const props = defineProps({
         'ink',
         'danger',
         'dashed',
+        'attention',
       ].includes(value),
   },
 });
@@ -47,20 +48,33 @@ const TONES = {
     'outline bg-[var(--g-slate-tint-strong)] outline-transparent text-[var(--g-text-muted)]',
   dashed:
     'outline-dashed bg-transparent outline-[var(--g-border-strong)] text-[var(--g-text-muted)]',
+  // `neutral` with the strong outline instead of the soft one. Exists because
+  // retiring amber collapsed "needs attention soon" onto the same chip as an
+  // ordinary label, and those two render side by side in one flex row on
+  // ConversationCardExpanded — an SLA still due beside a conversation's own
+  // labels. It spends no new hue, which is the constraint; the border weight
+  // is the whole channel.
+  attention:
+    'outline bg-[var(--g-slate-tint)] outline-[var(--g-border-strong)] text-[var(--g-text)]',
 };
 
 // Chatwoot's existing colour prop values, mapped onto the tones above so the
 // call sites passing them keep working. `slate` lands on `neutral` because that
 // is what it already looked like — tint, border, full-strength text — and it is
-// the default every uncoloured chip renders with. `amber` has no Gotchu
-// equivalent, so its entry is left alone rather than one being invented for it.
+// the default every uncoloured chip renders with. `amber` is retired: the
+// palette has no warning hue, so a warning chip collapses onto `neutral` — ink
+// text on a slate tint. It cannot take `ink`, which is the solid primary chip
+// `blue` already maps to, and it cannot take `dashed`, which the design reserves
+// for private notes. So an amber chip and a slate chip now look alike and the
+// word inside carries the difference; that is the cost of retiring a role, not
+// an oversight.
 const COLOR_TONES = {
   slate: TONES.neutral,
   teal: TONES.agent,
   ruby: TONES.danger,
   blue: TONES.ink,
   iris: TONES.agentFilled,
-  amber: 'outline bg-n-amber-2 outline-n-amber-4 text-n-amber-11',
+  amber: TONES.neutral,
 };
 
 const TONE_CLASSES = { ...TONES, ...COLOR_TONES };

@@ -10,13 +10,16 @@ import mfaAPI from 'dashboard/api/mfa';
 
 const LOW_BACKUP_CODES_THRESHOLD = 3;
 
-// Matches the amber/ruby subtle treatment used for warning callouts elsewhere
-// in the design system (e.g. CoverageBanner, InboxBanner, NextBanner).
+// Matches the subtle treatment used for warning callouts elsewhere in the design
+// system (e.g. CoverageBanner, InboxBanner, NextBanner). `warning` was amber
+// there and here; amber is retired, so it is a neutral ground with ink text and
+// `critical` keeps ruby — severity now reads as neutral-vs-red rather than as
+// three rungs of a colour ladder.
 const SEVERITY_CLASSES = {
   warning: {
-    container: 'bg-n-amber-3 border-n-amber-4 text-n-amber-11',
-    action: 'bg-n-amber-4 hover:bg-n-amber-5',
-    dismiss: 'hover:bg-n-amber-4',
+    container: 'bg-n-slate-3 border-n-slate-4 text-n-slate-12',
+    action: 'bg-n-slate-4 hover:bg-n-slate-5',
+    dismiss: 'hover:bg-n-slate-4',
   },
   critical: {
     container: 'bg-n-ruby-3 border-n-ruby-4 text-n-ruby-11',

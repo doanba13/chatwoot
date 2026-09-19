@@ -193,7 +193,7 @@ const copyConversationId = async () => {
           v-if="!isHMACVerified"
           v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
           size="14"
-          class="text-n-amber-10 my-0 mx-0 min-w-[14px] flex-shrink-0"
+          class="text-[var(--g-text)] my-0 mx-0 min-w-[14px] flex-shrink-0"
           icon="warning"
         />
         <template v-if="subjectParts.length">
@@ -233,7 +233,10 @@ const copyConversationId = async () => {
           <span v-if="hasMultipleInboxes">•</span>
           <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />
           <span v-if="isSnoozed">•</span>
-          <span v-if="isSnoozed" class="font-medium text-n-amber-10">
+          <!-- Snooze was the one amber in this header. Ink keeps it the single
+            unmuted item in an otherwise muted row, which is the job the amber
+            was doing. -->
+          <span v-if="isSnoozed" class="font-medium text-[var(--g-text)]">
             {{ snoozedDisplayText }}
           </span>
         </div>

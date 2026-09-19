@@ -117,11 +117,15 @@ export const formatTemplateDate = value => {
 };
 
 export const templateStatusClasses = status => {
+  // `pending` and `paused` were amber. Ink on a neutral ground, the same call
+  // CustomerSatisfactionPage makes for a template still in review — nothing else
+  // in this map holds ink, and `disabled` stays muted slate, which is the one
+  // status here that wants nothing from anybody.
   const classes = {
     approved: 'bg-n-teal-3 text-n-teal-11',
-    pending: 'bg-n-amber-3 text-n-amber-11',
+    pending: 'bg-n-slate-3 text-n-slate-12',
     rejected: 'bg-n-ruby-3 text-n-ruby-11',
-    paused: 'bg-n-amber-3 text-n-amber-11',
+    paused: 'bg-n-slate-3 text-n-slate-12',
     disabled: 'bg-n-alpha-2 text-n-slate-11',
   };
 

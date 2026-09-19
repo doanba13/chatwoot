@@ -103,7 +103,9 @@ const statusColors = computed(() => {
     return { text: 'text-n-teal-11', bubble: 'outline-n-teal-6 bg-n-teal-9' };
   if (isError.value)
     return { text: 'text-n-ruby-11', bubble: 'outline-n-ruby-6 bg-n-ruby-9' };
-  return { text: 'text-n-amber-11', bubble: 'outline-n-amber-6 bg-n-amber-9' };
+  // Pending was amber, which Gotchu retired; live and error keep their own
+  // hues, so pending falls to ink.
+  return { text: 'text-n-slate-12', bubble: 'outline-n-slate-6 bg-n-slate-12' };
 });
 
 const updatePortalConfiguration = customDomain => {

@@ -596,7 +596,7 @@ const continueToAgents = async () => {
           </div>
           <p
             v-if="!errorMessage"
-            class="mt-3 flex items-start gap-2 text-sm text-n-amber-11"
+            class="mt-3 flex items-start gap-2 text-sm text-n-slate-12"
           >
             <Icon icon="i-lucide-triangle-alert" class="mt-0.5 shrink-0" />
             {{ t('INBOX_MGMT.ADD.WHATSAPP.MANUAL_SETUP.TOKEN.WARNING') }}
@@ -727,7 +727,7 @@ const continueToAgents = async () => {
             </span>
             <span
               class="flex items-center gap-2 text-sm"
-              :class="status.complete ? 'text-n-teal-11' : 'text-n-amber-11'"
+              :class="status.complete ? 'text-n-teal-11' : 'text-n-slate-12'"
             >
               <Icon
                 :icon="

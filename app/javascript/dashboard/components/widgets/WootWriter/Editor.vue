@@ -1118,7 +1118,11 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
 
 .is-private {
   .prosemirror-mention-node {
-    @apply font-medium bg-n-amber-2/80 dark:bg-n-amber-2/80 text-n-slate-12 py-0 px-1;
+    // A mention inside a private note was tinted amber to match the amber
+    // private-note bubble. That bubble is dashed-slate now (bubbles/Base.vue)
+    // and amber is retired, so the tint goes neutral. The dark: variant that was
+    // here repeated the light value verbatim, so it had nothing to say.
+    @apply font-medium bg-n-slate-9/10 text-n-slate-12 py-0 px-1;
   }
 
   .ProseMirror-menubar-wrapper {

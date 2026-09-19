@@ -172,14 +172,17 @@ export default {
       @apply bg-n-ruby-9;
     }
   }
+  // Amber is retired: a warning label is a neutral ground with ink text and an
+  // ink dot. The dot cannot step down to a mid slate the way the ground does —
+  // it would vanish into it — so it takes the full ink the text does.
   &.warning {
-    @apply bg-n-amber-5 text-n-amber-12 border border-solid border-n-amber-7;
+    @apply bg-n-slate-5 text-n-slate-12 border border-solid border-n-slate-7;
 
     a {
-      @apply text-n-amber-12;
+      @apply text-n-slate-12;
     }
     .label-color-dot {
-      @apply bg-n-amber-9;
+      @apply bg-n-slate-12;
     }
   }
 

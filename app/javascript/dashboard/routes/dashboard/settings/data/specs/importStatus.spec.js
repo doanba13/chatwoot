@@ -89,10 +89,10 @@ describe('importStatus', () => {
 
   describe('statusDotClass', () => {
     it('maps each status to its dot color class', () => {
-      expect(statusDotClass('pending')).toBe('bg-n-amber-9');
+      expect(statusDotClass('pending')).toBe('bg-n-slate-11');
       expect(statusDotClass('processing')).toBe('bg-n-blue-9');
       expect(statusDotClass('completed')).toBe('bg-n-teal-9');
-      expect(statusDotClass('completed_with_errors')).toBe('bg-n-amber-9');
+      expect(statusDotClass('completed_with_errors')).toBe('bg-n-slate-11');
       expect(statusDotClass('failed')).toBe('bg-n-ruby-9');
       expect(statusDotClass('abandoned')).toBe('bg-n-slate-9');
     });

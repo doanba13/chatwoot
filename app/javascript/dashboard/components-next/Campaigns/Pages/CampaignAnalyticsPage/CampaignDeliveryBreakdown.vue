@@ -50,10 +50,12 @@ const segments = computed(() => {
       dotClass: 'bg-n-ruby-9',
     },
     {
+      // Amber is not a Gotchu colour. `skipped` takes ink, which keeps it
+      // distinct from `pending`'s slate-6 in the same bar and legend.
       key: 'skipped',
       value: skipped,
-      color: 'rgb(var(--amber-9))',
-      dotClass: 'bg-n-amber-9',
+      color: 'rgb(var(--slate-12))',
+      dotClass: 'bg-n-slate-12',
     },
     {
       key: 'pending',

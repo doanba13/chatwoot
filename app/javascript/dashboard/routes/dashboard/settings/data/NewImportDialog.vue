@@ -244,7 +244,7 @@ watch(
 
       <p
         v-if="hasActiveImport"
-        class="rounded-lg bg-n-amber-2 px-3 py-2 text-body-main text-n-amber-11"
+        class="rounded-lg bg-n-slate-2 px-3 py-2 text-body-main text-n-slate-12"
       >
         {{ $t('DATA_IMPORTS.DRAWER.ACTIVE_IMPORT') }}
       </p>

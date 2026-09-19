@@ -151,7 +151,7 @@ onUnmounted(() => {
     >
       <div
         v-if="allConversationsSelected"
-        class="bg-n-amber-2 outline -outline-offset-1 outline-1 outline-n-amber-5 rounded-lg text-sm mb-2 py-1.5 px-2 text-n-amber-text"
+        class="bg-n-slate-2 outline -outline-offset-1 outline-1 outline-n-slate-5 rounded-lg text-sm mb-2 py-1.5 px-2 text-n-slate-12"
       >
         {{ $t('BULK_ACTION.ALL_CONVERSATIONS_SELECTED_ALERT') }}
       </div>

@@ -65,7 +65,7 @@ const updateIntegration = async () => {
   >
     <div class="flex">
       <div class="flex-shrink-0">
-        <div class="i-lucide-bell text-xl text-n-amber-11 mt-1" />
+        <div class="i-lucide-bell text-xl text-n-slate-12 mt-1" />
       </div>
       <div class="ml-3">
         <p class="mb-1 text-heading-2 text-n-slate-12">
@@ -91,7 +91,7 @@ const updateIntegration = async () => {
       <div v-else class="inline-flex">
         <select
           v-model="selectedChannelId"
-          class="h-8 py-1 mr-4 text-xs leading-4 border border-n-amber-10"
+          class="h-8 py-1 mr-4 text-xs leading-4 border border-n-slate-12"
         >
           <option value="">
             {{ $t('INTEGRATION_SETTINGS.SLACK.SELECT_CHANNEL.OPTION_LABEL') }}
