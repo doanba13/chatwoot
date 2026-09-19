@@ -19,6 +19,7 @@ import AgentDot from 'dashboard/components-next/gotchu/AgentDot.vue';
 import ConfidenceChip from 'dashboard/components-next/gotchu/ConfidenceChip.vue';
 import AITrace from 'dashboard/components-next/gotchu/AITrace.vue';
 import DraftDock from 'dashboard/components-next/gotchu/DraftDock.vue';
+import ComposerCard from './ComposerCard.vue';
 
 // SidebarGroupLeaf is deliberately absent. It calls useSidebarContext(), which
 // injects a Symbol private to sidebar/provider.js and additionally needs
@@ -84,10 +85,23 @@ const traceSteps = [
 const draftText =
   'Hallo Frau Weber, Ihre Sendung ist unterwegs und wurde zuletzt am 4. September in Leipzig gescannt. Für Deutschland rechnen wir mit 14–21 Tagen ab Versand.';
 
+// The ordinary case, not an outlier: 812 characters, inside the 700–850 this
+// agent writes routinely. Uncapped, a draft this length rendered the dock at
+// 349px on staging in a 1000px viewport and left the customer's own message
+// clipped at 216px. The card below is what the 170px cap does to it.
+const longDraftText =
+  'Hallo Frau Weber, vielen Dank für Ihre Nachricht und entschuldigen Sie bitte die Verzögerung. Ihre Bestellung #PL-5563 wurde am 28. August versandt und zuletzt am 4. September im Verteilzentrum Leipzig gescannt. Da unsere Manufaktur die Anhänger einzeln gravieren lässt, verschicken wir aus Fernost, und für Deutschland rechnen wir deshalb mit 14 bis 21 Werktagen ab Versand — in Einzelfällen etwas länger, wenn der Zoll eine Sendung stichprobenartig prüft. Sie können den Stand jederzeit selbst unter dem Link in Ihrer Versandbestätigung verfolgen. Sollte die Sendung bis zum 25. September nicht bei Ihnen angekommen sein, melden Sie sich bitte kurz bei uns: wir schicken den Anhänger dann kostenfrei erneut oder erstatten den Betrag vollständig, ganz wie Sie es bevorzugen. Herzliche Grüße, Ihr Persoliebe-Team';
+
 const lastDockAction = ref('—');
 const noteDockAction = action => {
   lastDockAction.value = action;
 };
+
+// The review window, as the dock gets it: an ISO string, or null. Built at load
+// rather than hardcoded, so the labels are live instead of frozen at whatever the
+// file was written on.
+const inMinutes = minutes =>
+  new Date(Date.now() + minutes * 60_000).toISOString();
 
 // The shared header only proves itself in motion: the point is that becoming
 // ready reveals a body under a header that has not moved.
@@ -311,15 +325,22 @@ const replayDock = () => {
 
     <section class="flex flex-col gap-6 mb-10 max-w-xl">
       <h2 class="text-sm font-medium text-n-slate-11">
-        Draft dock — above a composer, as it sits in the thread
+        Draft dock — inside the composer, above the editor
       </h2>
-      <div
-        class="overflow-hidden border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
-      >
+      <!-- The only placement there is. `docs/gotchu/inbox-spec.md` §Composer:
+        one bordered container holding an optional draft dock above the editor.
+        The cards below stand in for ReplyBox — its mode toggles above, its
+        editor below — because the real one needs Vuex, the inbox store and a
+        conversation. No `overflow-hidden`, and that is the point: the dock sits
+        between two rows rather than on the card's rounded edge, so its own
+        bottom border is the line between the band and the editor. -->
+      <ComposerCard>
         <DraftDock
           state="ready"
+          write-enabled
           :text="draftText"
           confidence="probably"
+          :expires-at="inMinutes(18.5)"
           :adjust="['shorter', 'warmer', 'in French']"
           @insert="noteDockAction('insert')"
           @send="noteDockAction('send')"
@@ -327,10 +348,26 @@ const replayDock = () => {
           @adjust="noteDockAction(`adjust: ${$event}`)"
           @instruct="noteDockAction(`instruct: ${$event}`)"
         />
-        <div class="px-3 py-6 text-sm text-[var(--g-text-muted)]">
-          The reply box goes here.
-        </div>
-      </div>
+      </ComposerCard>
+      <!-- The cap, against an ordinary 812-character draft. Uncapped this dock
+        measured 349px on staging and squeezed the customer's own message to
+        216px; the body now stops at 170px — eight and a HALF 20px lines, so the
+        clip lands mid-line and reads as a draft that continues rather than as
+        the end of one. Scroll it: the header and Insert do not move, which is
+        the whole point of capping the body rather than the dock. -->
+      <ComposerCard>
+        <DraftDock
+          state="ready"
+          :text="longDraftText"
+          confidence="sure"
+          :expires-at="inMinutes(42)"
+        />
+      </ComposerCard>
+      <p class="text-xs text-n-slate-11">
+        {{ longDraftText.length }} characters, capped at 170px. The review
+        countdown and Insert stay outside the scroll container, and the body is
+        reachable by keyboard — Tab into it and use the arrow keys.
+      </p>
       <div class="flex items-center gap-3">
         <Button
           label="Replay streaming → ready"
@@ -343,11 +380,10 @@ const replayDock = () => {
           the header must not move when the body arrives
         </span>
       </div>
-      <div
-        class="overflow-hidden border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
-      >
+      <ComposerCard>
         <DraftDock
           :state="dockState"
+          write-enabled
           streaming-text="Reading the order…"
           :text="draftText"
           confidence="sure"
@@ -357,17 +393,61 @@ const replayDock = () => {
           @discard="noteDockAction('discard')"
           @instruct="noteDockAction(`instruct: ${$event}`)"
         />
-        <div class="px-3 py-6 text-sm text-[var(--g-text-muted)]">
-          The reply box goes here.
-        </div>
-      </div>
+      </ComposerCard>
+      <!-- The loader, standing still in `streaming` so it can be looked at
+        without catching the replay above mid-flight. Three bouncing dots adapted
+        from Chatwoot's MIT-licensed CopilotLoader, in the status slot at the
+        right of the header — the slot the confidence chip takes once the draft is
+        ready. It says work is happening and nothing more: nothing streams
+        between the worker and a browser, which is why the label says a draft is
+        being WRITTEN. Under `prefers-reduced-motion` the dots stop and dim. -->
+      <ComposerCard>
+        <DraftDock state="streaming" streaming-text="Writing a new draft…" />
+      </ComposerCard>
       <p class="text-xs text-n-slate-11">
         Last emitted: <span class="font-medium">{{ lastDockAction }}</span
         >. A dock with no confidence renders no chip, and
-        <code>state="none"</code> renders nothing at all.
+        <code>state="none"</code> renders nothing at all — which is what every
+        conversation with no draft shows, and most of them have none.
       </p>
-      <DraftDock state="ready" :text="draftText" />
-      <DraftDock state="none" />
+      <!-- What the fork actually ships today: Insert only. The gateway's write
+        routes are dark, and a Send that does nothing is worse than no Send. The
+        window here is hours rather than minutes, and the one below has run
+        out. -->
+      <ComposerCard>
+        <DraftDock
+          state="ready"
+          :text="draftText"
+          :expires-at="inMinutes(3 * 60 + 30)"
+        />
+      </ComposerCard>
+      <ComposerCard>
+        <DraftDock
+          state="ready"
+          write-enabled
+          :text="draftText"
+          :expires-at="inMinutes(-5)"
+        />
+      </ComposerCard>
+      <!-- The one thing that is NOT silent. Every ordinary empty case renders
+        nothing above the editor, but a read that FAILED is indistinguishable
+        from "no draft" if it renders nothing — so it says why, muted, in one
+        line. `DraftDockContainer` owns the real one; this is what it looks
+        like. -->
+      <ComposerCard>
+        <p
+          class="px-3 py-1.5 m-0 text-xs border-b text-[var(--g-text-muted)] border-[var(--g-border)]"
+        >
+          {{ $t('GOTCHU.DRAFT.NOTICE_UNAVAILABLE') }}
+        </p>
+      </ComposerCard>
+      <ComposerCard>
+        <p
+          class="px-3 py-1.5 m-0 text-xs border-b text-[var(--g-text-muted)] border-[var(--g-border)]"
+        >
+          {{ $t('GOTCHU.DRAFT.NOTICE_UNCONFIGURED') }}
+        </p>
+      </ComposerCard>
     </section>
   </div>
 </template>

@@ -97,7 +97,20 @@
       "ADJUST": "Adjust:",
       "STOP": "stop and edit",
       "INSTRUCT_PLACEHOLDER": "Tell Gotchu what to change…",
-      "INSTRUCT_SUBMIT": "Send instruction to Gotchu"
+      "INSTRUCT_SUBMIT": "Send instruction to Gotchu",
+      "INSTRUCT_ACCEPTED": "Instruction accepted. Gotchu answers in the Lark thread; a new draft shows up here if it writes one.",
+      "INSTRUCT_REFUSED": "Gotchu did not take that instruction — the draft may have moved on. Reload the conversation.",
+      "INSTRUCT_UNAVAILABLE": "Could not confirm the instruction reached Gotchu. Check the Lark thread before sending it again.",
+      "INSTRUCT_UNCONFIGURED": "Instructions are not configured on this Chatwoot, so nothing was sent.",
+      "INSTRUCT_INVALID": "That instruction is empty or longer than 2000 characters.",
+      "REVIEW_MINUTES": "{count} min to review",
+      "REVIEW_HOURS": "{count} h to review",
+      "REVIEW_SOON": "under a minute to review",
+      "REVIEW_EXPIRED": "review time ran out",
+      "REDRAFTING": "Writing a new draft…",
+      "NOTICE_UNAVAILABLE": "Gotchu is not answering, so whether a draft exists here is unknown.",
+      "NOTICE_UNCONFIGURED": "Gotchu is not configured on this Chatwoot, so no draft can be read.",
+      "NOTICE_FAILED": "The draft for this conversation could not be read."
     }
   }
 }

@@ -74,6 +74,57 @@ describe('Gotchu preview gallery', () => {
     expect(text).toContain('check this');
   });
 
+  it('renders the dock in every state the composer can show it', () => {
+    const text = mountGallery().text();
+
+    // The review window is built from `Date.now()` at load, so these prove the
+    // labels are computed rather than frozen into the fixture.
+    expect(text).toContain('18 min to review');
+    expect(text).toContain('3 h to review');
+    expect(text).toContain('review time ran out');
+  });
+
+  it('renders the composer placement rather than a panel section', () => {
+    const wrapper = mountGallery();
+
+    // The dock's own bottom border is its separator from the editor under it,
+    // which is the whole reason it is drawn — the panel wrapper that nulled it is
+    // gone, and so is the panel.
+    expect(wrapper.find('.draft-dock').classes()).toContain('border-b');
+    expect(wrapper.text()).toContain('The reply box goes here.');
+    expect(wrapper.text()).not.toContain('No draft for this conversation.');
+  });
+
+  it('shows the capped long draft and the streaming loader', () => {
+    // Both are things you can only judge by looking, so the gallery has to carry
+    // them: an 812-character draft is what the 170px cap was chosen against, and
+    // the loader is a state the replay above only passes through.
+    const wrapper = mountGallery();
+
+    const capped = wrapper
+      .findAll('.draft-dock__body')
+      .filter(body => body.text().length > 700);
+    expect(capped).toHaveLength(1);
+    expect(capped[0].classes()).toContain('max-h-[170px]');
+
+    // Not a total count: the replay card starts in `streaming` too, so there are
+    // two loaders on the page and the second one is the point of the fixed card.
+    const loaders = wrapper.findAll('.draft-dock__loader');
+    expect(loaders.length).toBeGreaterThanOrEqual(1);
+    loaders.forEach(loader =>
+      expect(loader.findAll('.draft-dock__dot')).toHaveLength(3)
+    );
+  });
+
+  it('renders a failed read as a line rather than as silence', () => {
+    // Every ordinary empty case renders nothing above the editor. A read that
+    // failed must not, or it is indistinguishable from "no draft".
+    const text = mountGallery().text();
+
+    expect(text).toContain('Gotchu is not answering');
+    expect(text).toContain('not configured on this Chatwoot');
+  });
+
   it('renders a button for every colour and variant', () => {
     // 5 colours x 5 variants, plus 4 sizes, loading, disabled and the theme toggle.
     expect(mountGallery().findAll('button').length).toBeGreaterThanOrEqual(25);

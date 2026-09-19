@@ -17,6 +17,7 @@ import CopilotEditorSection from './CopilotEditorSection.vue';
 import MessageSignatureMissingAlert from './MessageSignatureMissingAlert.vue';
 import ReplyBoxBanner from './ReplyBoxBanner.vue';
 import QuotedEmailPreview from './QuotedEmailPreview.vue';
+import DraftDockContainer from 'dashboard/components-next/gotchu/DraftDockContainer.vue';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 import WootMessageEditor from 'dashboard/components/widgets/WootWriter/Editor.vue';
 import AudioRecorder from 'dashboard/components/widgets/WootWriter/AudioRecorder.vue';
@@ -71,6 +72,7 @@ export default {
     ArticleSearchPopover,
     AttachmentPreview,
     AudioRecorder,
+    DraftDockContainer,
     ReplyBoxBanner,
     EmojiIconPicker,
     MessageSignatureMissingAlert,
@@ -1348,6 +1350,20 @@ export default {
       @toggle-editor-size="toggleEditorSize"
       @toggle-copilot="copilot.toggleEditor"
       @execute-copilot-action="executeCopilotAction"
+    />
+    <!-- The draft dock, inside this container and directly above the editor, is
+      the whole of `docs/gotchu/inbox-spec.md` §Composer: "one bordered
+      container … holding an optional draft dock above the editor". It renders
+      nothing at all until there is a draft, so on most conversations the
+      composer looks exactly as it did — and it draws its own bottom border,
+      which is the separator between the band and the editor under it.
+
+      Outside the copilot `<Transition>` below on purpose: inside it, toggling
+      Copilot would remount the container, throw away a draft already read and
+      start the poll again. -->
+    <DraftDockContainer
+      :conversation-id="conversationId"
+      :channel-type="channelType"
     />
     <ArticleSearchPopover
       v-if="showArticleSearchPopover && connectedPortalSlug"

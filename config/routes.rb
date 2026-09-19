@@ -176,6 +176,8 @@ Rails.application.routes.draw do
               resource :participants, only: [:show, :create, :update, :destroy]
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
+              resource :ai_draft, only: [:show]
+              resource :ai_draft_instruction, only: [:create]
             end
             member do
               post :mute
