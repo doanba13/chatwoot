@@ -33,7 +33,17 @@ const statusList = computed(() => {
   ];
 });
 
-const statusColors = ['bg-n-teal-9', 'bg-n-amber-9', 'bg-n-slate-9'];
+// Online is a filled gill dot, offline a filled slate one. Busy was amber,
+// which the palette retired. It takes a HOLLOW gill dot rather than another
+// hue: busy is the same person as online, just not taking work, so shape is
+// the honest channel and it spends no palette role. Ruby was the alternative
+// and is wrong here — ruby means danger/destructive everywhere else in this
+// system, and being busy is neither.
+const statusColors = [
+  'bg-n-teal-9',
+  'bg-transparent border-2 border-n-teal-9',
+  'bg-n-slate-9',
+];
 
 const availabilityStatuses = computed(() => {
   return statusList.value.map((statusLabel, index) => ({

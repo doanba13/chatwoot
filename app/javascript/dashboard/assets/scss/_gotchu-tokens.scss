@@ -137,6 +137,19 @@
     --g-text-muted: #9aa3b2;
     --g-ink: #fbfbfa;
     --g-on-ink: #14213d;
+
+    // Brand itself stays theme-invariant, exactly as the design ships it: the
+    // source's dark block omits `--brand` on purpose, and #ff6b8b carries on
+    // both grounds. What must NOT follow the flip is the text ON it.
+    // `--g-on-brand` resolves through `--g-ink`, which becomes paper here, and
+    // paper on axolotl measures 2.62:1 — below WCAG AA on the one brand element
+    // the design allows per screen (Resolve, ResolveAction.vue). Pinned to the
+    // ink literal instead: 5.88:1, identical in both themes.
+    // Known and not fixed: the 8px brand dot in HandledLine is 2.72:1 on the
+    // light surface, under 1.4.11's 3:1. No token can fix that without moving
+    // the brand hue; the dot is reinforcement beside a spelled-out name, and
+    // HandledLine is not wired to anything yet.
+    --g-on-brand: #14213d;
     --g-border: rgb(251 251 250 / 14%);
     --g-border-strong: rgb(251 251 250 / 30%);
     --g-agent: #3fb8a9;

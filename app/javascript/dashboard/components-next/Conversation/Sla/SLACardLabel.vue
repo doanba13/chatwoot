@@ -51,7 +51,14 @@ defineExpose({
     v-bind="$attrs"
     class="relative flex items-center cursor-pointer min-w-fit group"
   >
-    <Label :label="slaLabel" :color="isSlaMissed ? 'ruby' : 'amber'" compact>
+    <!-- Due takes `attention`, not `amber`: amber is retired, and plain
+      `neutral` made a still-due SLA byte-identical to a user label sitting in
+      the same row. Missed stays ruby — the only red on the card. -->
+    <Label
+      :label="slaLabel"
+      :color="isSlaMissed ? 'ruby' : 'attention'"
+      compact
+    >
       <template #icon>
         <Icon icon="i-lucide-flame" class="flex-shrink-0 size-3.5" />
       </template>

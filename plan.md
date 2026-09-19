@@ -1,410 +1,248 @@
-# Gotchu design system → Chatwoot dashboard
-
-Branch: `feat/gotchu-design` off `develop` (`8314676d1`).
-Design source: Claude Design project `Chatwoot Design System Kickoff`
-(`bdf19a68-cabf-4ba1-800f-4bcdc617e082`) — `tokens/*.css`, `components/gotchu-core.js`.
-
-Scope of this pass: **theme layer + the 18 `components-next` primitives**.
-Captain / AI Agent surfaces are deliberately untouched; they get re-themed in a
-later pass once the primitives underneath them are settled.
-
----
-
-## Constraints discovered in the repo
-
-1. `n-brand` is a hardcoded hex `#2781F6` at `theme/colors.js:229`, not a CSS
-   variable. `Button.vue` `blue/solid` renders `bg-n-brand`, so the design's own
-   compat block (which only overrides `--blue-9`/`--blue-11`) would leave every
-   primary button Chatwoot blue. 105 files reference `n-brand`, including
-   `widget/` (customer-facing) and `v3/` (login/onboarding), which are out of
-   scope — so the token gets a **fallback** to today's blue and only the
-   dashboard defines the override.
-
-2. Dark mode is `document.body.classList.add('dark')`
-   (`dashboard/helper/themeHelper.js:11`). The design ships
-   `[data-theme="dark"]`. Every dark block must be rewritten to `.dark`.
-
-3. `Button.vue` `blue/solid` hardcodes `text-white`. Under the design, `blue`
-   maps to **ink**, which inverts in dark mode (`--blue-9: 251 251 250`) — white
-   text on a near-white ground. This is a required component edit, not optional
-   polish.
-
-4. Chatwoot's control scale is `xs 24 / sm 32 / md 40 / lg 48`. The design's is
-   `sm 32 / md 36 / lg 40` (`--control-*` in `tokens/spacing.css`). Adopting the
-   design means `md` and `lg` both shrink by 4–8px, which moves layout in every
-   consumer of `<Button size="md">`. Taking the design's values; noting it as the
-   one deliberately disruptive change in this pass.
-
-5. Existing motion contradicts the design in three places:
-   `Input.vue` / `TextArea.vue` use `duration-500` where the design's hover token
-   is `120ms`; `Switch.vue:30` uses a `cubic-bezier(0.34,1.56,0.64,1)` overshoot
-   where the design reserves overshoot for "the handled moment" only;
-   `Dialog.vue:181` uses `backdrop-blur-[4px]` where the design scrim is flat.
-
-6. Fonts are self-hosted (`shared/assets/fonts/`), and Chatwoot is frequently
-   deployed air-gapped. The design's `tokens/fonts.css` uses a Google Fonts
-   `@import`. Self-host Bricolage Grotesque and JetBrains Mono to match repo
-   convention rather than introducing a CDN dependency. Inter is already there.
-
----
-
-## Phase 1 — Token layer
-
-- [x] `app/javascript/dashboard/assets/scss/_gotchu-tokens.scss` (new) - the six-colour base palette, semantic light set, `.dark` set - spacing / radius / shadow / control heights - motion durations + easing + `g-in` / `g-pop` / `g-pulse` / `g-spin`
-      keyframes + the `prefers-reduced-motion` block - the Radix compat overrides (`--blue-9`, `--teal-9`, `--ruby-9`,
-      `--slate-11/12`, `--solid-blue`, `--solid-iris`, `--background-color`)
-      rewritten from `[data-theme="dark"]` to `.dark` - `--brand-rgb` for the `n-brand` bridge - **verify:** all 12 compat variable names exist in `_next-colors.scss`
-      (already confirmed — 2 occurrences each, `:root` + `.dark`)
-- [x] Import it in `_woot.scss` **after** `_next-colors` so the overrides win at
-      equal specificity, and before `_base`.
-- [x] `theme/colors.js:229` — `brand: 'rgb(var(--brand-rgb, 39 129 246) / <alpha-value>)'`.
-      The fallback keeps `widget/` and `v3/` on today's blue.
-- [x] Type scale: add `--font-display` / `--font-mono` families and the
-      `--text-*` composites.
-- [x] Self-host Bricolage Grotesque + JetBrains Mono. Done via the
-      `@fontsource-variable/*` packages rather than by vendoring woff2 files
-      under `shared/assets/fonts/` as this line originally said — fontsource
-      ships the same self-hosted files with their `@font-face` rules already
-      written, so it is the same outcome without hand-managed binaries in the
-      repo. Imported from `entrypoints/dashboard.js`, not from Sass: Vite
-      resolves a bare package specifier in JS unambiguously, whereas from inside
-      Sass it depends on the preprocessor importer, and this has to load under
-      vite, vitest and histoire alike.
-
-**Verify:** `pnpm story:dev` renders; a primary Button is ink, not blue; toggle
-dark and confirm it inverts rather than going white-on-white.
-
-## Phase 2 — Motion foundation
-
-- [x] `pnpm add motion-v`
-- [x] Wrap the dashboard root in `<MotionConfig reduced-motion="user">`
-      (`App.vue`) so the library honours `prefers-reduced-motion` the same way
-      the CSS block does.
-- [x] Presets in `dashboard/helper/motion.js`, with the split written into its
-      header: **CSS handles state transitions** (hover tint, focus ring, switch
-      knob, spinner). **`motion-v` handles the case where an element must be
-      held in the DOM until its exit finishes.**
-- [x] Replace the contradicting durations from constraint 5 with tokens.
-
-### Where motion-v actually landed, and why it is one place and not four
-
-The plan named Dialog, DropdownMenu, Banner and the TabBar indicator. On
-contact with the code, **none of them qualified**, and the reason is the same
-in each case: they do not own their own presence.
-
-- **Banner and DropdownMenu** are mounted behind a consumer's `v-if` — all 20
-  toggled DropdownMenu call sites, every Banner call site. An exit animation
-  needs `AnimatePresence` at the _call site_ to hold the element, which would
-  mean touching every consumer. So the preset was only ever producing an enter,
-  and an enter is what the `g-in` keyframe already does. Wrapping them cost
-  real breakage: `<Motion>` inside a `shallowMount` drops its default slot, and
-  `AssistantSystemSettingsForm.spec.js` failed on Banner copy that had stopped
-  rendering.
-- **Dialog** does own its presence (`isOpen` is internal), but its exit is
-  structurally unplayable: `close()` calls the native `dialog.close()`
-  synchronously, so the panel would animate inside a `display: none` subtree.
-  Gating the form on `isOpen` to fix that moved initial focus off the Cancel
-  button. It uses two local keyframes keyed off `dialog[open]` instead.
-
-The one place it earns its keep is **`SnackbarContainer.vue`**, which was
-already broken: it used `<transition-group name="toast-fade">` and `toast-fade`
-is defined nowhere in the repo, so toasts have never animated and an expiring
-toast made the ones below it jump. Messages are removed from the _front_ of the
-list while later ones are still on screen, so this genuinely needs
-`AnimatePresence mode="popLayout"` — an exiting toast must leave the layout flow
-before the survivors move, or they animate from a position that no longer
-exists.
-
-**The lesson worth keeping:** "use motion for animation" is satisfied by one
-component that needed it, not by four wrappers that each turned an enter-only
-CSS animation into a JS one and broke a test on the way.
-
-**Verify:** with OS reduced-motion on, no element animates; toasts fade and the
-survivors slide up rather than jumping.
-
-## Phase 3 — Primitives
-
-Ordered so the highest-leverage files land first and the rest can be checked
-against them.
-
-- [x] `button/Button.vue` — `STYLE_CONFIG.colors` rewritten to the design's five
-      roles (`ink` ← blue, `agent` ← teal, `danger` ← ruby, `slate`, `brand`),
-      `text-white` → an ink-aware token, sizes to `24/32/36/40`,
-      `rounded-lg` → `--radius-control`
-- [x] `input/Input.vue`, `textarea/TextArea.vue` — slate-20% outline →
-      hover 40% → focus ink, `--slate-tint` ground, `duration-500` → `--dur-hover`
-- [x] `select/Select.vue` — same field base, chevron at 12px muted
-- [x] `checkbox/Checkbox.vue`, `radioCard/RadioCard.vue`, `switch/Switch.vue` —
-      checked state becomes ink (not brand); Switch gains the `agent` variant for
-      "Gotchu handles it" and loses the overshoot
-- [x] `tabbar/TabBar.vue` — sliding pill on `--slate-tint-strong`
-- [x] `label/Label.vue` — `COLOR_CLASSES` → the design's `TONES`
-- [x] `avatar/Avatar.vue` — one palette (tank ground, ink initials), circle for
-      people / rounded square for stores, `gotchu` kind = agent circle no letter
-- [x] `dropdown-menu/DropdownMenu.vue` — `--shadow-pop`, `g-in` on reveal,
-      sentence-case section titles
-- [x] `dialog/Dialog.vue` — radius 16, flat 40% ink scrim, no blur
-- [x] `banner/Banner.vue` — slate / agent / danger tones
-- [x] `table/BaseTable.vue`, `pagination/PaginationFooter.vue` — row rules only,
-      mono IDs
-- [x] `sidebar/SidebarGroupLeaf.vue` — tank active, 1px tree line
-- [x] `breadcrumb/Breadcrumb.vue`, `spinner/Spinner.vue`
-
-**Verify per component:** its own `*.story.vue` in histoire, light and dark.
-
-## Phase 4 — Gate
-
-Run in full for the first time on 2026-09-13, against the whole branch rather
-than one commit at a time.
-
-- [x] `pnpm eslint` over every app file the branch touches — **0 errors**. It
-      found one, `:color="'blue'"` in `ReplyBottomPanel.vue`
-      (`vue/no-useless-v-bind`), now fixed. Warnings on the 42 modified files:
-      **16, against 13 for the same files on `develop`** — three new, all of
-      classes that already fail there (dynamic i18n keys, raw text).
-- [x] `pnpm test` — **433 files, 4475 tests, all passing.**
-- [ ] `pnpm story:build` — still broken, and broken on `develop` too. Not this
-      branch's to fix; the preview harness exists because of it.
-- [x] Screenshot pass, light and dark — over the primitives and the AI
-      surfaces, in the preview harness. **Not over the real inbox screen with
-      real conversations**, which is the gap that matters for shipping.
-- [ ] `code-reviewer` agent on the diff
-
-**Known environment risk:** `.nvmrc` pins node `24.13.0`; this host has
-`20.19.4`. If the histoire or vite build fails on an engine check, that is the
-first thing to rule out.
-
----
-
-## Out of scope, on purpose
-
-- Captain / AI Agent surfaces (`components-next/captain/*`,
-  `CaptainGenerationDetails.vue`, the copilot components)
-- The 3-pane inbox layout, message bubbles, `ReplyBox`, `ContactPanel`
-  (design files `Gotchu Inbox v2/v3`)
-- `widget/` and `v3/` packs — held on today's blue by the `--brand-rgb` fallback
-- The icon set (`components/gotchu-icons.js`) — Chatwoot has its own
-
----
-
-# Phase 5 — The inbox screen (V1)
-
-Spec: `docs/gotchu/inbox-spec.md`, transcribed from `Gotchu System.dc.html` §1b.
-
-**V1, not `Gotchu Inbox v3`.** They are different designs. v3 is labelled
-"simplified" and carries its own OKLCH palette with a four-hue signal system
-(teal 175 / amber 70 / red 25 / neutral 260) that contradicts the shipped token
-sheet — most importantly it adds an amber "a human should look" role the System
-palette has no equivalent for, which would also reverse the Banner amber
-decision from Phase 3. V1 is authored in the System tokens already shipped, so
-the theme layer is untouched by this phase.
-
-## Panes
-
-- [ ] Conversation rows — `ConversationCard.vue`, `ConversationCardExpanded.vue`,
-      `UnreadBadge.vue`. 3px `--g-agent` left edge replaces today's top-border
-      selection; `13px` left padding is deliberate (13 + 3 = 16).
-- [ ] List header — `ChatListHeader.vue`, `ConversationList.vue`,
-      `ConversationBasicFilter`. Filters become chips with no track behind them.
-- [ ] Bubbles — `message/bubbles/Base.vue`, `MessageMeta.vue`. The private note
-      loses its amber flood for a dashed outline on `--g-surface`; that is the
-      biggest visual change in the thread.
-- [ ] Thread header — `ConversationHeader.vue`, `ResolveAction.vue`. **The
-      resolve button becomes the one axolotl element on the screen.**
-- [ ] Composer — `ReplyBox.vue`, `ReplyTopPanel.vue`, `ReplyBottomPanel.vue`.
-- [ ] Context rail — `ContactPanel.vue`, its `AccordionItem`, `ContactInfo`.
-
-## Two things deliberately not done
-
-1. **The nav rail keeps its structure.** V1 draws a 56px rail of per-store
-   avatars with a `--g-agent` ring on the active store. Chatwoot's sidebar does
-   collapse to exactly 56px (`MIN_WIDTH` in `sidebar/provider.js`), so the width
-   is not the problem — the mapping is. In Chatwoot the four stores are
-   **inboxes**, not accounts, so a store rail is a navigation decision about what
-   the top level of the product is, not a re-theme. Needs a product answer before
-   anyone builds it.
-
-2. **`ContactPanel` stays a draggable accordion.** V1 draws fixed stacked
-   sections. The panel's order is reorderable and persisted in UI settings via
-   vuedraggable. Matching the mock exactly would mean deleting that, which is
-   trading a feature for a resemblance.
-
-## Known collision
-
-`UnreadBadge` is `bg-n-teal-9`, which the bridge now resolves to `--g-agent`. In
-this system teal means _the assistant wrote or did this_, so an unread count in
-teal says something the design does not intend. Moved to `--g-ink`, matching the
-count pill in the spec's "Needs approval" control.
-
-## Still out of scope
-
-The AI surfaces, as from the start: the trace ("Gotchu checked 3 things"), the
-draft dock inside the composer, and the confidence chip. Specified in
-`gotchu-spine.js`; they belong with the Captain work.
-
----
-
-# Phase 6 — The AI surfaces (props-only)
-
-Spec: `components/gotchu-spine.js` in the design project. This phase takes the
-three surfaces named as out of scope from the start — the trace, the draft dock
-and the confidence chip — plus the dot the first two share.
-
-## Why props-only, and not wired
-
-The data behind all three is absent from this fork and from the gateway it
-would read:
-
-- **No browser can read a draft.** The gateway exposes three routes (order
-  context, precedent search, feedback). Cycle and draft state live in Postgres
-  reachable only from inside worker jobs. The draft dock, the trace, the
-  approval card and the metrics page all wait on that one authenticated read
-  path.
-- **There is no push anywhere.** Panel to gateway is request/response; worker to
-  Lark is an outbound socket. So `DraftDock`'s `streaming` state is a design
-  state this phase renders, not a behaviour it can produce.
-- **`reply_draft.confidence` is a real column written `null` on every draft.**
-  The chip has a schema slot and no signal.
-- **The trace has no ordered steps.** Only the finished `rendered_context` is
-  stored — never "looked up #PL-1095 → unfulfilled".
-
-So these are pure presentation components, driven entirely by props and
-exercised in the preview gallery, exactly as the Phase 3 primitives were. No
-call site in `ReplyBox`, the message list or the conversation header is
-touched; wiring them to a fixture store would only be wiring to delete once the
-read path lands.
-
-## Files
-
-- [x] `components-next/gotchu/AgentDot.vue` — the spine ships `AgentDot` and
-      `StreamingDot`, identical but for the pulse. One component, one prop.
-- [x] `components-next/gotchu/ConfidenceChip.vue` — three plain words, teal
-      outline, never a percentage.
-- [x] `components-next/gotchu/AITrace.vue` — collapsed to a count, expands
-      inline on `--g-dur-reveal`. Never a modal.
-- [x] `components-next/gotchu/DraftDock.vue` — `none` / `streaming` / `ready`.
-      Two paths plus discard.
-- [x] `GOTCHU` block in `i18n/locale/en/components.json`, and the same keys in
-      the preview harness's bare i18n instance.
-- [x] Gallery sections for all four, light and dark.
-- [x] Specs for `AITrace` and `DraftDock` — the two with branching. The chip and
-      the dot are covered by the gallery.
-
-## Deliberate departures from the spine
-
-1. **No keyboard hint on "stop and edit".** The spine draws a `S` key. No such
-   shortcut exists, and `ReplyTopPanel` already set the precedent in Phase 5 of
-   naming the real binding rather than the drawn one. Drawing a key that does
-   nothing is worse than drawing none.
-2. **The confidence chip takes no default level.** A caller that has no signal
-   must render no chip rather than a chip that says `probably` about nothing —
-   which is what a default would produce today, on every draft in production.
-
-**Verify:** `pnpm exec vite --config docs/gotchu/preview/vite.config.mjs`
-(`story:build` is broken on this fork independently of this work), light and
-dark; `pnpm test` for the two specs; `pnpm eslint` on the new files.
-
----
-
-# Phase 7 — Motion on the AI surfaces
-
-Written after looking at Phase 6 in the browser. The token sheet already carried
-durations named for these components (`--g-dur-reveal` "trace expand",
-`--g-dur-arrive` "draft dock"); this phase spends them.
-
-- [x] **The trace animates its own height.** It faded its steps in over a
-      container that had already snapped to full height, so the thread below
-      jumped on every expand. The shell is now a `display: grid` whose
-      `grid-template-rows` transitions `0fr → 1fr` over `--g-dur-reveal`, with
-      the steps fading in alongside. CSS only, no dependency.
-
-      The steps stay mounted, because a `v-if` gives the browser nothing to
-      transition from. Collapsed, the shell is zero-height and `inert`, so
-      nothing inside it is focusable or read out — and the spec asserts that
-      rather than asserting the text is absent from the DOM, which it no longer
-      is. Note `:inert="isCollapsed || undefined"`: Vue does not treat `inert`
-      as a boolean attribute, so binding `false` renders `inert="false"`, which
-      is inert.
-- [x] **Streaming and ready share one header row.** They were two differently
-      shaped bands, so becoming ready swapped the whole thing mid-generation.
-      One header now — same height, same dot, same position — and the body
-      appears under it.
-
-      The body is still `v-if`, not a collapsed shell: a shell keeps *Send
-      draft* in the DOM while the draft is arriving, one Tab away from sending a
-      reply nobody has read. A header that does not move is worth an animation;
-      a reachable send button is not. The chip has the same slot available and
-      is held back the same way, with its own assertion.
-- [x] **Hover transitions pinned to `--g-dur-hover`** on the adjust links and
-      the stop control, which were inheriting Tailwind's default.
-- [ ] **The dock has no exit, and `g-pop` is still unused.** Held deliberately.
-      `--g-dur-pop` (240ms, the only overshoot in the sheet) is reserved for
-      "the handled moment" and the send is that moment: the dot should turn
-      axolotl and pop before the band collapses, with discard collapsing
-      silently because nothing was handled. This is the one place `motion-v`
-      earns its keep — `DraftDock` owns its own presence, so `AnimatePresence`
-      can hold the element without touching a call site, which is exactly the
-      test Dialog, Banner and DropdownMenu failed in Phase 2. It also needs
-      `<MotionConfig reduced-motion="user">` added to the preview harness, which
-      only `App.vue` has today.
-
-**The rule this phase adds:** no motion that asserts a state the system cannot
-observe. Concretely, the streaming text gets no typewriter effect. There is no
-push, so tokens do not arrive; a typewriter would animate a fixed string and
-read as live progress nothing is measuring. The pulsing dot says "working"
-without claiming to know how far along.
-
-**Verified** against the running preview, by measurement rather than by eye:
-
-- trace height `0 → 24.3 → 115.2 → 141.0` over ~160ms, i.e. it interpolates
-  rather than snapping;
-- the dock's header row sits at the same `y` and the same height in streaming
-  and in ready (`y: 1083.0, h: 20.0` in both);
-- under `prefers-reduced-motion: reduce` the trace is at its full 141.0 at 40ms,
-  so the token sheet's global block covers the new transitions too.
-
-The gallery has a **Replay streaming → ready** control, because a shared header
-only proves itself in motion.
-
----
-
-# Phase 8 — Desk feedback on the AI surfaces
-
-Four things from the first real look at the running preview. The first two are
-alignment, the second two are product.
-
-- [x] **The chevron sits at the end of the trace header**, not against the
-      summary text. The whole header is the hit area, so the affordance belongs
-      at its edge. (`ml-auto`; measured 10px from the right edge, which is the
-      header's own padding.)
-- [x] **Step icons are centred on the first line of their step.** They hung from
-      a `mt-0.5`, which drifts per icon because lucide's truck and book sit
-      differently inside their viewBox than the magnifier does. Each icon now
-      sits in a 20px box — the line height of `did` — so centring is
-      structural. Measured: icon centre minus text centre is 0.0px on all three
-      steps.
-- [x] **Insert and Send draft no longer look identical.** They were the same
-      colour, variant and size, and only one of them reaches a customer. Send
-      is solid, Insert is outline, and each carries its own glyph. This is a
-      safety fix wearing a visual-design hat: two identical buttons where one is
-      irreversible is a misclick waiting to happen, and the dock's whole reason
-      for existing is that approval should be attributable.
-- [x] **The dock has an instruct field.** The desk works in prose — every
-      instruction the reply loop handles today arrives as German or French
-      sentences in a Lark thread — so a dock offering only three fixed
-      adjustments could not express "add the tracking number first", which is
-      exactly the instruction the deployed model mis-reads as a send (invariant
-      5's measured residual). Typing it here emits `instruct` and nothing else.
-
-      **The component has no path from typed text to `send`.** That is invariant
-      5 expressed as structure rather than as a prompt: a classifier can be
-      wrong about what a sentence meant, a button press cannot. Enforced by
-      `DraftDock.spec.js` "routes a typed instruction to the agent and never to
-      the customer", which types the literal words *send it* and asserts
-      `instruct` fired and `send` did not, and by "offers no way to send a draft
-      that is still arriving", which now also asserts the field itself is absent
-      while streaming.
-
-The field takes the card surface rather than Input's default `--g-slate-tint`,
-which renders as a grey wash over the tank ground. All four controls in the
-dock measure 32px.
+# Gotchu structural half — adjudication against the live design source
+
+Date: 2026-09-19. Source of truth read live via `DesignSync` against project
+`bdf19a68-cabf-4ba1-800f-4bcdc617e082` ("Chatwoot Design System Kickoff"):
+`tokens/colors.css`, `tokens/typography.css`, `tokens/spacing.css`, `github.md`
+and `components/gotchu-spine.js`. Quotes below are verbatim from those files.
+
+A brief claimed six parts of the design system had not landed. Four of the six
+are already applied, blocked on data, or contradicted by the source. This file
+records the adjudication so it is not re-derived, and scopes what is left.
+
+## Summary
+
+| # | Brief's claim | Verdict |
+|---|---|---|
+| 1 | Agent vs customer distinction not applied | **Already correct**, except one missing label, which is blocked on data |
+| 2 | Brand accent should move to Send; Resolve to ink | **Contradicted by the source.** Brand belongs on Resolve, which is where it already is |
+| 3 | Sidebar hierarchy, per-store dots | **Confirmed gap**, buildable, needs a data source the brief did not name |
+| 4 | Right rail: fixed expanded sections | **Confirmed gap**, but matching it deletes a shipped feature |
+| 5 | Apply `typography.css` and `spacing.css` | **Already transcribed.** Converting the remainder renders zero different pixels |
+| 6 | `[data-theme="dark"]` is unwired | **False.** Wired and complete, deliberately keyed on `.dark` |
+
+## 1. Agent vs customer — the fork is already right
+
+`gotchu-spine.js`, `G.Message`, its own comment:
+
+> Message — customer (left, grey), gotchu/agent (right, tank), note (right,
+> dashed slate). **Same bubble for AI and human agents; a teal label marks
+> Gotchu.**
+
+The bubble map, verbatim:
+
+```js
+const bubble = {
+  customer: { background: 'var(--bubble-customer)', borderBottomLeftRadius: 4 },
+  gotchu:   { background: 'var(--tank)', borderBottomRightRadius: 4 },
+  agent:    { background: 'var(--tank)', borderBottomRightRadius: 4 },
+  note:     { border: '1px dashed var(--border-strong)', background: 'var(--surface)',
+              color: 'var(--text-muted)', borderBottomRightRadius: 4 }
+}[kind];
+```
+
+So an outgoing bubble is a **flat `--tank` fill with no border**. `--agent`,
+`--agent-tint` and `--agent-border` appear on **no bubble at all**.
+
+`components-next/message/bubbles/Base.vue:44-48` today:
+
+```
+AGENT:   'bg-n-solid-blue text-n-slate-12'
+PRIVATE: 'bg-[var(--g-surface)] border border-dashed border-[var(--g-border-strong)] text-n-slate-11 …'
+USER:    'bg-[var(--g-bubble-customer)] text-n-slate-12'
+```
+
+`bg-n-solid-blue` resolves through the compat block at
+`_gotchu-tokens.scss:187` — `--solid-blue: 233 246 245` — which is `#E9F6F5`,
+i.e. `--g-tank`. **The agent bubble already renders tank**, the private note
+already matches, the customer bubble already matches, and
+`orientationMap` already carries `--g-radius-card` with the 4px corner notch.
+
+The brief's underlying observation is still real: `--g-bubble-customer`
+(`#F0F1F0`) and `--g-tank` (`#E9F6F5`) are two pale neighbours. The design
+accepts that, because three other things separate them — side, corner notch,
+and the one thing the fork lacks:
+
+```js
+kind === 'gotchu'
+  ? h('span', { style: { font: 'var(--text-meta)', fontWeight: 500, color: 'var(--agent)' } },
+      author || 'Gotchu')
+  : null,
+```
+
+### Why the label cannot be built yet — the actual blocker
+
+The label depends on knowing **which outgoing messages Gotchu wrote**, and
+nothing in Chatwoot's message payload says so. `Base.vue:30-33` can only
+distinguish Captain:
+
+```js
+const isCaptainMessage = computed(
+  () => (sender.value?.type ?? senderType.value) === SENDER_TYPES.CAPTAIN_ASSISTANT
+);
+```
+
+Gotchu posts through the Chatwoot API **as the agent** — `post.ts` records the
+Chatwoot agent id — so a Gotchu-sent reply is byte-identical to a human's in the
+dashboard. A `kind: 'gotchu'` bubble is therefore not a token change; it needs
+an authorship signal that does not exist today.
+
+Three ways to get one, in ascending cost:
+
+1. **`content_attributes` on the outgoing message.** The worker already owns the
+   `POST /messages` call, so it can stamp its own key. Cheapest, and it is
+   per-message rather than per-conversation.
+2. **Join `reply_draft.chatwoot_message_id`** through the gateway, the way
+   `/api/draft` already reads a cycle. Costs a request per conversation open.
+3. **A dedicated sender type.** Matches Captain's shape, changes Rails, and
+   makes every Gotchu reply visibly non-human to anyone reading the thread.
+
+Option 1 is the recommendation. It is additive, needs no migration, and the one
+place it touches is a call the worker already makes.
+
+## 2. Brand accent — the brief has it backwards
+
+`tokens/colors.css`, verbatim, including its comment:
+
+```css
+  --brand: var(--g-axolotl);           /* once per screen */
+```
+
+"Once per screen" is confirmed. **Which** element is the opposite of the brief.
+Three independent statements in the live source put brand on the *handled
+moment*, never on a send:
+
+```js
+// HandledLine — "Pink dot for Gotchu (the handled moment), avatar for a person."
+h('span', { style: { width: 8, height: 8, borderRadius: 999, background: 'var(--brand)', … } })
+
+// ApprovalCard — "Approve is the one pink."
+h(Button, { color: 'brand', onClick: onApprove }, 'Approve')
+
+// DraftDock — no brand token anywhere in it
+h(Button, { color: 'agent', variant: 'outline', size: 'sm', onClick: onInsert }, 'Insert'),
+h(Button, { color: 'agent', variant: 'outline', size: 'sm', onClick: onSend },   'Send draft'),
+h(Button, { color: 'slate', variant: 'ghost',   size: 'sm', onClick: onDiscard },'Discard')
+```
+
+The fork already matches this. `ResolveAction.vue:206` carries
+`!bg-n-axolotl`, and its comment at `:192` already says *"The one axolotl
+element on the screen."* Applying the brief as written would put pink on Send
+and drain it from Resolve — inverting the rule it was trying to enforce.
+
+**One deliberate departure to keep.** The source makes Insert and Send draft
+*identical* (`color: 'agent', variant: 'outline'` twice). The fork makes Send
+solid, and `DraftDock.vue:262-266` records why: only one of the two reaches a
+customer, and two identical buttons where one is irreversible undoes the point
+of the dock. That was desk feedback on 2026-09-13. Keep the fork's version;
+the departure is from a known weakness in the source, not from ignorance of it.
+
+## 3. Store dots — the one clean gap
+
+`--g-store-1` … `--g-store-5` exist at `_gotchu-tokens.scss:73-77` and are
+consumed **nowhere**. The source's rule, verbatim from `tokens/colors.css`:
+
+```css
+  /* per-store identity — 8px dots and chips only, never a background */
+```
+
+`ConversationRow` in `gotchu-spine.js` — note the size is **6**, not the 8 in
+`StoreDot`'s own default, and note the row comment *"One accent per row max."*:
+
+```js
+h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5,
+    border: '1px solid var(--border)', borderRadius: 6, padding: '0 6px',
+    color: 'var(--text-muted)' } },
+  h(StoreDot, { color: storeColor, size: 6 }), store),
+```
+
+### The data source the brief did not name
+
+Store identity in a fork conversation row is `InboxName.vue` — a `ChannelIcon`
+plus the inbox name. **Keying a store dot off the inbox is wrong**, and wrong
+in the worst place: inbox 1 is the shared Email inbox serving all four stores
+and is deliberately undeclared in the registry, so an inbox-derived dot is
+blank or misleading on the majority of traffic.
+
+The correct key is `conversation.custom_attributes.store_key`, which the
+webhook receiver already writes on `conversation_created` and on later
+`message_created` events. It is in the API payload; `grep -r store_key
+app/javascript` finds it in no component. So this is a small data wiring job
+plus a stable `store_key` → `--g-store-N` map, not a styling change.
+
+Also missing from the row, from the same component: `borderLeft: 3px solid
+var(--agent)` and `background: var(--tank)` on the selected row, and
+`stateKind: 'gotchu' → 'var(--agent)'` on the assignment line.
+
+## 4. Right rail — a gap that costs a feature
+
+The source's rail holds five fixed, always-expanded sections with no
+disclosure control of any kind. The fork's `ContactPanel.vue:12-26` renders
+seven `AccordionItem`s whose open state and order persist through
+`useUISettings`.
+
+This was already declined once, for the reason that still applies: matching the
+mock deletes a shipped, persisted feature. It needs a product decision, not a
+token swap. Note also that the source specifies no scroll behaviour for the
+rail at all (`overflow:hidden`), so the fork would have to design that part
+regardless.
+
+## 5. Type and density — already equal, by measurement
+
+`tokens/typography.css` and `tokens/spacing.css` are transcribed in full at
+`_gotchu-tokens.scss:79-118`. There is nothing to apply.
+
+The remaining gap is that `components-next` uses Tailwind utilities rather than
+`var(--g-*)`. That is a no-op, because `tailwind.config.js:206-210` is
+`fontSize: { ...defaultTheme.fontSize, xxxs, xxs }` and spacing is untouched:
+
+```
+text-sm  14px/20px  ==  --g-text-body   (400 14px/20px Inter)
+text-xs  12px/16px  ==  --g-text-meta   (400 12px/16px Inter)
+gap-2  8px == --g-space-2 · px-3 12px == --g-space-3 · p-4 16px == --g-space-4
+```
+
+Converting them renders zero different pixels, and the `font:` shorthand resets
+family and weight, so it would regress any component that sets `font-semibold`
+beside a size class. Skip it.
+
+The half of the type system that *does* change pixels is already applied where
+the source says it belongs — *"IDs, SKUs, tracking, keys"*:
+`--g-font-mono` at `ConversationHeader.vue:213,228`, `ShopifyOrderItem.vue:79`,
+`ContactInfo.vue:301`, `BaseTable.vue:93`, `PaginationFooter.vue:102`;
+`--g-font-display` at `Avatar.vue:128`; `--g-text-key` at
+`ReplyTopPanel.vue:251`.
+
+Two real holes worth noting, both in the source rather than the fork: §1b's own
+markup uses `10px`, `6px`, `5px` and `2px` gaps that are off its own 4px grid
+(`10px` is the second-commonest gap on the screen), and two type sizes — a 9px
+micro-initial and 13px Bricolage store initials — have no `--text-*` token.
+Expressing the inbox purely in `--g-space-*` is therefore not possible.
+
+## 6. Dark mode — already wired
+
+`_gotchu-tokens.scss:131-155` flips every semantic token; `:192-206` flips the
+Radix triplets. Keyed on `.dark` rather than `[data-theme="dark"]` deliberately,
+documented at `:17-18`: Chatwoot sets `document.body.classList.add('dark')` in
+`dashboard/helper/themeHelper.js`. Adopting the source's selector would
+*unwire* what works.
+
+One genuine hazard inherited from the source: `--brand` is **absent from its
+dark block**, in both `tokens/colors.css` and the sheet, so `#FF6B8B` is
+theme-invariant while `--g-on-brand` (`--g-ink`) flips to paper. That makes
+"Resolve" navy-on-pink in light and paper-on-pink in dark. `--g-danger` does
+flip; brand does not. Worth a contrast check on the one brand element.
+
+## What is actually left
+
+1. **Store dot in the conversation row** — unblocked. Needs a `store_key` →
+   `--g-store-N` map and a 6px dot in the existing meta row. Tier 2.
+2. **Selected-row treatment** — 3px `--g-agent` left border plus `--g-tank`
+   background, and `--g-agent` on a Gotchu-assigned state line. Tier 2.
+3. **Gotchu author label** — blocked on an authorship signal. Recommend
+   stamping `content_attributes` from the worker's own `POST /messages`.
+4. **Brand contrast in dark mode** — measure, then decide whether to diverge
+   from the source by giving `--g-brand` a dark value.
+
+Not doing without a decision: the right rail (deletes a feature), moving brand
+off Resolve (inverts the source), converting Tailwind utilities to space tokens
+(no pixels change).
