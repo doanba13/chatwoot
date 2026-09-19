@@ -208,6 +208,72 @@ const tailwindConfig = {
       xxxs: '0.5rem',
       xxs: '0.625rem',
     },
+    // Border radius — the Gotchu scale.
+    //
+    // Source: Claude Design project, tokens/spacing.css §3a ("Radius 8 → 6 on
+    // controls, 12 → 10 on cards"), transcribed into
+    // dashboard/assets/scss/_gotchu-tokens.scss as `--g-radius-*`. Gotchu has
+    // four rungs — 6 / 10 / 16 / 999 — and Tailwind's defaults happen to line up
+    // on three of them, so `xl` is the only rung whose rendered value moves.
+    //
+    // This replaces rather than extends, like `fontSize` above: a top-level
+    // theme key wipes the default scale, so the defaults are spread back in and
+    // only the Gotchu rungs are overwritten. `rounded-none`, `rounded-sm` (2px)
+    // and bare `rounded` (4px) therefore keep Tailwind's values — they have no
+    // Gotchu equivalent, and minting one here would add a fifth radius to a
+    // four-rung scale.
+    //
+    // Each override is a `var()` with Tailwind's own default as the fallback,
+    // not a hardcoded px. Both halves are load-bearing:
+    //
+    //  1. _gotchu-tokens.scss stays the single source. Change `--g-radius-card`
+    //     there and every `rounded-xl` in the dashboard follows. Hardcode `10px`
+    //     here instead and the token file and the utility scale drift apart with
+    //     nothing to notice it.
+    //  2. One tailwind.config.js feeds FIVE stylesheets — dashboard/_woot.scss,
+    //     widget/woot.scss, portal/application.scss, survey/woot.scss and
+    //     dashboard/super_admin/index.scss — and only the dashboard one imports
+    //     `gotchu-tokens`. Without the fallback, an undefined `--g-radius-card`
+    //     makes `border-radius: var(…)` invalid at computed-value time; border
+    //     radius does not inherit, so every `rounded-xl` in the widget, portal,
+    //     survey and superadmin packs would collapse to 0px. The fallback keeps
+    //     those four on exactly today's values and scopes the re-theme to the
+    //     dashboard — the same trick, for the same reason, as `--g-brand-rgb` in
+    //     theme/colors.js.
+    //
+    // `lg` (8px) is deliberately NOT remapped, and that is the decision worth
+    // reading. 8px is off the Gotchu scale, but it is used 359 times (292 of them
+    // in the dashboard) on both sides of the control/card line:
+    // `components-next/message` uses it 41 times for chat bubbles (a card →
+    // 10px) while `components-next/sidebar` uses it 13 times for nav buttons (a
+    // control → 6px). Classifying the 274 plain dashboard sites by their
+    // enclosing element split them 95 control / 102 card / 14 media / 63
+    // unclear — so either blanket remap moves ~100 call sites the wrong way in
+    // one unreviewable jump. It also feeds the
+    // size-proportional ladder in components-next/avatar (16→`rounded`, 24→`md`,
+    // 32→`lg`, 48→`xl`, 64→`2xl`): pointing `lg` at `--g-radius-card` would tie
+    // it with `xl` and collapse two rungs of that ladder into one. So `lg` stays
+    // 8px until someone does the per-site pass. It is the known remaining
+    // off-scale value, not an oversight.
+    borderRadius: {
+      ...defaultTheme.borderRadius,
+      // --g-radius-control. 6px both ways today; wired anyway so that changing
+      // the control radius in the token file actually reaches the 219 call sites
+      // that resolve through `md` (`rounded-md`, `rounded-r-md`, `md:rounded-md`
+      // …) rather than being coincidentally right.
+      md: 'var(--g-radius-control, 0.375rem)',
+      // --g-radius-card. The one rung that moves: 12px → 10px. 213 call sites
+      // resolve through `xl`; the 196 in the dashboard are the ones that change,
+      // the other 17 hold at 12px on the fallback.
+      xl: 'var(--g-radius-card, 0.75rem)',
+      // --g-radius-modal. 16px both ways today; wired for the same reason as
+      // `md`.
+      '2xl': 'var(--g-radius-modal, 1rem)',
+      // --g-radius-full. 999px against Tailwind's 9999px — indistinguishable on
+      // anything narrower than ~2000px, so this is a single-source move and not
+      // a visual one.
+      full: 'var(--g-radius-full, 9999px)',
+    },
     colors: {
       transparent: 'transparent',
       white: '#fff',
