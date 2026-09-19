@@ -4,6 +4,8 @@ import { MESSAGE_TYPE } from 'widget/helpers/constants';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 
+import { previewTextFor } from './helpers/previewText';
+
 const props = defineProps({
   message: {
     type: Object,
@@ -20,6 +22,13 @@ const props = defineProps({
   multiLine: {
     type: Boolean,
     default: false,
+  },
+  // False when the caller draws the subject on a line of its own, so this line
+  // carries the body instead of repeating it. Defaults to true, which is how
+  // Chatwoot has always rendered an email preview. See helpers/previewText.js.
+  preferSubject: {
+    type: Boolean,
+    default: true,
   },
 });
 
@@ -49,11 +58,12 @@ const isMessagePrivate = computed(() => {
   return isPrivate;
 });
 
-const parsedLastMessage = computed(() => {
-  const { content_attributes: contentAttributes } = props.message;
-  const { email: { subject } = {} } = contentAttributes || {};
-  return getPlainText(subject || props.message.content);
-});
+const parsedLastMessage = computed(() =>
+  previewTextFor(props.message, {
+    preferSubject: props.preferSubject,
+    toPlainText: getPlainText,
+  })
+);
 
 const lastMessageFileType = computed(() => {
   const [{ file_type: fileType } = {}] = props.message.attachments;

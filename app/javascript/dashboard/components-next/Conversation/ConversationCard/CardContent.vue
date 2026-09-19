@@ -10,6 +10,10 @@ defineProps({
   voiceCallDirection: { type: String, default: '' },
   unreadCount: { type: Number, default: 0 },
   showExpandedPreview: { type: Boolean, default: false },
+  // Threaded through to MessagePreview. False when the card above draws the
+  // subject itself; the default keeps Chatwoot's subject-first preview for any
+  // caller that does not.
+  preferSubject: { type: Boolean, default: true },
 });
 </script>
 
@@ -30,6 +34,7 @@ defineProps({
       key="message-preview"
       :message="lastMessage"
       :multi-line="showExpandedPreview"
+      :prefer-subject="preferSubject"
       :class="unreadCount > 0 ? 'text-n-slate-12' : 'text-n-slate-11'"
     />
     <span

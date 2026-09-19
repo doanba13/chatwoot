@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue';
 import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
 
-import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import MessagePreview from 'dashboard/components-next/Conversation/ConversationCard/MessagePreview.vue';
 import CardLabels from 'dashboard/components-next/Conversation/ConversationCard/CardLabels.vue';
 import SLACardLabel from 'dashboard/components-next/Conversation/ConversationCard/SLACardLabel.vue';
@@ -24,6 +23,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // Threaded through to MessagePreview. False when the card above draws the
+  // subject itself; the default keeps Chatwoot's subject-first preview for any
+  // caller that does not.
+  preferSubject: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const slaCardLabelRef = ref(null);
@@ -31,15 +37,6 @@ const slaCardLabelRef = ref(null);
 const lastNonActivityMessage = computed(() =>
   useSnakeCase(props.conversation.lastNonActivityMessage ?? {}, { deep: true })
 );
-
-const assignee = computed(() => {
-  const { meta: { assignee: agent = {} } = {} } = props.conversation;
-  return {
-    name: agent.name ?? agent.availableName,
-    thumbnail: agent.thumbnail,
-    status: agent.availabilityStatus,
-  };
-});
 
 const unreadMessagesCount = computed(() => {
   const { unreadCount } = props.conversation;
@@ -64,6 +61,7 @@ defineExpose({
     <div class="flex items-center justify-between w-full gap-2 py-1 h-7">
       <MessagePreview
         :message="lastNonActivityMessage"
+        :prefer-subject="preferSubject"
         class="flex-1 min-w-0"
         :class="unreadMessagesCount > 0 ? 'text-n-slate-12' : 'text-n-slate-11'"
       />
@@ -78,12 +76,16 @@ defineExpose({
       </div>
     </div>
 
+    <!-- The assignee avatar used to sit at the end of this row, and this row
+    only renders when there is an SLA threshold or a label. CardAssignmentState
+    in the card above now shows the assignment on every row, so keeping it here
+    would draw the same avatar twice on a labelled conversation. -->
     <div
       class="grid items-center gap-2.5 h-7"
       :class="
         hasSlaThreshold && hasLabels
-          ? 'grid-cols-[auto_auto_1fr_20px]'
-          : 'grid-cols-[1fr_20px]'
+          ? 'grid-cols-[auto_auto_1fr]'
+          : 'grid-cols-[1fr]'
       "
     >
       <SLACardLabel
@@ -98,14 +100,6 @@ defineExpose({
           :account-labels="accountLabels"
         />
       </div>
-      <Avatar
-        v-if="assignee.name"
-        :name="assignee.name"
-        :src="assignee.thumbnail"
-        :size="20"
-        :status="assignee.status"
-        rounded-full
-      />
     </div>
   </div>
 </template>

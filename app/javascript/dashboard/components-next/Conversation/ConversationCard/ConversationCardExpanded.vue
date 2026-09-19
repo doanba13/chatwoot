@@ -13,6 +13,8 @@ import CardStatusIcon from './CardStatusIcon.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 
+import { mailSubjectFor } from './helpers/mailSubject';
+
 const props = defineProps({
   chat: { type: Object, required: true },
   currentContact: { type: Object, required: true },
@@ -47,6 +49,11 @@ const voiceCallData = computed(() => {
 });
 
 const unreadCount = computed(() => props.chat.unread_count);
+
+// See helpers/mailSubject.js. `chat` comes out of the main conversations store,
+// so the server casing is the shape that arrives here. Empty on every non-email
+// channel, and the element is then absent rather than blank.
+const mailSubject = computed(() => mailSubjectFor(props.chat));
 
 const slaCardLabel = useTemplateRef('slaCardLabel');
 
@@ -159,12 +166,29 @@ const selectedModel = computed({
         {{ currentContact.name }}
       </h4>
 
+      <!-- Subject before preview, the way a mail client orders a row: it is the
+      line that carries the order number when nothing else in the thread does. -->
+      <span
+        v-if="mailSubject"
+        v-tooltip.top="{
+          content: mailSubject,
+          delay: { show: 500, hide: 0 },
+        }"
+        data-testid="card-subject"
+        class="text-body-main font-medium text-n-slate-12 truncate min-w-0 max-w-48"
+      >
+        {{ mailSubject }}
+      </span>
+
+      <!-- The subject is on its own line above, so the preview must not prefer
+      it: Chatwoot's default would make both lines the same string. -->
       <CardContent
         :last-message="lastMessageInChat"
         :voice-call-status="voiceCallData.status"
         :voice-call-direction="voiceCallData.direction"
         :unread-count="unreadCount"
         :show-expanded-preview="false"
+        :prefer-subject="false"
       />
     </div>
 

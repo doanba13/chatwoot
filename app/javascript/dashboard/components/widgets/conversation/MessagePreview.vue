@@ -2,6 +2,7 @@
 import { MESSAGE_TYPE } from 'widget/helpers/constants';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { ATTACHMENT_ICONS } from 'shared/constants/messages';
+import { previewTextFor } from 'dashboard/components-next/Conversation/ConversationCard/helpers/previewText';
 
 export default {
   name: 'MessagePreview',
@@ -17,6 +18,14 @@ export default {
     defaultEmptyMessage: {
       type: String,
       default: '',
+    },
+    // False when the caller draws the subject on a line of its own, so this
+    // line carries the body instead of repeating it. Defaults to true, which is
+    // how Chatwoot has always rendered an email preview, and ReplyToMessage
+    // relies on that. See helpers/previewText.js.
+    preferSubject: {
+      type: Boolean,
+      default: true,
     },
   },
   setup() {
@@ -39,9 +48,10 @@ export default {
       return isPrivate;
     },
     parsedLastMessage() {
-      const { content_attributes: contentAttributes } = this.message;
-      const { email: { subject } = {} } = contentAttributes || {};
-      return this.getPlainText(subject || this.message.content);
+      return previewTextFor(this.message, {
+        preferSubject: this.preferSubject,
+        toPlainText: this.getPlainText,
+      });
     },
     lastMessageFileType() {
       const [{ file_type: fileType } = {}] = this.message.attachments;

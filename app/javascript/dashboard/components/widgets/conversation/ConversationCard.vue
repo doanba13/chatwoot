@@ -12,6 +12,7 @@ import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard
 import SLACardLabel from './components/SLACardLabel.vue';
 import VoiceCallStatus from './VoiceCallStatus.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
+import { mailSubjectFor } from 'dashboard/components-next/Conversation/ConversationCard/helpers/mailSubject';
 
 const props = defineProps({
   chat: { type: Object, required: true },
@@ -70,11 +71,24 @@ const showLabelsSection = computed(() => {
   return props.chat.labels?.length > 0 || hasSlaPolicyId.value;
 });
 
+// See helpers/mailSubject.js. `chat` comes out of the main conversations store,
+// so the server casing is the shape that arrives here — this condensed row is
+// the list the desk scans all day, and the reason the subject is worth showing.
+const mailSubject = computed(() => mailSubjectFor(props.chat));
+
+// The timestamp and the unread badge are absolutely positioned over the right
+// edge of this column, so every full-width line under the name has to leave the
+// badge room. Pulled out of messagePreviewClass so the subject line uses the
+// same rule instead of restating it.
+const unreadBadgeClearanceClass = computed(() => [
+  !props.compact && hasUnread.value ? 'ltr:pr-4 rtl:pl-4' : '',
+  props.compact && hasUnread.value ? 'ltr:pr-6 rtl:pl-6' : '',
+]);
+
 const messagePreviewClass = computed(() => {
   return [
     hasUnread.value ? 'font-medium text-n-slate-12' : 'text-n-slate-11',
-    !props.compact && hasUnread.value ? 'ltr:pr-4 rtl:pl-4' : '',
-    props.compact && hasUnread.value ? 'ltr:pr-6 rtl:pl-6' : '',
+    ...unreadBadgeClearanceClass.value,
   ];
 });
 
@@ -193,6 +207,19 @@ watch(
       >
         {{ currentContact.name }}
       </h4>
+      <!-- Subject between the contact and the preview. In a measured sample of
+      live threads it is the only place the order number appears in a fair
+      number of them, so it is what an agent scans this list for. Absent rather
+      than blank on a channel that was never created by a mail. -->
+      <p
+        v-if="mailSubject"
+        :title="mailSubject"
+        data-testid="card-subject"
+        class="text-n-slate-12 text-sm font-medium my-0 mx-2 leading-6 h-6 flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+        :class="unreadBadgeClearanceClass"
+      >
+        {{ mailSubject }}
+      </p>
       <VoiceCallStatus
         v-if="voiceCallData.status"
         key="voice-status-row"
@@ -200,10 +227,13 @@ watch(
         :direction="voiceCallData.direction"
         :message-preview-class="messagePreviewClass"
       />
+      <!-- The subject is on its own line above, so the preview must not prefer
+      it: Chatwoot's default would make both lines the same string. -->
       <MessagePreview
         v-else-if="lastMessageInChat"
         key="message-preview"
         :message="lastMessageInChat"
+        :prefer-subject="false"
         class="my-0 mx-2 leading-6 h-6 flex-1 min-w-0 text-sm"
         :class="messagePreviewClass"
       />

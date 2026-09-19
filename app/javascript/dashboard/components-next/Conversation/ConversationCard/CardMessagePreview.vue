@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
 
-import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import MessagePreview from './MessagePreview.vue';
 
 const props = defineProps({
@@ -10,20 +9,18 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  // Threaded through to MessagePreview. False when the card above draws the
+  // subject itself; the default keeps Chatwoot's subject-first preview for any
+  // caller that does not.
+  preferSubject: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const lastNonActivityMessage = computed(() =>
   useSnakeCase(props.conversation.lastNonActivityMessage ?? {}, { deep: true })
 );
-
-const assignee = computed(() => {
-  const { meta: { assignee: agent = {} } = {} } = props.conversation;
-  return {
-    name: agent.name ?? agent.availableName,
-    thumbnail: agent.thumbnail,
-    status: agent.availabilityStatus,
-  };
-});
 
 const unreadMessagesCount = computed(() => {
   const { unreadCount } = props.conversation;
@@ -36,18 +33,15 @@ const unreadMessagesCount = computed(() => {
     <MessagePreview
       :message="lastNonActivityMessage"
       multi-line
+      :prefer-subject="preferSubject"
       class="w-full"
       :class="unreadMessagesCount > 0 ? 'text-n-slate-12' : 'text-n-slate-11'"
     />
+    <!-- The assignee avatar that used to sit here moved up into
+    CardAssignmentState, which renders on every row rather than only where a
+    preview does. Drawing it in both places put the same avatar on the card
+    twice. -->
     <div class="flex items-center flex-shrink-0 gap-2 pb-2">
-      <Avatar
-        v-if="assignee.name"
-        :name="assignee.name"
-        :src="assignee.thumbnail"
-        :size="20"
-        :status="assignee.status"
-        rounded-full
-      />
       <div
         v-if="unreadMessagesCount > 0"
         class="inline-flex items-center justify-center rounded-full size-5 bg-n-brand"
