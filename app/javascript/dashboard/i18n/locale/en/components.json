@@ -111,6 +111,37 @@
       "NOTICE_UNAVAILABLE": "Gotchu is not answering, so whether a draft exists here is unknown.",
       "NOTICE_UNCONFIGURED": "Gotchu is not configured on this Chatwoot, so no draft can be read.",
       "NOTICE_FAILED": "The draft for this conversation could not be read."
+    },
+    "HANDLED": {
+      "BY": "Handled by {name}",
+      "BY_IN": "Handled by {name} · {count} min"
+    },
+    "APPROVAL": {
+      "TITLE": "Needs your approval",
+      "PLANNED": "Planned actions",
+      "APPROVE": "Approve",
+      "ADJUST": "Adjust",
+      "HAND_OVER": "Hand over"
+    },
+    "ESCALATION": {
+      "HANDED_TO": "Handed to {name}",
+      "NOTE": "Gotchu drafted nothing. Customer was told a person is on it."
+    },
+    "STORES": {
+      "OPEN": "{count} open",
+      "OPEN_PERSONA": "{count} open · persona: {persona}",
+      "ALL": "All stores · Open"
+    },
+    "AUTONOMY": {
+      "DRAFT_TITLE": "Draft only",
+      "DRAFT_DESCRIPTION": "Customers hear from your team. Gotchu writes, you send.",
+      "APPROVE_TITLE": "Approve first",
+      "APPROVE_DESCRIPTION": "Customers wait a few minutes. Every reply and action gets one click from you.",
+      "HANDLE_TITLE": "Handle selected topics",
+      "HANDLE_DESCRIPTION": "Instant answers on the topics you switch on. Everything else waits for you."
+    },
+    "TOPICS": {
+      "ALWAYS_HANDS_OVER": "Always hands over"
     }
   }
 }

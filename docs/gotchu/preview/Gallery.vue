@@ -19,6 +19,12 @@ import AgentDot from 'dashboard/components-next/gotchu/AgentDot.vue';
 import ConfidenceChip from 'dashboard/components-next/gotchu/ConfidenceChip.vue';
 import AITrace from 'dashboard/components-next/gotchu/AITrace.vue';
 import DraftDock from 'dashboard/components-next/gotchu/DraftDock.vue';
+import HandledLine from 'dashboard/components-next/gotchu/HandledLine.vue';
+import ApprovalCard from 'dashboard/components-next/gotchu/ApprovalCard.vue';
+import EscalationCard from 'dashboard/components-next/gotchu/EscalationCard.vue';
+import StoreSwitcher from 'dashboard/components-next/gotchu/StoreSwitcher.vue';
+import AutonomyDial from 'dashboard/components-next/gotchu/AutonomyDial.vue';
+import TopicSwitch from 'dashboard/components-next/gotchu/TopicSwitch.vue';
 import ComposerCard from './ComposerCard.vue';
 
 // SidebarGroupLeaf is deliberately absent. It calls useSidebarContext(), which
@@ -102,6 +108,111 @@ const noteDockAction = action => {
 // file was written on.
 const inMinutes = minutes =>
   new Date(Date.now() + minutes * 60_000).toISOString();
+
+// ---------------------------------------------------------------------------
+// The six transcribed-but-unwired surfaces. Every fixture below is invented for
+// this page: there is no approval flow, no escalation record, no signal that
+// Gotchu authored anything, no product answer on whether a store is a top-level
+// scope, no stored autonomy mode and no per-topic configuration. Nothing here is
+// mounted anywhere in the app.
+// ---------------------------------------------------------------------------
+
+// `--g-store-1` … `--g-store-4`, in registry order. plan.md §3: these tokens
+// exist and are consumed nowhere, and the correct key is
+// `conversation.custom_attributes.store_key` rather than the inbox — which is
+// data wiring this page deliberately does not do.
+const switcherStores = [
+  {
+    id: 'persoliebe',
+    name: 'persoliebe',
+    open: 12,
+    persona: 'Lena',
+    color: 'var(--g-store-1)',
+  },
+  {
+    id: 'cadeauniq',
+    name: 'cadeauniq',
+    open: 4,
+    persona: 'Camille',
+    color: 'var(--g-store-2)',
+  },
+  { id: 'giftera', name: 'giftera', open: 0, color: 'var(--g-store-3)' },
+  {
+    id: 'paradisperso',
+    name: 'paradisperso',
+    open: 7,
+    color: 'var(--g-store-4)',
+  },
+];
+const activeStore = ref('cadeauniq');
+
+// Named bindings, not the source's `⌘1`…`⌘4`: nothing registers those, and
+// ReplyTopPanel's rule is to name the real one or draw none. These are drawn
+// here only to exercise the opt-in branch — the card above them, which is what
+// the fork would actually ship, draws no keys at all.
+const switcherStoresWithKeys = switcherStores.map((store, index) => ({
+  ...store,
+  shortcut: `Alt+${index + 1}`,
+}));
+
+const autonomy = ref('approve');
+
+const topics = ref([
+  {
+    id: 'where-is-my-order',
+    name: 'Where is my order',
+    meta: 'Gotchu answers with the live scan',
+    on: true,
+  },
+  {
+    id: 'delivery-window',
+    name: 'How long does delivery take',
+    meta: 'Waits for you',
+    on: false,
+  },
+  {
+    id: 'wrong-item',
+    name: 'Wrong or damaged item',
+    meta: 'Waits for you',
+    on: false,
+  },
+  // `null`, not false: this one cannot be switched on at all, so it renders a
+  // chip rather than a switch. Refunds are the case the desk keeps.
+  {
+    id: 'refund',
+    name: 'Refund or cancellation',
+    meta: 'Always a person',
+    on: null,
+    handler: 'Always hands over',
+  },
+  { id: 'chargeback', name: 'Chargeback', meta: 'Always a person', on: null },
+]);
+const toggleTopic = (id, value) => {
+  topics.value = topics.value.map(topic =>
+    topic.id === id ? { ...topic, on: value } : topic
+  );
+};
+
+const approvalText =
+  'Hallo Frau Weber, Ihre Sendung #PL-1095 wurde am 4. September in Leipzig gescannt und ist noch unterwegs. Für Deutschland rechnen wir mit 14–21 Tagen ab Versand — melden Sie sich bitte, wenn sie bis zum 25. September nicht da ist.';
+
+const approvalActions = [
+  { icon: 'i-lucide-send', label: 'Send this reply to Frau Weber' },
+  // The source's own bare-name vocabulary, to exercise the normaliser.
+  { icon: 'clock', label: 'Move the conversation to pending' },
+  // No icon at all: falls through to a check rather than dropping the row.
+  { label: 'Log the tracking read against the order' },
+];
+
+const lastGestureAction = ref('—');
+const noteGesture = action => {
+  lastGestureAction.value = action;
+};
+
+const selectStore = id => {
+  activeStore.value = id;
+  noteGesture(`store: ${id}`);
+};
 
 // The shared header only proves itself in motion: the point is that becoming
 // ready reveals a body under a header that has not moved.
@@ -448,6 +559,158 @@ const replayDock = () => {
           {{ $t('GOTCHU.DRAFT.NOTICE_UNCONFIGURED') }}
         </p>
       </ComposerCard>
+    </section>
+
+    <h2
+      class="mt-4 mb-3 text-lg font-bold text-n-slate-12 font-[family-name:var(--g-font-display)]"
+    >
+      Transcribed, not wired
+    </h2>
+    <p class="mb-6 text-sm text-n-slate-11 max-w-2xl">
+      Six components from the design source with no call site anywhere, because
+      each one is blocked on something that does not exist: an approval flow,
+      escalation records, a signal that Gotchu authored a message (it posts
+      through the API as an ordinary agent), a product answer on whether a store
+      is a top-level scope, a stored autonomy mode, and per-topic configuration.
+      Every value below is a fixture written on this page.
+    </p>
+
+    <section class="flex flex-col gap-3 mb-10 max-w-xl">
+      <h2 class="text-sm font-medium text-n-slate-11">
+        Handled line — the pink dot is the handled moment
+      </h2>
+      <HandledLine :minutes="4" />
+      <HandledLine by="Linh" :minutes="26" />
+      <!-- 0 is a value, not an absence: a case closed inside the same minute. -->
+      <HandledLine :minutes="0" />
+      <!-- No duration at all renders no middot. -->
+      <HandledLine by="Anna Meier" />
+      <p class="text-xs text-n-slate-11">
+        Toggle Dark above and watch the dot. <code>--g-brand</code> has no dark
+        value while <code>--g-on-brand</code> flips, so the dot is
+        theme-invariant — and the LIGHT theme is the weaker one: #ff6b8b
+        measures 2.72:1 against <code>--g-surface</code> in light and 5.45:1 in
+        dark. It is under WCAG 1.4.11's 3:1, which is acceptable only because
+        the name is spelled out beside it.
+      </p>
+    </section>
+
+    <section class="flex flex-col gap-4 mb-10 max-w-xl">
+      <h2 class="text-sm font-medium text-n-slate-11">
+        Approval card — Approve is the one brand element
+      </h2>
+      <ApprovalCard
+        customer="Frau Weber"
+        order-id="#PL-1095"
+        :text="approvalText"
+        :actions="approvalActions"
+        confidence="probably"
+        @approve="noteGesture('approve')"
+        @adjust="noteGesture('adjust')"
+        @hand-over="noteGesture('hand over')"
+      />
+      <!-- No planned actions, no order id, no confidence: an empty "Planned
+        actions" heading reads as a failed load, so the section is absent
+        entirely, and a card with no measured confidence renders no chip — the
+        same reasoning ConfidenceChip states for refusing a default. -->
+      <ApprovalCard
+        customer="Jean Dupont"
+        text="Bonjour, votre commande a bien été expédiée. Nous vous écrivons dès qu'un nouveau scan arrive."
+        @approve="noteGesture('approve (bare)')"
+        @adjust="noteGesture('adjust (bare)')"
+        @hand-over="noteGesture('hand over (bare)')"
+      />
+    </section>
+
+    <section class="flex flex-col gap-4 mb-10 max-w-xl">
+      <h2 class="text-sm font-medium text-n-slate-11">
+        Escalation — ink, not red. A handover is the system working.
+      </h2>
+      <EscalationCard
+        to="Linh"
+        reason="the customer asked for a refund in writing"
+        action-label="Open the order"
+        @action="noteGesture('escalation action')"
+      />
+      <EscalationCard
+        to="Anna Meier"
+        reason="two orders match this thread"
+        note="Der Kundin wurde gesagt, dass sich jemand meldet."
+      />
+    </section>
+
+    <section class="flex flex-wrap items-start gap-6 mb-10">
+      <div class="flex flex-col gap-3">
+        <h2 class="text-sm font-medium text-n-slate-11">
+          Store switcher — the colour is a dot, never a ground
+        </h2>
+        <StoreSwitcher
+          :stores="switcherStores"
+          :active-id="activeStore"
+          @select="selectStore"
+        />
+        <p class="text-xs text-n-slate-11 max-w-80">
+          The source fills each avatar with the store colour. The token sheet
+          forbids it in a comment on the tokens themselves — "8px dots and chips
+          only, never a background" — so the avatar stays neutral and the colour
+          is the badge dot.
+        </p>
+      </div>
+      <div class="flex flex-col gap-3">
+        <h2 class="text-sm font-medium text-n-slate-11">
+          …and the opt-in shortcut hints
+        </h2>
+        <StoreSwitcher
+          :stores="switcherStoresWithKeys"
+          active-id="all"
+          all-shortcut="Alt+0"
+          @select="noteGesture(`store: ${$event}`)"
+        />
+        <p class="text-xs text-n-slate-11 max-w-80">
+          Named bindings, not the source's <code>⌘1</code>…<code>⌘4</code>:
+          nothing registers those. The card on the left is what the fork would
+          ship — no keys at all.
+        </p>
+      </div>
+    </section>
+
+    <section class="flex flex-col gap-4 mb-10 max-w-3xl">
+      <h2 class="text-sm font-medium text-n-slate-11">
+        Autonomy dial — described by what the customer experiences
+      </h2>
+      <AutonomyDial :value="autonomy" @select="autonomy = $event" />
+      <h2 class="mt-2 text-sm font-medium text-n-slate-11">
+        …with the third mode behind a plan
+      </h2>
+      <AutonomyDial
+        value="draft"
+        :locked-ids="['handle']"
+        lock-tag="Growth plan"
+        @select="noteGesture(`autonomy: ${$event}`)"
+      />
+      <p class="text-xs text-n-slate-11">
+        Two dials on one page, which is why the radio group name comes from
+        <code>useId()</code> rather than a shared constant: RadioCard defaults
+        its group name to its own id, so three cards would otherwise be three
+        independent groups and two dials would fight over one selection.
+      </p>
+    </section>
+
+    <section class="flex flex-col gap-3 mb-10 max-w-xl">
+      <h2 class="text-sm font-medium text-n-slate-11">
+        Topic switches — three-valued, not two
+      </h2>
+      <TopicSwitch :topics="topics" @toggle="toggleTopic" />
+      <p class="text-xs text-n-slate-11">
+        <code>on: null</code> is not <code>false</code>: the last two rows
+        always hand over, so they render a chip rather than a switch someone
+        could move. Teal means Gotchu handles it end to end — the meta line
+        carries the same state in colour.
+      </p>
+      <p class="text-xs text-n-slate-11">
+        Last emitted:
+        <span class="font-medium">{{ lastGestureAction }}</span>
+      </p>
     </section>
   </div>
 </template>
