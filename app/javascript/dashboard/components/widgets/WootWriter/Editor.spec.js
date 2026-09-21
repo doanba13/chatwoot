@@ -120,6 +120,29 @@ describe('Editor insert-to-send stamp (Critical finding regression)', () => {
     expect(insertedDraftFor(4471)).toBeNull();
   });
 
+  it('does not clear the stamp when a variable or an emoji is inserted', async () => {
+    // Pins Ruling 14: getContentNode() resolves every one of these five
+    // types through insertAtCursor's tr.replaceWith(from, to, node) over the
+    // TYPED TRIGGER SPAN only (`{{`, `:`, …) — an in-place decoration that
+    // cannot replace or constitute the draft the way a canned response's
+    // templated body commonly does. A supporter dropping a merge field or an
+    // emoji into the draft they are editing is the canonical edited send
+    // this stamp exists to capture, so these two must leave it alone.
+    rememberInsertedDraft(4471, { cycleId: 2, draftVersion: 3 });
+    const wrapper = await mountEditor();
+
+    ['variable', 'emoji'].forEach(type => {
+      try {
+        wrapper.vm.insertSpecialContent(type, 'placeholder');
+      } catch {
+        // Same incidental getContentNode()/range throw as the canned-response
+        // test above — irrelevant to what this test checks.
+      }
+    });
+
+    expect(insertedDraftFor(4471)).toEqual({ cycleId: 2, draftVersion: 3 });
+  });
+
   it('leaves an unrelated conversation alone', async () => {
     rememberInsertedDraft(9999, { cycleId: 5, draftVersion: 1 });
 

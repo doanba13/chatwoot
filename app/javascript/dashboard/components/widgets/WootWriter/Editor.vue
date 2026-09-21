@@ -768,16 +768,21 @@ function insertContentIntoEditor(content, defaultFrom = 0) {
  * @param {Object|string} content - The content to insert, depending on the type.
  */
 function insertSpecialContent(type, content) {
-  // A canned response, a mention, a variable, an emoji, a tool — none of
-  // these come from the draft dock, and every one of them changes what is in
-  // the editor. A gotchu stamp remembered for a draft the supporter is no
-  // longer looking at must not ride along onto whatever this inserts.
-  // Unconditional, ahead of the editorView guard below, on purpose: nothing
-  // is inserted without editorView, so nothing needs to be invalidated
-  // either, but a stray call clearing an already-empty slot costs nothing —
-  // and it keeps this the one place every future special-content type
-  // inherits the clear from, without needing its own line here.
-  forgetInsertedDraft(props.conversationId);
+  // Only a canned response clears the stamp here. getContentNode() below
+  // resolves every one of these five types to insertAtCursor's
+  // tr.replaceWith(from, to, node) over the TYPED TRIGGER SPAN only (`@jo`,
+  // `/greet`, `{{`, `:`) — mention, variable, emoji and tool are in-place
+  // decorations dropped into whatever the supporter is already writing, and
+  // mechanically cannot replace or constitute the draft the way a canned
+  // response's templated body commonly does. A supporter dropping a merge
+  // field or an emoji into the draft they are editing is the CANONICAL
+  // edited send this stamp exists to capture — clearing on those four would
+  // silently drop exactly that population and buy no attribution safety in
+  // return, since none of them can carry the reply's substance. Resist
+  // widening this back to unconditional: it reads safer and is not.
+  if (type === 'cannedResponse') {
+    forgetInsertedDraft(props.conversationId);
+  }
 
   if (!editorView) {
     return;
