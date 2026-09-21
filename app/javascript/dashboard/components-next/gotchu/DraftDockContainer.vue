@@ -325,14 +325,26 @@ const onInsert = () => {
     text
   );
 
-  // ReplyBox's own insert handler clears any stamp left over from an earlier
-  // draft the moment it receives this event, and mitt delivers it
-  // synchronously — so that has already happened by the time this line runs,
-  // and recording here, after, is what makes this write the one that stands.
-  rememberInsertedDraft(props.conversationId, {
-    cycleId,
-    draftVersion: draftVersion.value,
-  });
+  // The composer's own insert funnels (Editor.vue's insertContentIntoEditor
+  // / insertSpecialContent for the rich editor and canned responses,
+  // ReplyBox's addIntoEditor for the plain one) clear any stamp left over
+  // from an earlier draft the moment they receive this event, and mitt
+  // delivers it synchronously — so that has already happened by the time
+  // this line runs, and recording here, after, is what makes this write the
+  // one that stands. DraftDockContainer.spec.js's "records after the insert
+  // event fires, not before" pins this ordering: swapping these two
+  // statements makes that test fail.
+  //
+  // A missing version means no stamp at all, not a stamp with a hole in it —
+  // the receiver validates both fields as integers and would reject a
+  // partial one anyway, so remembering it here would only buy a confusing
+  // log line downstream.
+  if (Number.isInteger(cycleId) && Number.isInteger(draftVersion.value)) {
+    rememberInsertedDraft(props.conversationId, {
+      cycleId,
+      draftVersion: draftVersion.value,
+    });
+  }
 };
 
 /**

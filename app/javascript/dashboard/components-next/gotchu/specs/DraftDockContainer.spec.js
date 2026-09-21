@@ -9,6 +9,11 @@ import { DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER } from 'dashboard/composables/
 import AiDraftAPI from 'dashboard/api/gotchu/aiDraft';
 import DraftDockContainer from '../DraftDockContainer.vue';
 import DraftInstruct from '../DraftInstruct.vue';
+import {
+  forgetInsertedDraft,
+  insertedDraftFor,
+  rememberInsertedDraft,
+} from '../helpers/insertedDraft';
 
 // The real catalogue. Every assertion in here is about which SENTENCE an agent
 // reads, and under `t: key => key` a wrong mapping and a right one both pass.
@@ -92,6 +97,13 @@ beforeEach(() => {
 afterEach(() => {
   wrappers.splice(0).forEach(wrapper => wrapper.unmount());
   vi.useRealTimers();
+  // insertedDraft.js is a module-level Map, not component state, so it
+  // outlives the wrapper it was written by. Every test in this file mounts
+  // with the same default conversationId (3580), and the insert tests below
+  // genuinely call onInsert — so without this, a leftover stamp from one
+  // test is exactly the kind of thing the next test's assertions would trip
+  // over without ever touching insertedDraft.js itself.
+  forgetInsertedDraft(3580);
 });
 
 describe('DraftDockContainer', () => {
@@ -509,6 +521,112 @@ describe('DraftDockContainer insert', () => {
     await mountContainer();
 
     expect(emit).not.toHaveBeenCalled();
+  });
+});
+
+// The provenance stamp Insert hands to Send (content_attributes.gotchu),
+// tracked in ../helpers/insertedDraft.js. DraftDockContainer only ever
+// WRITES to it (on Insert) and CLEARS it (on a poll that moved on) — the
+// funnels that clear it on a different insert live in Editor.vue and
+// ReplyBox.vue, covered in their own specs.
+describe('DraftDockContainer gotchu stamp', () => {
+  beforeEach(() => {
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answer(reviewing(), { version: 1, body })
+    );
+  });
+
+  afterEach(() => {
+    forgetInsertedDraft(9001);
+  });
+
+  it('records the cycle and version on Insert, scoped to this conversation', async () => {
+    const wrapper = await mountContainer({ conversationId: 3580 });
+
+    await wrapper.find('button').trigger('click');
+
+    expect(insertedDraftFor(3580)).toEqual({ cycleId: 2964, draftVersion: 1 });
+    // A supporter with a second conversation open must not have this one's
+    // Insert stamp it too.
+    expect(insertedDraftFor(9001)).toBeNull();
+  });
+
+  it("leaves another conversation's remembered draft untouched", async () => {
+    rememberInsertedDraft(9001, { cycleId: 1, draftVersion: 1 });
+
+    const wrapper = await mountContainer({ conversationId: 3580 });
+    await wrapper.find('button').trigger('click');
+
+    expect(insertedDraftFor(9001)).toEqual({ cycleId: 1, draftVersion: 1 });
+  });
+
+  it('records after the insert event fires, not before — swapping emit and remember breaks this', async () => {
+    // Shaped after the REAL clearing funnels (Editor.vue's
+    // insertContentIntoEditor, ReplyBox's addIntoEditor): clear on every
+    // insert, unconditionally. Registered on the actual bus event so this
+    // test is sensitive to the order onInsert does its two jobs in, not to
+    // how the fake listener happens to be written.
+    const clearOnInsert = () => forgetInsertedDraft(3580);
+    emitter.on(BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR, clearOnInsert);
+    try {
+      const wrapper = await mountContainer({ conversationId: 3580 });
+      await wrapper.find('button').trigger('click');
+
+      // If onInsert ever remembers BEFORE it emits, clearOnInsert above wipes
+      // the write out and this reads null instead.
+      expect(insertedDraftFor(3580)).toEqual({
+        cycleId: 2964,
+        draftVersion: 1,
+      });
+    } finally {
+      emitter.off(BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR, clearOnInsert);
+    }
+  });
+
+  it('clears the memory when a later poll shows a different draft version', async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountContainer({ conversationId: 3580 });
+    await wrapper.find('button').trigger('click');
+    expect(insertedDraftFor(3580)).toEqual({ cycleId: 2964, draftVersion: 1 });
+
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answer(reviewing(), { version: 2, body: 'a redraft' })
+    );
+    await vi.advanceTimersByTimeAsync(15_000);
+    vi.useRealTimers();
+    await flushPromises();
+
+    expect(insertedDraftFor(3580)).toBeNull();
+  });
+
+  it('clears the memory when a later poll shows a different cycle', async () => {
+    // Same version number, different cycle: a version-only comparison would
+    // read this as unchanged, but it is a different draft entirely — a new
+    // cycle's own version numbering starts at 1 again.
+    vi.useFakeTimers();
+    const wrapper = await mountContainer({ conversationId: 3580 });
+    await wrapper.find('button').trigger('click');
+    expect(insertedDraftFor(3580)).toEqual({ cycleId: 2964, draftVersion: 1 });
+
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answer(reviewing({ id: 3001 }), { version: 1, body: 'a new cycle' })
+    );
+    await vi.advanceTimersByTimeAsync(15_000);
+    vi.useRealTimers();
+    await flushPromises();
+
+    expect(insertedDraftFor(3580)).toBeNull();
+  });
+
+  it('does not remember an incomplete stamp when the draft carries no valid version', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue(answer(reviewing(), { body }));
+
+    const wrapper = await mountContainer({ conversationId: 3580 });
+    await wrapper.find('button').trigger('click');
+
+    // Text still goes to the editor either way (asserted in the insert
+    // block above); what must not happen is a stamp missing draftVersion.
+    expect(insertedDraftFor(3580)).toBeNull();
   });
 });
 

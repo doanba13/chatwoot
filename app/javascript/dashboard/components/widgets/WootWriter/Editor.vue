@@ -29,6 +29,7 @@ import { useAlert } from 'dashboard/composables';
 import { vOnClickOutside } from '@vueuse/components';
 
 import { BUS_EVENTS } from 'shared/constants/busEvents';
+import { forgetInsertedDraft } from 'dashboard/components-next/gotchu/helpers/insertedDraft';
 import {
   CONVERSATION_EVENTS,
   CAPTAIN_EVENTS,
@@ -738,6 +739,16 @@ async function insertNodeIntoEditor(node, from = 0, to = 0) {
 }
 
 function insertContentIntoEditor(content, defaultFrom = 0) {
+  // The only listener for INSERT_INTO_RICH_EDITOR — the draft dock's own
+  // Insert on a WEB/EMAIL inbox emits this, and so does a Copilot suggestion
+  // (CopilotAssistantMessage.vue). Whichever one it is, this replaces
+  // whatever was in the editor, so a gotchu stamp remembered for an earlier
+  // draft must not survive onto it. mitt delivers events synchronously, so
+  // when the dock's own Insert is the caller, this clears first and the
+  // dock's handler records its fresh stamp right after — this is never the
+  // last write for that case.
+  forgetInsertedDraft(props.conversationId);
+
   const from = defaultFrom || editorView.state.selection.from || 0;
   // Use the editor's current schema to ensure compatibility with buildMessageSchema
   const currentSchema = editorView.state.schema;
@@ -757,6 +768,17 @@ function insertContentIntoEditor(content, defaultFrom = 0) {
  * @param {Object|string} content - The content to insert, depending on the type.
  */
 function insertSpecialContent(type, content) {
+  // A canned response, a mention, a variable, an emoji, a tool — none of
+  // these come from the draft dock, and every one of them changes what is in
+  // the editor. A gotchu stamp remembered for a draft the supporter is no
+  // longer looking at must not ride along onto whatever this inserts.
+  // Unconditional, ahead of the editorView guard below, on purpose: nothing
+  // is inserted without editorView, so nothing needs to be invalidated
+  // either, but a stray call clearing an already-empty slot costs nothing —
+  // and it keeps this the one place every future special-content type
+  // inherits the clear from, without needing its own line here.
+  forgetInsertedDraft(props.conversationId);
+
   if (!editorView) {
     return;
   }

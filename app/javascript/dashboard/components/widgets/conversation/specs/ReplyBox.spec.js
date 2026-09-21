@@ -2,8 +2,20 @@ import { shallowMount } from '@vue/test-utils';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 import { nextTick } from 'vue';
 import { createStore } from 'vuex';
+import { emitter } from 'shared/helpers/mitt';
+import { BUS_EVENTS } from 'shared/constants/busEvents';
 import ReplyBox from '../ReplyBox.vue';
 import WhatsappTemplates from '../WhatsappTemplates/Modal.vue';
+import {
+  forgetInsertedDraft,
+  insertedDraftFor,
+  rememberInsertedDraft,
+} from 'dashboard/components-next/gotchu/helpers/insertedDraft';
+
+// Only the gotchu stamp tests below dispatch this; every other test in this
+// file never sends a message, so adding it here does not change what any
+// existing test observes.
+const createPendingMessageAndSend = vi.fn().mockResolvedValue({ data: {} });
 
 const CHANNELS = [
   { name: 'WhatsApp Cloud', inbox: { channel_type: 'Channel::Whatsapp' } },
@@ -62,6 +74,8 @@ const buildStore = ({
       'draftMessages/setReplyEditorMode': ({ commit }, { mode }) =>
         commit('setReplyEditorMode', mode),
       'draftMessages/set': ({ commit }, payload) => commit('setDraft', payload),
+      createPendingMessageAndSend: (_, payload) =>
+        createPendingMessageAndSend(payload),
     },
     getters: {
       getSelectedChat: s => s.chat,
@@ -430,5 +444,66 @@ describe('ReplyBox', () => {
         REPLY_EDITOR_MODES.NOTE
       );
     });
+  });
+});
+
+// The other half of the Critical review finding: INSERT_INTO_RICH_EDITOR and
+// the canned-response path are covered against the real Editor.vue in its
+// own Editor.spec.js, because that is genuinely where those funnels live —
+// see insertContentIntoEditor / insertSpecialContent there. What belongs
+// here is what ReplyBox itself still owns: the ONLY listener for
+// INSERT_INTO_NORMAL_EDITOR (addIntoEditor), and the stamp/discard behaviour
+// in sendMessage. Both are driven through the real, mounted component —
+// the real emitter registration from ReplyBox's own mounted() hook for the
+// first, the real sendMessage method for the second — not a hand-rolled
+// stand-in for either.
+describe('ReplyBox gotchu stamp', () => {
+  afterEach(() => {
+    createPendingMessageAndSend.mockClear();
+    forgetInsertedDraft(1); // REPLIABLE.id
+  });
+
+  it('clears the remembered stamp on the real INSERT_INTO_NORMAL_EDITOR event', () => {
+    rememberInsertedDraft(1, { cycleId: 1, draftVersion: 1 });
+    mountWith({ inbox: { channel_type: 'Channel::FacebookPage' } });
+
+    // The actual event ReplyBox registers `this.addIntoEditor` against in
+    // mounted() — not a call to wrapper.vm.addIntoEditor(), which would only
+    // prove the method works, not that anything is still wired to it.
+    emitter.emit(BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR, 'a canned response');
+
+    expect(insertedDraftFor(1)).toBeNull();
+  });
+
+  it('sends an unstamped payload when nothing was inserted', async () => {
+    const { wrapper } = mountWith({});
+
+    await wrapper.vm.sendMessage({
+      conversationId: 1,
+      message: 'an ordinary reply',
+      private: false,
+    });
+
+    expect(createPendingMessageAndSend).toHaveBeenCalledTimes(1);
+    expect(
+      createPendingMessageAndSend.mock.calls[0][0].contentAttributes
+    ).toBeUndefined();
+  });
+
+  it('stamps content_attributes.gotchu on send when a draft is remembered, then discards it', async () => {
+    rememberInsertedDraft(1, { cycleId: 55, draftVersion: 2 });
+    const { wrapper } = mountWith({});
+
+    await wrapper.vm.sendMessage({
+      conversationId: 1,
+      message: 'edited draft text',
+      private: false,
+    });
+
+    expect(
+      createPendingMessageAndSend.mock.calls[0][0].contentAttributes
+    ).toEqual({ gotchu: { cycleId: 55, draftVersion: 2 } });
+    // Requirement 4: the next send in this conversation is not this draft.
+    expect(insertedDraftFor(1)).toBeNull();
   });
 });

@@ -20,7 +20,7 @@ import QuotedEmailPreview from './QuotedEmailPreview.vue';
 import DraftDockContainer from 'dashboard/components-next/gotchu/DraftDockContainer.vue';
 import {
   forgetInsertedDraft,
-  insertedDraftFor,
+  stampSendPayload,
 } from 'dashboard/components-next/gotchu/helpers/insertedDraft';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 import WootMessageEditor from 'dashboard/components/widgets/WootWriter/Editor.vue';
@@ -983,20 +983,14 @@ export default {
       editorMessage = '',
       copilotAcceptedMessage = ''
     ) {
-      // Present only when the draft dock's own Insert is still what is in the
-      // editor for this conversation (see addIntoEditor and
-      // DraftDockContainer's staleness check) — absent for every ordinary
-      // reply, which is what keeps an unstamped send an ordinary one.
-      const insertedDraft = insertedDraftFor(this.conversationId);
-      const payloadToSend = insertedDraft
-        ? {
-            ...messagePayload,
-            contentAttributes: {
-              ...messagePayload.contentAttributes,
-              gotchu: insertedDraft,
-            },
-          }
-        : messagePayload;
+      // Stamps content_attributes.gotchu when the draft dock's own Insert is
+      // still what is in the editor for this conversation (see Editor.vue's
+      // insert funnels and DraftDockContainer's staleness check), and
+      // returns the payload untouched otherwise.
+      const payloadToSend = stampSendPayload(
+        this.conversationId,
+        messagePayload
+      );
 
       try {
         await this.$store.dispatch(
@@ -1047,14 +1041,16 @@ export default {
       this.updateEditorSelectionWith = '';
     },
     addIntoEditor(content) {
-      // This is the shared landing spot for INSERT_INTO_NORMAL_EDITOR /
-      // INSERT_INTO_RICH_EDITOR — the draft dock's own Insert, a Copilot
-      // suggestion, and a canned response all arrive here. Any of the latter
-      // two replaces what the draft dock put in the editor, so a gotchu stamp
-      // remembered for that draft must not survive onto it. mitt delivers
-      // events synchronously, so when Insert is the caller this runs and
-      // clears first, and the dock's own handler records its fresh stamp
-      // right after — this is never the last write for that case.
+      // This is the ONLY listener for INSERT_INTO_NORMAL_EDITOR (the plain,
+      // non-rich-text editor path — Editor.vue's own INSERT_INTO_RICH_EDITOR
+      // listener and its canned-response funnel are separate and clear their
+      // own stamp; see Editor.vue's insertContentIntoEditor /
+      // insertSpecialContent). Whatever replaces the editor's content here —
+      // the draft dock's own Insert, or anything else routed through this
+      // event — must not leave a gotchu stamp for text it did not put there.
+      // mitt delivers events synchronously, so when Insert is the caller this
+      // runs and clears first, and the dock's own handler records its fresh
+      // stamp right after — this is never the last write for that case.
       forgetInsertedDraft(this.conversationId);
       this.updateEditorSelectionWith = content;
       this.onFocus();
