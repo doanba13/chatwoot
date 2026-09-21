@@ -12,6 +12,11 @@ import {
   errorView,
   loadingView,
 } from './helpers/draftView';
+import {
+  forgetInsertedDraft,
+  insertedDraftFor,
+  rememberInsertedDraft,
+} from './helpers/insertedDraft';
 
 // What the dock is wired to. The dock itself stays props-only — it is the thing
 // the design gallery mounts and the thing a spec can drive one state at a time —
@@ -107,6 +112,15 @@ const POLL_INTERVAL_MS = 15 * 1000;
 const view = ref(loadingView());
 
 /**
+ * The version number behind whatever `view.text` currently shows, or null.
+ *
+ * Not part of `view` — the dock renders none of it — but Insert and the
+ * staleness check in `read()` both need the exact number the gateway just
+ * returned, to name on a send and to notice when it has moved on.
+ */
+const draftVersion = ref(null);
+
+/**
  * Whether Rails can forward an instruction at all — its answer, per read, not a
  * guess. False until a read says otherwise, so a browser that has not heard yet,
  * or one whose read failed, offers nothing.
@@ -186,10 +200,31 @@ const read = async () => {
     const { data } = await AiDraftAPI.getDraft(readFor);
     if (readFor !== props.conversationId) return;
     view.value = draftViewFrom(data);
+    draftVersion.value =
+      Number.isInteger(data?.draft?.version) && data.draft.version > 0
+        ? data.draft.version
+        : null;
     // Server config, read every time rather than cached: an operator who sets the
     // credential and restarts Rails gets the field within a poll, and one who
     // takes it away loses it just as fast.
     instructAvailable.value = data?.capabilities?.instruct === true;
+
+    // A newer draft can land on this very poll after Insert already handed
+    // the old text to the composer — the dock polls every 15s and nothing
+    // stops a redraft finishing in between. Stamping that old version on a
+    // send would claim the supporter reviewed text they never saw, which is
+    // the reply worker's invariant 6, reached here by the browser's own poll
+    // instead of a stale approval. Once what the gateway just returned stops
+    // matching what Insert remembered, the memory is wrong for any send from
+    // here on and has to go quiet rather than carry on.
+    const remembered = insertedDraftFor(readFor);
+    if (
+      remembered &&
+      (remembered.cycleId !== view.value.cycleId ||
+        remembered.draftVersion !== draftVersion.value)
+    ) {
+      forgetInsertedDraft(readFor);
+    }
   } catch (error) {
     if (readFor !== props.conversationId) return;
     instructAvailable.value = false;
@@ -233,6 +268,10 @@ const onVisibilityChange = () => {
 // draft stays above the editor until the new read lands.
 const restart = () => {
   view.value = loadingView();
+  // The previous conversation's version number is meaningless here — it
+  // would otherwise sit stale until the fresh read lands, and Insert reads
+  // it directly rather than through `view`.
+  draftVersion.value = null;
   // Everything about the previous conversation goes, including a half-typed
   // instruction: it was about another customer's draft. `submitting` is cleared
   // here rather than by the request still in flight for that conversation, which
@@ -276,7 +315,7 @@ const insertIntoRichEditor = computed(() =>
 );
 
 const onInsert = () => {
-  const { text } = view.value;
+  const { text, cycleId } = view.value;
   if (!text) return;
 
   emitter.emit(
@@ -285,6 +324,15 @@ const onInsert = () => {
       : BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR,
     text
   );
+
+  // ReplyBox's own insert handler clears any stamp left over from an earlier
+  // draft the moment it receives this event, and mitt delivers it
+  // synchronously — so that has already happened by the time this line runs,
+  // and recording here, after, is what makes this write the one that stands.
+  rememberInsertedDraft(props.conversationId, {
+    cycleId,
+    draftVersion: draftVersion.value,
+  });
 };
 
 /**

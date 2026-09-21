@@ -18,6 +18,10 @@ import MessageSignatureMissingAlert from './MessageSignatureMissingAlert.vue';
 import ReplyBoxBanner from './ReplyBoxBanner.vue';
 import QuotedEmailPreview from './QuotedEmailPreview.vue';
 import DraftDockContainer from 'dashboard/components-next/gotchu/DraftDockContainer.vue';
+import {
+  forgetInsertedDraft,
+  insertedDraftFor,
+} from 'dashboard/components-next/gotchu/helpers/insertedDraft';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 import WootMessageEditor from 'dashboard/components/widgets/WootWriter/Editor.vue';
 import AudioRecorder from 'dashboard/components/widgets/WootWriter/AudioRecorder.vue';
@@ -979,14 +983,31 @@ export default {
       editorMessage = '',
       copilotAcceptedMessage = ''
     ) {
+      // Present only when the draft dock's own Insert is still what is in the
+      // editor for this conversation (see addIntoEditor and
+      // DraftDockContainer's staleness check) — absent for every ordinary
+      // reply, which is what keeps an unstamped send an ordinary one.
+      const insertedDraft = insertedDraftFor(this.conversationId);
+      const payloadToSend = insertedDraft
+        ? {
+            ...messagePayload,
+            contentAttributes: {
+              ...messagePayload.contentAttributes,
+              gotchu: insertedDraft,
+            },
+          }
+        : messagePayload;
+
       try {
         await this.$store.dispatch(
           'createPendingMessageAndSend',
-          messagePayload
+          payloadToSend
         );
         emitter.emit(BUS_EVENTS.SCROLL_TO_MESSAGE);
         emitter.emit(BUS_EVENTS.MESSAGE_SENT);
         this.removeFromDraft();
+        // The next send in this conversation is not this draft.
+        forgetInsertedDraft(this.conversationId);
         this.sendMessageAnalyticsData(messagePayload.private, {
           editorMessage,
           copilotAcceptedMessage,
@@ -1026,6 +1047,15 @@ export default {
       this.updateEditorSelectionWith = '';
     },
     addIntoEditor(content) {
+      // This is the shared landing spot for INSERT_INTO_NORMAL_EDITOR /
+      // INSERT_INTO_RICH_EDITOR — the draft dock's own Insert, a Copilot
+      // suggestion, and a canned response all arrive here. Any of the latter
+      // two replaces what the draft dock put in the editor, so a gotchu stamp
+      // remembered for that draft must not survive onto it. mitt delivers
+      // events synchronously, so when Insert is the caller this runs and
+      // clears first, and the dock's own handler records its fresh stamp
+      // right after — this is never the last write for that case.
+      forgetInsertedDraft(this.conversationId);
       this.updateEditorSelectionWith = content;
       this.onFocus();
     },
