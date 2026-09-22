@@ -1,0 +1,481 @@
+require 'rails_helper'
+
+RSpec.describe 'Gotchu Procedures API', type: :request do
+  let(:account) { create(:account) }
+  let(:admin) { create(:user, account: account, role: :administrator) }
+  let(:agent) { create(:user, account: account, role: :agent) }
+  let(:gateway_url) { 'http://gateway.test:8137' }
+  let(:gateway_secret) { 'a-shared-secret' }
+  let(:gesture_secret) { 'a-gesture-secret' }
+  let(:procedures_endpoint) { "#{gateway_url}/api/procedures" }
+  # Every body the gateway was actually sent, parsed. Captured in the stub's
+  # own matcher, the same way the instruct spec does it, so an assertion
+  # about what travelled is about the request that travelled.
+  let(:sent) { [] }
+  let(:valid_params) do
+    { slug: 'return-window', title: 'Return window', body: 'Offer a 30 day return window.', phrases: ['I want to return this'] }
+  end
+
+  def configure_gateway(url: gateway_url, secret: gateway_secret, gesture: gesture_secret)
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_URL', nil).and_return(url)
+    allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return(secret)
+    allow(ENV).to receive(:fetch).with('GOTCHU_GESTURE_SECRET', nil).and_return(gesture)
+  end
+
+  def procedures_url
+    "/api/v1/accounts/#{account.id}/gotchu/procedures"
+  end
+
+  def procedure_url(id)
+    "#{procedures_url}/#{id}"
+  end
+
+  def status_url(id)
+    "#{procedure_url(id)}/status"
+  end
+
+  def replay_url
+    "#{procedures_url}/replay"
+  end
+
+  def stub_list(status: 200, body: { procedures: [] }, query: { secret: gateway_secret })
+    stub_request(:get, procedures_endpoint)
+      .with(query: query, headers: { 'x-gesture-secret' => gesture_secret })
+      .to_return(status: status, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+  end
+
+  def stub_write(url, status: 200, body: {})
+    stub_request(:post, url)
+      .with(query: { secret: gateway_secret }) do |request|
+        sent << JSON.parse(request.body)
+        true
+      end
+      .to_return(status: status, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+  end
+
+  def forwarded_body
+    sent.last
+  end
+
+  describe 'GET /api/v1/accounts/{account.id}/gotchu/procedures' do
+    it 'returns unauthorized for an unauthenticated caller, and never reaches the gateway' do
+      configure_gateway
+
+      get procedures_url
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:get, procedures_endpoint)).not_to have_been_made
+    end
+
+    it 'refuses an agent who is not an administrator' do
+      configure_gateway
+
+      get procedures_url, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:get, procedures_endpoint)).not_to have_been_made
+    end
+
+    context 'when it is an administrator' do
+      it 'sends both credentials, the secret in the query and the gesture secret in the header' do
+        configure_gateway
+        stub_list
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:get, procedures_endpoint)
+            .with(query: { secret: gateway_secret }, headers: { 'x-gesture-secret' => gesture_secret })
+        ).to have_been_made
+      end
+
+      it 'returns the gateway list merged with capabilities' do
+        configure_gateway
+        stub_list(body: { procedures: [{ id: 1, slug: 'return-window' }] })
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['procedures']).to eq([{ 'id' => 1, 'slug' => 'return-window' }])
+        expect(response.parsed_body['capabilities']).to eq({ 'procedures' => true })
+      end
+
+      it 'passes a store filter through as a query param' do
+        configure_gateway
+        stub_list(query: { secret: gateway_secret, store: 'persoliebe' }, body: { procedures: [] })
+
+        get "#{procedures_url}?store=persoliebe", headers: admin.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:get, procedures_endpoint).with(query: { secret: gateway_secret, store: 'persoliebe' })
+        ).to have_been_made
+      end
+
+      it 'reports the capability as unavailable when the gateway is not configured' do
+        configure_gateway(url: nil)
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['capabilities']).to eq({ 'procedures' => false })
+        expect(response.parsed_body['procedures']).to eq([])
+      end
+
+      it 'never reaches the gateway when it is not configured' do
+        configure_gateway(url: nil)
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(a_request(:get, %r{.*/api/procedures.*})).not_to have_been_made
+      end
+
+      it 'reports an unknown store filter as a validation error, not a crash' do
+        configure_gateway
+        stub_list(query: { secret: gateway_secret, store: 'nope' }, status: 400, body: { error: 'unknown store: nope' })
+
+        get "#{procedures_url}?store=nope", headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['reason']).to eq('invalid')
+      end
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/gotchu/procedures' do
+    it 'refuses an agent who is not an administrator' do
+      configure_gateway
+
+      post procedures_url, params: valid_params, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:post, procedures_endpoint)).not_to have_been_made
+    end
+
+    context 'when it is an administrator' do
+      it 'creates the procedure and relays the gateway response' do
+        configure_gateway
+        stub_write(procedures_endpoint, body: { id: 9, slug: 'return-window', status: 'testing', version: 1 })
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq({ 'id' => 9, 'slug' => 'return-window', 'status' => 'testing', 'version' => 1 })
+      end
+
+      it 'takes the actor from the session, never from the body' do
+        configure_gateway
+        stub_write(procedures_endpoint, body: { id: 9 })
+
+        post procedures_url, params: valid_params.merge(actor: 'chatwoot:999'), headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body['actor']).to eq("chatwoot:#{admin.id}")
+      end
+
+      it 'sends both credentials, the secret in the query and the gesture secret in the header' do
+        configure_gateway
+        stub_write(procedures_endpoint, body: { id: 9 })
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:post, procedures_endpoint).with(
+            query: { secret: gateway_secret },
+            headers: { 'x-gesture-secret' => gesture_secret, 'Content-Type' => 'application/json' }
+          )
+        ).to have_been_made
+      end
+
+      it 'forwards slug, title, body, phrases and storeKey, and never a status' do
+        configure_gateway
+        stub_write(procedures_endpoint, body: { id: 9 })
+
+        post procedures_url, params: valid_params.merge(store_key: 'persoliebe', status: 'active'),
+                             headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body).to include(
+          'slug' => 'return-window',
+          'title' => 'Return window',
+          'body' => 'Offer a 30 day return window.',
+          'phrases' => ['I want to return this'],
+          'storeKey' => 'persoliebe'
+        )
+        expect(forwarded_body).not_to have_key('status')
+      end
+
+      it 'uses the short gesture timeout, unlike replay' do
+        configure_gateway
+        fake_response = instance_double(HTTParty::Response, code: 200, body: { id: 9 }.to_json)
+        expect(HTTParty).to receive(:post)
+          .with(procedures_endpoint, hash_including(timeout: Gotchu::ProcedureService::TIMEOUT_SECONDS))
+          .and_return(fake_response)
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'reports a duplicate slug as a conflict' do
+        configure_gateway
+        stub_write(procedures_endpoint, status: 409,
+                                        body: { error: 'a procedure with slug "return-window" already exists for this store' })
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:conflict)
+        expect(response.parsed_body['reason']).to eq('duplicate_slug')
+      end
+
+      it 'reports a validation failure from the gateway as unprocessable' do
+        configure_gateway
+        stub_write(procedures_endpoint, status: 400, body: { error: 'slug, title, body and phrases are required' })
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['reason']).to eq('invalid')
+      end
+
+      it 'says it is not configured when a credential is missing' do
+        configure_gateway(gesture: nil)
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:service_unavailable)
+        expect(response.parsed_body['reason']).to eq('unconfigured')
+        expect(a_request(:post, procedures_endpoint)).not_to have_been_made
+      end
+
+      it 'could not confirm, rather than failed, when the gateway does not answer' do
+        configure_gateway
+        stub_request(:post, procedures_endpoint).with(query: { secret: gateway_secret }).to_timeout
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:bad_gateway)
+        expect(response.parsed_body['reason']).to eq('unavailable')
+      end
+
+      it 'leaks neither the gateway address nor its status code nor its words' do
+        configure_gateway
+        stub_write(procedures_endpoint, status: 502, body: { error: 'could not embed the trigger phrases' })
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:bad_gateway)
+        expect(response.body).not_to include(gateway_url)
+        expect(response.body).not_to include('could not embed')
+        expect(response.body).not_to include('502')
+      end
+    end
+  end
+
+  describe 'PATCH /api/v1/accounts/{account.id}/gotchu/procedures/{id}' do
+    let(:revise_endpoint) { "#{gateway_url}/api/procedures/9/revisions" }
+    let(:revise_params) { { title: 'Return window, updated', body: 'Offer a 45 day return window.', phrases: %w[return refund] } }
+
+    it 'refuses an agent who is not an administrator' do
+      configure_gateway
+
+      patch procedure_url(9), params: revise_params, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:post, revise_endpoint)).not_to have_been_made
+    end
+
+    context 'when it is an administrator' do
+      it 'revises the procedure and relays the gateway response' do
+        configure_gateway
+        stub_write(revise_endpoint, body: { id: 9, version: 2 })
+
+        patch procedure_url(9), params: revise_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq({ 'id' => 9, 'version' => 2 })
+      end
+
+      it 'takes the actor from the session, never from the body, and never forwards a slug' do
+        configure_gateway
+        stub_write(revise_endpoint, body: { id: 9 })
+
+        patch procedure_url(9), params: revise_params.merge(actor: 'chatwoot:999', slug: 'a-different-slug'),
+                                headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body['actor']).to eq("chatwoot:#{admin.id}")
+        expect(forwarded_body).not_to have_key('slug')
+      end
+
+      it 'sends both credentials, the secret in the query and the gesture secret in the header' do
+        configure_gateway
+        stub_write(revise_endpoint, body: { id: 9 })
+
+        patch procedure_url(9), params: revise_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:post, revise_endpoint).with(
+            query: { secret: gateway_secret },
+            headers: { 'x-gesture-secret' => gesture_secret, 'Content-Type' => 'application/json' }
+          )
+        ).to have_been_made
+      end
+
+      it 'reports an unknown procedure id as not found' do
+        configure_gateway
+        stub_write(revise_endpoint, status: 404, body: { error: 'no such procedure' })
+
+        patch procedure_url(9), params: revise_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(response.parsed_body['reason']).to eq('not_found')
+      end
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/gotchu/procedures/{id}/status' do
+    let(:status_endpoint) { "#{gateway_url}/api/procedures/9/status" }
+
+    it 'refuses an agent who is not an administrator' do
+      configure_gateway
+
+      post status_url(9), params: { status: 'active' }, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:post, status_endpoint)).not_to have_been_made
+    end
+
+    context 'when it is an administrator' do
+      it 'changes the status and relays the gateway response' do
+        configure_gateway
+        stub_write(status_endpoint, body: { id: 9, status: 'active' })
+
+        post status_url(9), params: { status: 'active' }, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq({ 'id' => 9, 'status' => 'active' })
+      end
+
+      it 'takes the actor from the session, never from the body' do
+        configure_gateway
+        stub_write(status_endpoint, body: { id: 9 })
+
+        post status_url(9), params: { status: 'active', actor: 'chatwoot:999' }, headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body['actor']).to eq("chatwoot:#{admin.id}")
+      end
+
+      it 'reports an unknown status value as a validation error' do
+        configure_gateway
+        stub_write(status_endpoint, status: 400, body: { error: 'status must be one of: testing|active|archived' })
+
+        post status_url(9), params: { status: 'bogus' }, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['reason']).to eq('invalid')
+      end
+
+      it 'reports an unknown procedure id as not found' do
+        configure_gateway
+        stub_write(status_endpoint, status: 404, body: { error: 'no such procedure' })
+
+        post status_url(9), params: { status: 'active' }, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(response.parsed_body['reason']).to eq('not_found')
+      end
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/gotchu/procedures/replay' do
+    let(:replay_endpoint) { "#{gateway_url}/api/procedures/replay" }
+
+    it 'refuses an agent who is not an administrator' do
+      configure_gateway
+
+      post replay_url, params: {}, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:post, replay_endpoint)).not_to have_been_made
+    end
+
+    context 'when it is an administrator' do
+      it 'sends both credentials, the secret in the query and the gesture secret in the header' do
+        configure_gateway
+        stub_write(replay_endpoint, body: { days: 30, considered: 0, cappedByWindow: false, timedOut: false, byResolution: {}, byProcedure: [] })
+
+        post replay_url, params: {}, headers: admin.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:post, replay_endpoint).with(
+            query: { secret: gateway_secret },
+            headers: { 'x-gesture-secret' => gesture_secret, 'Content-Type' => 'application/json' }
+          )
+        ).to have_been_made
+      end
+
+      it 'takes the actor from the session, never from the body' do
+        configure_gateway
+        stub_write(replay_endpoint, body: { days: 30, considered: 0, cappedByWindow: false, timedOut: false, byResolution: {}, byProcedure: [] })
+
+        post replay_url, params: { actor: 'chatwoot:999' }, headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body['actor']).to eq("chatwoot:#{admin.id}")
+      end
+
+      it 'never sends a sample parameter — sampling was removed from the HTTP surface' do
+        configure_gateway
+        stub_write(replay_endpoint, body: { days: 30, considered: 0, cappedByWindow: false, timedOut: false, byResolution: {}, byProcedure: [] })
+
+        post replay_url, params: { sample: 5 }, headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body).not_to have_key('sample')
+      end
+
+      it 'forwards optional days, storeKey and procedureId filters' do
+        configure_gateway
+        stub_write(replay_endpoint, body: { days: 7, considered: 0, cappedByWindow: false, timedOut: false, byResolution: {}, byProcedure: [] })
+
+        post replay_url, params: { days: 7, store_key: 'persoliebe', procedure_id: 4 },
+                         headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body).to include('days' => 7, 'storeKey' => 'persoliebe', 'procedureId' => 4)
+      end
+
+      it 'relays a timed-out, capped result so the screen can say the scan did not finish' do
+        configure_gateway
+        stub_write(replay_endpoint, body: { days: 30, considered: 200, cappedByWindow: true, timedOut: true, byResolution: {}, byProcedure: [] })
+
+        post replay_url, params: {}, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['timedOut']).to be(true)
+        expect(response.parsed_body['cappedByWindow']).to be(true)
+        expect(response.parsed_body['considered']).to eq(200)
+      end
+
+      it 'uses a timeout comfortably above the gateway replay budget, unlike the other routes' do
+        configure_gateway
+        fake_response = instance_double(
+          HTTParty::Response, code: 200,
+                              body: { days: 30, considered: 0, cappedByWindow: false, timedOut: false, byResolution: {}, byProcedure: [] }.to_json
+        )
+        expect(HTTParty).to receive(:post)
+          .with(replay_endpoint, hash_including(timeout: Gotchu::ProcedureService::REPLAY_TIMEOUT_SECONDS))
+          .and_return(fake_response)
+
+        post replay_url, params: {}, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'could not confirm, rather than failed, when the gateway does not answer' do
+        configure_gateway
+        stub_request(:post, replay_endpoint).with(query: { secret: gateway_secret }).to_timeout
+
+        post replay_url, params: {}, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:bad_gateway)
+        expect(response.parsed_body['reason']).to eq('unavailable')
+      end
+    end
+  end
+end

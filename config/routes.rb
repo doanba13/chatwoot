@@ -292,6 +292,23 @@ Rails.application.routes.draw do
           resources :custom_attribute_definitions, only: [:index, :show, :create, :update, :destroy]
           resources :custom_filters, only: [:index, :show, :create, :update, :destroy]
           resource :branded_email_layout, only: [:show, :update]
+          # Account-level, not nested under conversations: a procedure is
+          # merchant-authored config that applies across every conversation a
+          # store gets, not a per-conversation gesture like ai_draft/ai_draft_instruction.
+          namespace :gotchu do
+            resources :procedures, only: [:index, :create, :update] do
+              member do
+                post :status
+              end
+              collection do
+                # A collection route, not a member one: a replay answers "what
+                # would my whole procedure set have matched", scored over the set,
+                # not one procedure. Narrowing to a single procedure is a
+                # procedureId field in the body, not a narrower URL.
+                post :replay
+              end
+            end
+          end
           resources :inboxes, only: [:index, :show, :create, :update, :destroy] do
             get :assignable_agents, on: :member
             get :campaigns, on: :member
