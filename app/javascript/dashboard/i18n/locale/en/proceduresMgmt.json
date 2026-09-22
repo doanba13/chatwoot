@@ -1,0 +1,110 @@
+{
+  "PROCEDURES_MGMT": {
+    "HEADER": "Procedures",
+    "HEADER_BTN_TXT": "New procedure",
+    "DESCRIPTION": "Procedures are merchant-authored instructions Gotchu follows when a customer message matches a trigger phrase you write. Write one, test it against recent conversations with Replay, then activate it.",
+    "LOADING": "Fetching procedures",
+    "SEARCH_PLACEHOLDER": "Search procedures...",
+    "NO_RESULTS": "No procedures found matching your search",
+    "COUNT": "{n} procedure | {n} procedures",
+    "LIST": {
+      "404": "There are no procedures yet.",
+      "GLOBAL": "All stores",
+      "TABLE_HEADER": {
+        "SLUG": "Slug",
+        "TITLE": "Title",
+        "STORE": "Store",
+        "STATUS": "Status",
+        "TRIGGERS": "Triggers",
+        "ACTIONS": "Actions"
+      }
+    },
+    "STATUS": {
+      "TESTING": "Testing",
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived",
+      "API": {
+        "SUCCESS_MESSAGE": "Procedure status updated"
+      }
+    },
+    "ACTIONS": {
+      "EDIT": "Edit",
+      "ACTIVATE": "Activate",
+      "RETURN_TO_TESTING": "Return to testing",
+      "ARCHIVE": "Archive",
+      "REPLAY": "Replay"
+    },
+    "UNCONFIGURED": {
+      "DESCRIPTION": "Procedures are not configured on this Chatwoot. Set the following on the gateway and restart it to turn this on:"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Procedures are not configured on this Chatwoot, so nothing was sent.",
+      "UNAVAILABLE": "Could not confirm the request reached Gotchu. Check the gateway before trying again.",
+      "INVALID": "Gotchu rejected this procedure. Check the slug format, the length limits, and that the title, body and trigger phrases don't name a specific customer or order.",
+      "DUPLICATE_SLUG": "A procedure with this slug already exists for this store.",
+      "NOT_FOUND": "This procedure no longer exists. Reload the list."
+    },
+    "FORM": {
+      "SLUG": {
+        "LABEL": "Slug",
+        "PLACEHOLDER": "return_window",
+        "HINT": "Lowercase letters, numbers and underscores only, 3-40 characters.",
+        "IMMUTABLE": "The slug is set on creation and cannot be changed.",
+        "REQUIRED_ERROR": "A slug is required.",
+        "PATTERN_ERROR": "Must match ^[a-z0-9_]{3,40}$ -- lowercase letters, numbers and underscores only, 3-40 characters."
+      },
+      "TITLE": {
+        "LABEL": "Title",
+        "PLACEHOLDER": "Return window",
+        "REQUIRED_ERROR": "A title is required.",
+        "LENGTH_ERROR": "Title must be at most 100 characters."
+      },
+      "BODY": {
+        "LABEL": "Body",
+        "PLACEHOLDER": "What the desk should do for this case...",
+        "REQUIRED_ERROR": "A body is required.",
+        "LENGTH_ERROR": "Body must be at most 4000 characters."
+      },
+      "PHRASES": {
+        "LABEL": "Trigger phrases",
+        "PLACEHOLDER": "Type a phrase and press Enter",
+        "HINT": "How a customer might ask for this, in their own words. Up to {max} phrases.",
+        "COUNT": "{count} of {max} phrases",
+        "MIN_ERROR": "At least one trigger phrase is required.",
+        "MAX_ERROR": "At most 12 trigger phrases are allowed."
+      },
+      "CANCEL": "Cancel"
+    },
+    "CREATE": {
+      "DESCRIPTION": "A new procedure starts in Testing. It only reaches drafts once you activate it.",
+      "SUBMIT": "Create procedure",
+      "API": {
+        "SUCCESS_MESSAGE": "Procedure created, in Testing"
+      }
+    },
+    "EDIT": {
+      "VERSION_LABEL": "Version {version}",
+      "SUBMIT": "Save new version",
+      "NOT_FOUND": "That procedure no longer exists.",
+      "API": {
+        "SUCCESS_MESSAGE": "Procedure updated"
+      }
+    },
+    "REPLAY": {
+      "TITLE": "Replay results",
+      "SCOPE": "Scanned the last {days} days ({considered} conversations).",
+      "SCOPE_CAPPED": "Scanned the last {considered} conversations -- more exist in the window than this scan covers.",
+      "TIMED_OUT": "The scan did not finish in time. These numbers are partial.",
+      "RESOLUTION_HEADER": "Matches by resolution",
+      "NO_MATCHES": "No conversations were scored.",
+      "RESOLUTION": {
+        "MATCHED": "Matched",
+        "BELOW_FLOOR": "Below floor",
+        "AMBIGUOUS": "Ambiguous",
+        "NONE_ACTIVE": "No active procedures",
+        "UNAVAILABLE": "Matcher unavailable"
+      },
+      "CLOSE": "Close"
+    }
+  }
+}
