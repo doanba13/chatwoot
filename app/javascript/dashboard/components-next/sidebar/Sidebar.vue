@@ -888,6 +888,18 @@ const menuItems = computed(() => {
           to: accountScopedRoute('macros_wrapper'),
         },
         {
+          name: 'Settings Procedures',
+          label: t('SIDEBAR.PROCEDURES'),
+          icon: 'i-lucide-list-checks',
+          activeOn: [
+            'procedures_wrapper',
+            'procedures_list',
+            'procedures_new',
+            'procedures_edit',
+          ],
+          to: accountScopedRoute('procedures_list'),
+        },
+        {
           name: 'Settings Canned Responses',
           label: t('SIDEBAR.CANNED_RESPONSES'),
           icon: 'i-lucide-message-square-quote',

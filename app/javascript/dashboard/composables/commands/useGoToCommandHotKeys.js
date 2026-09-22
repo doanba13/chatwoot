@@ -16,6 +16,7 @@ import {
   ICON_INBOX,
   ICON_LAYOUT_TEMPLATE,
   ICON_LIBRARY,
+  ICON_LIST_CHECKS,
   ICON_MEGAPHONE,
   ICON_MESSAGE_CIRCLE,
   ICON_MESSAGE_QUOTE,
@@ -204,6 +205,13 @@ const GO_TO_COMMANDS = [
     section: SECTION_SETTINGS,
     icon: ICON_TOY_BRICK,
     routeName: 'macros_wrapper',
+  },
+  {
+    id: 'open_procedure_settings',
+    title: 'COMMAND_BAR.COMMANDS.GO_TO_SETTINGS_PROCEDURES',
+    section: SECTION_SETTINGS,
+    icon: ICON_LIST_CHECKS,
+    routeName: 'procedures_list',
   },
   {
     id: 'open_canned_response_settings',

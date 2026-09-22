@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useAlert } from 'dashboard/composables';
@@ -18,15 +18,53 @@ import {
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
+import Select from 'dashboard/components-next/select/Select.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 
 const { t } = useI18n();
 const router = useRouter();
 
+// Not a real store key -- the sentinel a merchant picks to mean "every
+// store", which travels to the API as `store_key: null` (global) rather
+// than as this string. Select's own `modelValue` type has no `null`, so the
+// selection itself is always a plain string and the translation to/from
+// `null` happens only at the API boundary (see `submit` below).
+const GLOBAL_STORE_VALUE = '__global__';
+
 const slug = ref('');
 const title = ref('');
 const body = ref('');
 const phrases = ref([]);
+const storeSelection = ref(GLOBAL_STORE_VALUE);
+
+// The registry's own store keys, carried on GET /api/procedures precisely so
+// this picker never hand-maintains its own copy (task 11 fix round). Starts
+// empty and stays empty if the read fails -- "All stores" is always still a
+// valid, honest choice, so a failed read degrades the picker rather than
+// blocking the form.
+const availableStores = ref([]);
+
+const loadStores = async () => {
+  try {
+    const { data } = await ProceduresAPI.list();
+    availableStores.value = data.stores || [];
+  } catch (error) {
+    useAlert(t(procedureErrorKey(error)));
+  }
+};
+
+const storeOptions = computed(() => [
+  { value: GLOBAL_STORE_VALUE, label: t('PROCEDURES_MGMT.LIST.GLOBAL') },
+  ...availableStores.value.map(key => ({ value: key, label: key })),
+]);
+
+const storeScopeDescription = computed(() =>
+  storeSelection.value === GLOBAL_STORE_VALUE
+    ? t('PROCEDURES_MGMT.FORM.STORE.GLOBAL_DESCRIPTION')
+    : t('PROCEDURES_MGMT.FORM.STORE.SCOPED_DESCRIPTION', {
+        store: storeSelection.value,
+      })
+);
 
 // Errors show once the field has been touched, or once a submit has been
 // attempted -- so a merchant does not see every field turn red before they
@@ -64,6 +102,12 @@ const submit = async () => {
       title: title.value.trim(),
       body: body.value,
       phrases: phrases.value,
+      // The sentinel never travels -- omitted (null) means global, exactly
+      // as ProcedureService#create's own `.compact` expects.
+      store_key:
+        storeSelection.value === GLOBAL_STORE_VALUE
+          ? null
+          : storeSelection.value,
     });
     useAlert(t('PROCEDURES_MGMT.CREATE.API.SUCCESS_MESSAGE'));
     goToList();
@@ -75,6 +119,8 @@ const submit = async () => {
     submitting.value = false;
   }
 };
+
+onBeforeMount(loadStores);
 </script>
 
 <template>
@@ -154,6 +200,16 @@ const submit = async () => {
               max: MAX_PHRASES,
             })
           }}
+        </p>
+      </div>
+
+      <div>
+        <label class="block mb-1 text-sm font-medium text-n-slate-12">
+          {{ t('PROCEDURES_MGMT.FORM.STORE.LABEL') }}
+        </label>
+        <Select v-model="storeSelection" :options="storeOptions" />
+        <p class="mt-1 text-xs text-n-slate-11">
+          {{ storeScopeDescription }}
         </p>
       </div>
 

@@ -73,6 +73,11 @@
         "MIN_ERROR": "At least one trigger phrase is required.",
         "MAX_ERROR": "At most 12 trigger phrases are allowed."
       },
+      "STORE": {
+        "LABEL": "Store",
+        "GLOBAL_DESCRIPTION": "This procedure applies to conversations from any store.",
+        "SCOPED_DESCRIPTION": "This procedure only applies to {store} conversations."
+      },
       "CANCEL": "Cancel"
     },
     "CREATE": {
@@ -84,6 +89,7 @@
     },
     "EDIT": {
       "VERSION_LABEL": "Version {version}",
+      "STORE_SCOPE": "Store: {store}",
       "SUBMIT": "Save new version",
       "NOT_FOUND": "That procedure no longer exists.",
       "API": {

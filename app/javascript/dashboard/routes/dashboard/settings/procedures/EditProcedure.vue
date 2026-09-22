@@ -54,6 +54,14 @@ const formValid = computed(() =>
   })
 );
 
+// Read-only this round -- changing an existing procedure's store is a
+// separate, later piece of work (task 11 fix round).
+const storeScopeLabel = computed(() =>
+  procedure.value?.storeKey
+    ? procedure.value.storeKey
+    : t('PROCEDURES_MGMT.LIST.GLOBAL')
+);
+
 const goToList = () => router.push({ name: 'procedures_list' });
 
 const applyProcedure = data => {
@@ -129,6 +137,12 @@ onBeforeMount(loadProcedure);
         <span class="text-n-slate-9" aria-hidden="true">·</span>
         <span class="text-n-slate-11">
           {{ t(`PROCEDURES_MGMT.STATUS.${procedure.status.toUpperCase()}`) }}
+        </span>
+        <span class="text-n-slate-9" aria-hidden="true">·</span>
+        <span class="text-n-slate-11">
+          {{
+            t('PROCEDURES_MGMT.EDIT.STORE_SCOPE', { store: storeScopeLabel })
+          }}
         </span>
       </div>
 
