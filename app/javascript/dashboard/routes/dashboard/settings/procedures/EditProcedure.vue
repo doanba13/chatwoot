@@ -18,6 +18,7 @@ import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import UnconfiguredNotice from './UnconfiguredNotice.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -31,6 +32,11 @@ const procedureId = computed(() => Number(route.params.procedureId));
 // Index.vue's own read.
 const isLoading = ref(true);
 const procedure = ref(null);
+// Same read carries `capabilities.procedures`, gated here the same way
+// CreateProcedure.vue is (fix round 2) -- a merchant who bookmarked or typed
+// an edit URL directly sees the explanatory empty state rather than "that
+// procedure no longer exists", which would be the wrong reason.
+const proceduresAvailable = ref(true);
 
 const title = ref('');
 const body = ref('');
@@ -75,6 +81,9 @@ const loadProcedure = async () => {
   isLoading.value = true;
   try {
     const { data } = await ProceduresAPI.list();
+    proceduresAvailable.value = data.capabilities?.procedures === true;
+    if (!proceduresAvailable.value) return;
+
     const found = (data.procedures || []).find(p => p.id === procedureId.value);
     if (!found) {
       useAlert(t('PROCEDURES_MGMT.EDIT.NOT_FOUND'));
@@ -122,6 +131,7 @@ onBeforeMount(loadProcedure);
       v-if="isLoading"
       :message="t('PROCEDURES_MGMT.LOADING')"
     />
+    <UnconfiguredNotice v-else-if="!proceduresAvailable" />
 
     <template v-else-if="procedure">
       <div class="flex items-center gap-2 mb-6 text-sm">

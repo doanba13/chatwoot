@@ -20,6 +20,7 @@ import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import UnconfiguredNotice from './UnconfiguredNotice.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -44,12 +45,24 @@ const storeSelection = ref(GLOBAL_STORE_VALUE);
 // blocking the form.
 const availableStores = ref([]);
 
+// This same read carries `capabilities.procedures`, so the form is gated on
+// it the same way Index.vue's list is (fix round 2): a merchant who types
+// this URL directly, bypassing the list's own hidden "New procedure"
+// button, sees the same explanatory empty state rather than a live-looking
+// form that can only fail once they submit it. Optimistic (`true`) until
+// the read answers, matching Index.vue's own posture.
+const isLoading = ref(true);
+const proceduresAvailable = ref(true);
+
 const loadStores = async () => {
   try {
     const { data } = await ProceduresAPI.list();
     availableStores.value = data.stores || [];
+    proceduresAvailable.value = data.capabilities?.procedures === true;
   } catch (error) {
     useAlert(t(procedureErrorKey(error)));
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -125,109 +138,117 @@ onBeforeMount(loadStores);
 
 <template>
   <div class="w-full max-w-2xl py-6 mx-auto">
-    <p class="mb-6 text-body-main text-n-slate-11">
-      {{ t('PROCEDURES_MGMT.CREATE.DESCRIPTION') }}
-    </p>
+    <woot-loading-state
+      v-if="isLoading"
+      :message="t('PROCEDURES_MGMT.LOADING')"
+    />
+    <UnconfiguredNotice v-else-if="!proceduresAvailable" />
 
-    <form class="flex flex-col gap-5" @submit.prevent="submit">
-      <Input
-        v-model="slug"
-        :label="t('PROCEDURES_MGMT.FORM.SLUG.LABEL')"
-        :placeholder="t('PROCEDURES_MGMT.FORM.SLUG.PLACEHOLDER')"
-        :message="
-          showError('slug') && slugErrorKey
-            ? t(slugErrorKey)
-            : t('PROCEDURES_MGMT.FORM.SLUG.HINT')
-        "
-        :message-type="showError('slug') && slugErrorKey ? 'error' : 'info'"
-        @blur="touched.slug = true"
-      />
+    <template v-else>
+      <p class="mb-6 text-body-main text-n-slate-11">
+        {{ t('PROCEDURES_MGMT.CREATE.DESCRIPTION') }}
+      </p>
 
-      <Input
-        v-model="title"
-        :label="t('PROCEDURES_MGMT.FORM.TITLE.LABEL')"
-        :placeholder="t('PROCEDURES_MGMT.FORM.TITLE.PLACEHOLDER')"
-        :message="showError('title') && titleErrorKey ? t(titleErrorKey) : ''"
-        :message-type="showError('title') && titleErrorKey ? 'error' : 'info'"
-        @blur="touched.title = true"
-      />
-
-      <TextArea
-        v-model="body"
-        :label="t('PROCEDURES_MGMT.FORM.BODY.LABEL')"
-        :placeholder="t('PROCEDURES_MGMT.FORM.BODY.PLACEHOLDER')"
-        :max-length="4000"
-        show-character-count
-        auto-height
-        :message="showError('body') && bodyErrorKey ? t(bodyErrorKey) : ''"
-        :message-type="showError('body') && bodyErrorKey ? 'error' : 'info'"
-        @blur="touched.body = true"
-      />
-
-      <div>
-        <label class="block mb-1 text-sm font-medium text-n-slate-12">
-          {{ t('PROCEDURES_MGMT.FORM.PHRASES.LABEL') }}
-        </label>
-        <p class="mb-2 text-xs text-n-slate-11">
-          {{ t('PROCEDURES_MGMT.FORM.PHRASES.HINT', { max: MAX_PHRASES }) }}
-        </p>
-        <div
-          class="px-3 py-2 border rounded-xl"
-          :class="
-            showError('phrases') && phrasesErrorKey
-              ? 'border-n-ruby-9'
-              : 'border-n-weak'
+      <form class="flex flex-col gap-5" @submit.prevent="submit">
+        <Input
+          v-model="slug"
+          :label="t('PROCEDURES_MGMT.FORM.SLUG.LABEL')"
+          :placeholder="t('PROCEDURES_MGMT.FORM.SLUG.PLACEHOLDER')"
+          :message="
+            showError('slug') && slugErrorKey
+              ? t(slugErrorKey)
+              : t('PROCEDURES_MGMT.FORM.SLUG.HINT')
           "
-        >
-          <TagInput
-            v-model="phrases"
-            :placeholder="t('PROCEDURES_MGMT.FORM.PHRASES.PLACEHOLDER')"
-            :disabled="phrases.length >= MAX_PHRASES"
-            allow-create
-            @blur="touched.phrases = true"
+          :message-type="showError('slug') && slugErrorKey ? 'error' : 'info'"
+          @blur="touched.slug = true"
+        />
+
+        <Input
+          v-model="title"
+          :label="t('PROCEDURES_MGMT.FORM.TITLE.LABEL')"
+          :placeholder="t('PROCEDURES_MGMT.FORM.TITLE.PLACEHOLDER')"
+          :message="showError('title') && titleErrorKey ? t(titleErrorKey) : ''"
+          :message-type="showError('title') && titleErrorKey ? 'error' : 'info'"
+          @blur="touched.title = true"
+        />
+
+        <TextArea
+          v-model="body"
+          :label="t('PROCEDURES_MGMT.FORM.BODY.LABEL')"
+          :placeholder="t('PROCEDURES_MGMT.FORM.BODY.PLACEHOLDER')"
+          :max-length="4000"
+          show-character-count
+          auto-height
+          :message="showError('body') && bodyErrorKey ? t(bodyErrorKey) : ''"
+          :message-type="showError('body') && bodyErrorKey ? 'error' : 'info'"
+          @blur="touched.body = true"
+        />
+
+        <div>
+          <label class="block mb-1 text-sm font-medium text-n-slate-12">
+            {{ t('PROCEDURES_MGMT.FORM.PHRASES.LABEL') }}
+          </label>
+          <p class="mb-2 text-xs text-n-slate-11">
+            {{ t('PROCEDURES_MGMT.FORM.PHRASES.HINT', { max: MAX_PHRASES }) }}
+          </p>
+          <div
+            class="px-3 py-2 border rounded-xl"
+            :class="
+              showError('phrases') && phrasesErrorKey
+                ? 'border-n-ruby-9'
+                : 'border-n-weak'
+            "
+          >
+            <TagInput
+              v-model="phrases"
+              :placeholder="t('PROCEDURES_MGMT.FORM.PHRASES.PLACEHOLDER')"
+              :disabled="phrases.length >= MAX_PHRASES"
+              allow-create
+              @blur="touched.phrases = true"
+            />
+          </div>
+          <p
+            v-if="showError('phrases') && phrasesErrorKey"
+            class="mt-1 text-sm text-n-ruby-9"
+          >
+            {{ t(phrasesErrorKey) }}
+          </p>
+          <p v-else class="mt-1 text-xs text-n-slate-11">
+            {{
+              t('PROCEDURES_MGMT.FORM.PHRASES.COUNT', {
+                count: phrases.length,
+                max: MAX_PHRASES,
+              })
+            }}
+          </p>
+        </div>
+
+        <div>
+          <label class="block mb-1 text-sm font-medium text-n-slate-12">
+            {{ t('PROCEDURES_MGMT.FORM.STORE.LABEL') }}
+          </label>
+          <Select v-model="storeSelection" :options="storeOptions" />
+          <p class="mt-1 text-xs text-n-slate-11">
+            {{ storeScopeDescription }}
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <Button
+            faded
+            slate
+            type="button"
+            :label="t('PROCEDURES_MGMT.FORM.CANCEL')"
+            @click="goToList"
+          />
+          <Button
+            type="submit"
+            :label="t('PROCEDURES_MGMT.CREATE.SUBMIT')"
+            :is-loading="submitting"
+            :disabled="submitting"
           />
         </div>
-        <p
-          v-if="showError('phrases') && phrasesErrorKey"
-          class="mt-1 text-sm text-n-ruby-9"
-        >
-          {{ t(phrasesErrorKey) }}
-        </p>
-        <p v-else class="mt-1 text-xs text-n-slate-11">
-          {{
-            t('PROCEDURES_MGMT.FORM.PHRASES.COUNT', {
-              count: phrases.length,
-              max: MAX_PHRASES,
-            })
-          }}
-        </p>
-      </div>
-
-      <div>
-        <label class="block mb-1 text-sm font-medium text-n-slate-12">
-          {{ t('PROCEDURES_MGMT.FORM.STORE.LABEL') }}
-        </label>
-        <Select v-model="storeSelection" :options="storeOptions" />
-        <p class="mt-1 text-xs text-n-slate-11">
-          {{ storeScopeDescription }}
-        </p>
-      </div>
-
-      <div class="flex items-center justify-end gap-2 pt-2">
-        <Button
-          faded
-          slate
-          type="button"
-          :label="t('PROCEDURES_MGMT.FORM.CANCEL')"
-          @click="goToList"
-        />
-        <Button
-          type="submit"
-          :label="t('PROCEDURES_MGMT.CREATE.SUBMIT')"
-          :is-loading="submitting"
-          :disabled="submitting"
-        />
-      </div>
-    </form>
+      </form>
+    </template>
   </div>
 </template>

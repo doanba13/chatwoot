@@ -98,18 +98,10 @@
     },
     "REPLAY": {
       "TITLE": "Replay results",
+      "MATCH_COUNT": "{count} conversation would have matched this procedure. | {count} conversations would have matched this procedure.",
       "SCOPE": "Scanned the last {days} days ({considered} conversations).",
       "SCOPE_CAPPED": "Scanned the last {considered} conversations -- more exist in the window than this scan covers.",
       "TIMED_OUT": "The scan did not finish in time. These numbers are partial.",
-      "RESOLUTION_HEADER": "Matches by resolution",
-      "NO_MATCHES": "No conversations were scored.",
-      "RESOLUTION": {
-        "MATCHED": "Matched",
-        "BELOW_FLOOR": "Below floor",
-        "AMBIGUOUS": "Ambiguous",
-        "NONE_ACTIVE": "No active procedures",
-        "UNAVAILABLE": "Matcher unavailable"
-      },
       "CLOSE": "Close"
     }
   }

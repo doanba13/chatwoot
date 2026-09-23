@@ -6,11 +6,12 @@ import { picoSearch } from '@chatwoot/pico-search';
 
 import ProceduresAPI from 'dashboard/api/gotchu/procedures';
 import { procedureErrorKey } from './errors';
-import { replayScopeView, replayIsPartial } from './replayView';
 
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import UnconfiguredNotice from './UnconfiguredNotice.vue';
+import ReplayResult from './ReplayResult.vue';
 import {
   BaseTable,
   BaseTableRow,
@@ -18,16 +19,6 @@ import {
 } from 'dashboard/components-next/table';
 
 const { t } = useI18n();
-
-// The three env vars the gateway needs, named here rather than only in the
-// locale file, so the empty state and the message stay in step even if one
-// of them is copy-edited on its own -- see GOTCHU_GATEWAY_URL et al. in
-// Gotchu::ProcedureService.available?
-const REQUIRED_ENV_VARS = [
-  'GOTCHU_GATEWAY_URL',
-  'GOTCHU_GATEWAY_SECRET',
-  'GOTCHU_GESTURE_SECRET',
-];
 
 const STATUS_BADGE_CLASS = {
   testing: 'bg-n-slate-3 text-n-slate-11',
@@ -125,31 +116,6 @@ const closeReplayModal = () => {
   showReplayModal.value = false;
 };
 
-const replayScope = computed(() =>
-  replayResult.value ? replayScopeView(replayResult.value) : null
-);
-const replayPartial = computed(() =>
-  replayResult.value ? replayIsPartial(replayResult.value) : false
-);
-
-const RESOLUTIONS = [
-  'matched',
-  'below_floor',
-  'ambiguous',
-  'none_active',
-  'unavailable',
-];
-const resolutionRows = computed(() => {
-  const byResolution = replayResult.value?.byResolution || {};
-  return RESOLUTIONS.filter(key => byResolution[key] !== undefined).map(
-    key => ({
-      key,
-      label: t(`PROCEDURES_MGMT.REPLAY.RESOLUTION.${key.toUpperCase()}`),
-      count: byResolution[key],
-    })
-  );
-});
-
 onBeforeMount(fetchProcedures);
 </script>
 
@@ -178,18 +144,7 @@ onBeforeMount(fetchProcedures);
       </BaseSettingsHeader>
     </template>
     <template #body>
-      <div
-        v-if="!isLoading && !proceduresAvailable"
-        class="flex flex-col items-center justify-center gap-3 py-20 text-center"
-      >
-        <span class="i-lucide-server-off size-10 text-n-slate-9" />
-        <p class="max-w-md mb-0 text-n-slate-11 text-body-main">
-          {{ t('PROCEDURES_MGMT.UNCONFIGURED.DESCRIPTION') }}
-        </p>
-        <code class="px-2 py-1 text-xs rounded bg-n-slate-3 text-n-slate-11">
-          {{ REQUIRED_ENV_VARS.join(', ') }}
-        </code>
-      </div>
+      <UnconfiguredNotice v-if="!isLoading && !proceduresAvailable" />
 
       <BaseTable
         v-else
@@ -264,6 +219,7 @@ onBeforeMount(fetchProcedures);
                     slate
                     sm
                     :is-loading="statusChanging[procedure.id]"
+                    :disabled="statusChanging[procedure.id]"
                     @click="changeStatus(procedure, 'active')"
                   />
                   <Button
@@ -275,6 +231,7 @@ onBeforeMount(fetchProcedures);
                     slate
                     sm
                     :is-loading="statusChanging[procedure.id]"
+                    :disabled="statusChanging[procedure.id]"
                     @click="changeStatus(procedure, 'testing')"
                   />
                   <Button
@@ -284,6 +241,7 @@ onBeforeMount(fetchProcedures);
                     slate
                     sm
                     :is-loading="statusChanging[procedure.id]"
+                    :disabled="statusChanging[procedure.id]"
                     @click="changeStatus(procedure, 'archived')"
                   />
                   <Button
@@ -292,6 +250,7 @@ onBeforeMount(fetchProcedures);
                     slate
                     sm
                     :is-loading="replaying[procedure.id]"
+                    :disabled="replaying[procedure.id]"
                     @click="openReplay(procedure)"
                   />
                 </div>
@@ -310,43 +269,11 @@ onBeforeMount(fetchProcedures);
         />
 
         <div class="flex flex-col gap-4 px-8 pb-8 mt-4">
-          <template v-if="replayResult">
-            <p v-if="replayScope" class="mb-0 text-body-main text-n-slate-11">
-              {{ t(replayScope.key, replayScope.params) }}
-            </p>
-
-            <div
-              v-if="replayPartial"
-              class="flex items-center gap-2 px-3 py-2 text-sm border rounded-lg bg-n-slate-3 border-n-weak text-n-slate-12"
-            >
-              <span class="flex-shrink-0 i-lucide-triangle-alert size-4" />
-              {{ t('PROCEDURES_MGMT.REPLAY.TIMED_OUT') }}
-            </div>
-
-            <div>
-              <h4 class="mb-2 text-sm font-medium text-n-slate-12">
-                {{ t('PROCEDURES_MGMT.REPLAY.RESOLUTION_HEADER') }}
-              </h4>
-              <ul class="flex flex-col gap-1 pl-0 list-none">
-                <li
-                  v-for="row in resolutionRows"
-                  :key="row.key"
-                  class="flex items-center justify-between text-body-main text-n-slate-11"
-                >
-                  <span>{{ row.label }}</span>
-                  <span class="font-medium text-n-slate-12">{{
-                    row.count
-                  }}</span>
-                </li>
-                <li
-                  v-if="!resolutionRows.length"
-                  class="text-body-main text-n-slate-11"
-                >
-                  {{ t('PROCEDURES_MGMT.REPLAY.NO_MATCHES') }}
-                </li>
-              </ul>
-            </div>
-          </template>
+          <ReplayResult
+            v-if="replayResult && replayProcedure"
+            :result="replayResult"
+            :procedure-id="replayProcedure.id"
+          />
 
           <div class="flex justify-end w-full gap-2 px-0 py-2">
             <Button
