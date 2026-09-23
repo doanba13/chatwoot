@@ -87,6 +87,13 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # straight through as the service's `expected_version:` precondition. The
   # gateway itself derives and stamps the procedure's authorised version; no
   # input on this surface can set one (sibling repo invariant 36).
+  #
+  # The gateway treats `expectedVersion` as optional -- it works with none,
+  # just without the precondition check. This proxy does not: its one
+  # caller (ChannelTiers.vue) always has the procedure version it loaded and
+  # always sends it, so a request arriving here without one is either a
+  # broken client or a stale page, and refusing it locally (never reaching
+  # the gateway) is cheaper and clearer than a write going through unguarded.
   def update_binding
     tier = params[:tier].presence
     if tier && ALLOWED_TIERS.exclude?(tier)
@@ -95,11 +102,19 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
       return
     end
 
+    expected_version = params[:expected_version].presence
+    if expected_version.blank?
+      render json: { error: 'A procedure version is required to change a channel. Reload and try again.',
+                     reason: 'version_required' },
+             status: :unprocessable_entity
+      return
+    end
+
     render json: service.set_binding(
       id: params[:id].to_i,
       channel: params[:channel],
       tier: tier,
-      expected_version: params[:expected_version].presence&.to_i
+      expected_version: expected_version.to_i
     )
   end
 

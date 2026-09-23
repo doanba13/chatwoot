@@ -25,6 +25,9 @@ describe('#procedureErrorKey', () => {
     expect(procedureErrorKey(errorWithReason('not_active_for_auto'))).toEqual(
       PROCEDURE_ERROR_KEYS.not_active_for_auto
     );
+    expect(procedureErrorKey(errorWithReason('version_required'))).toEqual(
+      PROCEDURE_ERROR_KEYS.version_required
+    );
   });
 
   it('never collapses distinct reasons onto the same message', () => {

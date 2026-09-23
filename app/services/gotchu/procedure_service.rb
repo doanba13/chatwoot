@@ -210,8 +210,14 @@ class Gotchu::ProcedureService
   }.freeze
 
   def conflict_error_for(response)
-    message = JSON.parse(response.body.to_s)['error']
-    CONFLICT_MESSAGES.fetch(message, UnavailableError)
+    payload = JSON.parse(response.body.to_s)
+    # A 409 body that parses but isn't an object (an array, a bare string, a
+    # number) has no `['error']` to read -- `Hash#[]` would raise a
+    # NoMethodError/TypeError on anything else and turn a 409 into a 500.
+    # Same "opaque and unconfirmed" fallback as an unrecognised message.
+    return UnavailableError unless payload.is_a?(Hash)
+
+    CONFLICT_MESSAGES.fetch(payload['error'], UnavailableError)
   rescue JSON::ParserError
     UnavailableError
   end

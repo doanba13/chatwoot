@@ -18,6 +18,11 @@ export const PROCEDURE_ERROR_KEYS = Object.freeze({
   // #render_not_active_for_auto).
   stale_version: 'PROCEDURES_MGMT.ERRORS.STALE_VERSION',
   not_active_for_auto: 'PROCEDURES_MGMT.ERRORS.NOT_ACTIVE_FOR_AUTO',
+  // The local 422 `update_binding` answers itself, without calling the
+  // gateway, when the request carries no `expected_version` -- deliberately
+  // its own reason rather than `invalid`, so it never shows this screen the
+  // slug-format copy `ERRORS.INVALID` is written for.
+  version_required: 'PROCEDURES_MGMT.ERRORS.VERSION_REQUIRED',
 });
 
 /**

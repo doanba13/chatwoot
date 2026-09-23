@@ -44,7 +44,8 @@
       "DUPLICATE_SLUG": "A procedure with this slug already exists for this store.",
       "NOT_FOUND": "This procedure no longer exists. Reload the list.",
       "STALE_VERSION": "The procedure changed since you opened it. Reload the page and try again.",
-      "NOT_ACTIVE_FOR_AUTO": "Only an active procedure can be raised to auto. Activate it first."
+      "NOT_ACTIVE_FOR_AUTO": "Only an active procedure can be raised to auto. Activate it first.",
+      "VERSION_REQUIRED": "A procedure version is required to change a channel. Reload the page and try again."
     },
     "FORM": {
       "SLUG": {
@@ -121,7 +122,7 @@
         "AUTO": "Auto"
       },
       "AUTO_DISABLED_HINT": "Activate this procedure before a channel on it can be raised to auto.",
-      "AUTO_LIMITED_HINT": "Auto is saved here, but nothing sends automatically on this channel yet -- every draft is refused as \"order not verified\", because a visitor's identity on this channel can be spoofed.",
+      "AUTO_LIMITED_HINT": "Auto can be turned on here, but nothing sends automatically on this channel yet -- every draft is refused as \"order not verified\", because a visitor's identity on this channel can be spoofed.",
       "AUTHORISES_VERSION": "Authorises v{version}",
       "REVOKE": "Revoke"
     }

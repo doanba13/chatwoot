@@ -474,21 +474,38 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
     end
 
     context 'when it is an administrator' do
-      it 'raises the channel to a tier and relays the gateway response' do
+      it 'raises the channel to a tier and relays the gateway response, binding wrapper intact' do
         configure_gateway
-        stub_put(binding_endpoint, body: { procedureId: 9, channel: 'email', tier: 'draft', authorisedVersion: nil,
-                                            setBy: 'chatwoot:1', setAt: '2026-09-23T00:00:00Z' })
+        # The gateway wraps its response as `{ binding: {...} }`, never a
+        # bare binding at the top level -- the controller is a pass-through
+        # (`render json: service.set_binding(...)`), so it must relay that
+        # wrapper exactly as received.
+        stub_put(binding_endpoint, body: { binding: { procedureId: 9, channel: 'email', tier: 'draft',
+                                                        authorisedVersion: nil, setBy: 'chatwoot:1',
+                                                        setAt: '2026-09-23T00:00:00Z' } })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
                                       headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:success)
-        expect(response.parsed_body['tier']).to eq('draft')
+        expect(response.parsed_body['binding']['tier']).to eq('draft')
+        expect(response.parsed_body['binding']['procedureId']).to eq(9)
+      end
+
+      it 'relays a `binding: null` response verbatim when the write turned the channel off' do
+        configure_gateway
+        stub_put(binding_endpoint, body: { binding: nil })
+
+        put binding_url(9, 'email'), params: { tier: nil, expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq('binding' => nil)
       end
 
       it 'takes the actor from the session, never from the body' do
         configure_gateway
-        stub_put(binding_endpoint, body: { channel: 'email', tier: 'draft' })
+        stub_put(binding_endpoint, body: { binding: { channel: 'email', tier: 'draft' } })
 
         put binding_url(9, 'email'),
             params: { tier: 'draft', expected_version: 3, actor: 'chatwoot:999' },
@@ -499,7 +516,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
 
       it 'sends tier, actor and expectedVersion, and only those three keys' do
         configure_gateway
-        stub_put(binding_endpoint, body: { channel: 'email', tier: 'draft' })
+        stub_put(binding_endpoint, body: { binding: { channel: 'email', tier: 'draft' } })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
                                       headers: admin.create_new_auth_token, as: :json
@@ -510,7 +527,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
 
       it 'never forwards params[:version] or params[:authorised_version] -- only params[:expected_version] becomes expectedVersion' do
         configure_gateway
-        stub_put(binding_endpoint, body: { channel: 'email', tier: 'draft' })
+        stub_put(binding_endpoint, body: { binding: { channel: 'email', tier: 'draft' } })
 
         put binding_url(9, 'email'),
             params: { tier: 'draft', expected_version: 3, version: 999, authorised_version: 999 },
@@ -524,7 +541,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
 
       it 'sends an explicit tier: null to turn a channel off' do
         configure_gateway
-        stub_put(binding_endpoint, body: { channel: 'email', tier: nil })
+        stub_put(binding_endpoint, body: { binding: nil })
 
         put binding_url(9, 'email'), params: { tier: nil, expected_version: 3 },
                                       headers: admin.create_new_auth_token, as: :json
@@ -544,9 +561,33 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         expect(a_request(:put, binding_endpoint)).not_to have_been_made
       end
 
+      it 'rejects a missing expected_version locally, with its own reason, and never calls the gateway' do
+        configure_gateway
+
+        put binding_url(9, 'email'), params: { tier: 'draft' }, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        # Its own reason, not 'invalid' -- 'invalid' is what the
+        # slug-format/length-limits copy (ERRORS.INVALID) is written for,
+        # and would be the wrong message on this screen.
+        expect(response.parsed_body['reason']).to eq('version_required')
+        expect(a_request(:put, binding_endpoint)).not_to have_been_made
+      end
+
+      it 'rejects a blank expected_version locally the same way as a missing one' do
+        configure_gateway
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: '' },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['reason']).to eq('version_required')
+        expect(a_request(:put, binding_endpoint)).not_to have_been_made
+      end
+
       it 'sends both credentials, the secret in the query and the gesture secret in the header' do
         configure_gateway
-        stub_put(binding_endpoint, body: { channel: 'email', tier: 'draft' })
+        stub_put(binding_endpoint, body: { binding: { channel: 'email', tier: 'draft' } })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
                                       headers: admin.create_new_auth_token, as: :json

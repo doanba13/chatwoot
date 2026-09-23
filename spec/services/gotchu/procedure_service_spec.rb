@@ -54,7 +54,12 @@ RSpec.describe Gotchu::ProcedureService do
 
   describe '#set_binding' do
     it 'issues a PUT to /api/procedures/:id/bindings/:channel with tier, actor and expectedVersion only' do
-      response = json_response(200, { procedureId: 7, channel: 'email', tier: 'auto' })
+      # The gateway wraps its response as `{ binding: {...} }` -- this
+      # service is a plain proxy and does NOT unwrap it; `set_binding`
+      # returns whatever `parse` hands back, `binding` key and all.
+      # ChannelTiers.vue is the one that reads `.binding` off the result.
+      response = json_response(200, { binding: { procedureId: 7, channel: 'email', tier: 'auto', authorisedVersion: 5,
+                                                   setBy: 'chatwoot:42', setAt: '2026-09-23T00:00:00Z' } })
       expect(HTTParty).to receive(:put) do |url, options|
         expect(url).to eq("#{gateway_url}/api/procedures/7/bindings/email")
         expect(options[:query]).to eq(secret: gateway_secret)
@@ -67,7 +72,19 @@ RSpec.describe Gotchu::ProcedureService do
 
       result = service.set_binding(id: 7, channel: 'email', tier: 'auto', expected_version: 5)
 
-      expect(result).to eq('procedureId' => 7, 'channel' => 'email', 'tier' => 'auto')
+      expect(result).to eq(
+        'binding' => { 'procedureId' => 7, 'channel' => 'email', 'tier' => 'auto', 'authorisedVersion' => 5,
+                        'setBy' => 'chatwoot:42', 'setAt' => '2026-09-23T00:00:00Z' }
+      )
+    end
+
+    it 'relays a `binding: null` response verbatim when the write turned the channel off' do
+      response = json_response(200, { binding: nil })
+      allow(HTTParty).to receive(:put).and_return(response)
+
+      result = service.set_binding(id: 7, channel: 'email', tier: nil, expected_version: 5)
+
+      expect(result).to eq('binding' => nil)
     end
 
     it 'sends an explicit tier: null to turn a channel off, never dropping the key' do
@@ -127,6 +144,14 @@ RSpec.describe Gotchu::ProcedureService do
     it 'raises UnavailableError, not a fabricated conflict reason, on a 409 body this build does not recognise' do
       allow(HTTParty).to receive(:put)
         .and_return(json_response(409, { error: 'some future reason nobody wrote a case for' }))
+
+      expect { service.set_binding(id: 7, channel: 'email', tier: 'draft', expected_version: 5) }
+        .to raise_error(Gotchu::ProcedureService::UnavailableError)
+    end
+
+    it 'raises UnavailableError, rather than a TypeError, on a 409 body that parses but is not an object' do
+      response = instance_double(HTTParty::Response, code: 409, body: [1, 2, 3].to_json)
+      allow(HTTParty).to receive(:put).and_return(response)
 
       expect { service.set_binding(id: 7, channel: 'email', tier: 'draft', expected_version: 5) }
         .to raise_error(Gotchu::ProcedureService::UnavailableError)

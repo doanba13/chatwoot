@@ -70,11 +70,11 @@ const autoDisabled = () => props.procedureStatus !== 'active';
 // only ever SENDS on the email channel. A messenger/web row can still be
 // raised to auto -- the tier is stored, exactly as asked for -- but every
 // draft on those channels is refused downstream as "order not verified",
-// because a visitor's identity there can be spoofed. Shown only for the
-// channels it is true of, and only once that channel is actually set to
-// auto, so it never crowds a row the setting doesn't apply to.
-const showAutoLimitedHint = channel =>
-  channel !== 'email' && tierFor(channel) === 'auto';
+// because a visitor's identity there can be spoofed. Shown on every
+// messenger/web row regardless of its current tier -- BEFORE a supporter
+// picks Auto, not only once it is already stored, so it informs the choice
+// rather than explaining it after the fact.
+const isAutoLimitedChannel = channel => channel !== 'email';
 
 const loadBindings = async () => {
   isLoading.value = true;
@@ -89,20 +89,24 @@ const loadBindings = async () => {
   }
 };
 
-// The PUT response is the single updated binding for this channel -- upsert
-// it. A response with no tier (or a `tier: null`) means the channel is off
-// again, which is the absence of a row, so it is spliced out rather than
-// stored with a null tier.
-const applyBindingResponse = (channel, data) => {
+// The gateway wraps the PUT response as `{ binding: {...} }`, or
+// `{ binding: null }` when the write turned the channel off -- never a bare
+// binding at the top level. Reading `data.tier` here (instead of
+// `data.binding.tier`) used to be indistinguishable from "off" on EVERY
+// successful Draft/Auto write, because the wrapper object itself has no
+// `.tier` -- so every write rendered as Off and hid Revoke while auto was
+// actually live underneath it. `binding` is the already-unwrapped payload;
+// null means the row is gone.
+const applyBindingResponse = (channel, binding) => {
   const idx = bindings.value.findIndex(b => b.channel === channel);
-  if (!data?.tier) {
+  if (!binding) {
     if (idx !== -1) bindings.value.splice(idx, 1);
     return;
   }
   if (idx !== -1) {
-    bindings.value.splice(idx, 1, data);
+    bindings.value.splice(idx, 1, binding);
   } else {
-    bindings.value.push(data);
+    bindings.value.push(binding);
   }
 };
 
@@ -119,7 +123,7 @@ const changeTier = async (channel, tier) => {
         expectedVersion: props.procedureVersion,
       }
     );
-    applyBindingResponse(channel, data);
+    applyBindingResponse(channel, data.binding);
   } catch (error) {
     rowErrorKey[channel] = procedureErrorKey(error);
   } finally {
@@ -165,6 +169,19 @@ onMounted(loadBindings);
     </p>
 
     <div v-else class="flex flex-col gap-3">
+      <!-- A disabled <button> often never fires a hover/pointer event at
+        all, so a v-tooltip on the Auto button was frequently unreachable --
+        this says the same thing as inline text instead, once, since the
+        reason is procedure-wide rather than per-channel. -->
+      <div
+        v-if="autoDisabled()"
+        class="flex items-start gap-2 px-2 py-1.5 text-xs border rounded-md bg-n-slate-2 border-n-weak text-n-slate-11"
+        data-testid="channel-tiers-auto-disabled-hint"
+      >
+        <span class="flex-shrink-0 mt-0.5 i-lucide-triangle-alert size-3.5" />
+        {{ t('PROCEDURES_MGMT.CHANNEL_TIERS.AUTO_DISABLED_HINT') }}
+      </div>
+
       <div
         v-for="channel in CHANNELS"
         :key="channel"
@@ -183,11 +200,6 @@ onMounted(loadBindings);
             <Button
               v-for="tier in TIERS"
               :key="tier"
-              v-tooltip.top="
-                tier === 'auto' && autoDisabled()
-                  ? t('PROCEDURES_MGMT.CHANNEL_TIERS.AUTO_DISABLED_HINT')
-                  : undefined
-              "
               :label="tierLabel(tier)"
               size="xs"
               :variant="tierFor(channel) === tier ? 'solid' : 'faded'"
@@ -224,7 +236,7 @@ onMounted(loadBindings);
         </p>
 
         <div
-          v-if="showAutoLimitedHint(channel)"
+          v-if="isAutoLimitedChannel(channel)"
           class="flex items-start gap-2 px-2 py-1.5 text-xs border rounded-md bg-n-slate-2 border-n-weak text-n-slate-11"
           :data-testid="`channel-tier-auto-hint-${channel}`"
         >

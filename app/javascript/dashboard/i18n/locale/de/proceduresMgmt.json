@@ -2,7 +2,8 @@
   "PROCEDURES_MGMT": {
     "ERRORS": {
       "STALE_VERSION": "Die Prozedur hat sich geändert, seit du sie geöffnet hast. Lade die Seite neu und versuche es erneut.",
-      "NOT_ACTIVE_FOR_AUTO": "Nur eine aktive Prozedur kann auf Auto gesetzt werden. Aktiviere sie zuerst."
+      "NOT_ACTIVE_FOR_AUTO": "Nur eine aktive Prozedur kann auf Auto gesetzt werden. Aktiviere sie zuerst.",
+      "VERSION_REQUIRED": "Für die Änderung eines Kanals ist eine Prozedurversion erforderlich. Lade die Seite neu und versuche es erneut."
     },
     "CHANNEL_TIERS": {
       "TITLE": "Kanäle",
@@ -19,7 +20,7 @@
         "AUTO": "Auto"
       },
       "AUTO_DISABLED_HINT": "Aktiviere diese Prozedur, bevor ein Kanal darauf auf Auto gesetzt werden kann.",
-      "AUTO_LIMITED_HINT": "Auto ist hier gespeichert, sendet auf diesem Kanal aber noch nichts automatisch -- jeder Entwurf wird als „Bestellung nicht verifiziert“ abgelehnt, da sich die Identität eines Besuchers auf diesem Kanal fälschen lässt.",
+      "AUTO_LIMITED_HINT": "Auto lässt sich hier aktivieren, sendet auf diesem Kanal aber noch nichts automatisch -- jeder Entwurf wird als „Bestellung nicht verifiziert“ abgelehnt, da sich die Identität eines Besuchers auf diesem Kanal fälschen lässt.",
       "AUTHORISES_VERSION": "Autorisiert v{version}",
       "REVOKE": "Widerrufen"
     }
