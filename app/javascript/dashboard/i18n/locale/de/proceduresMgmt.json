@@ -1,0 +1,27 @@
+{
+  "PROCEDURES_MGMT": {
+    "ERRORS": {
+      "STALE_VERSION": "Die Prozedur hat sich geändert, seit du sie geöffnet hast. Lade die Seite neu und versuche es erneut.",
+      "NOT_ACTIVE_FOR_AUTO": "Nur eine aktive Prozedur kann auf Auto gesetzt werden. Aktiviere sie zuerst."
+    },
+    "CHANNEL_TIERS": {
+      "TITLE": "Kanäle",
+      "DESCRIPTION": "Aktiviere diese Prozedur pro Kanal. Entwurf lässt Gotchu eine Antwort vorschlagen, die ein Supporter versendet; Auto lässt Gotchu ohne Prüfung senden.",
+      "LOADING": "Kanaleinstellungen werden geladen",
+      "CHANNELS": {
+        "EMAIL": "E-Mail",
+        "MESSENGER": "Messenger",
+        "WEB": "Web-Widget"
+      },
+      "TIERS": {
+        "OFF": "Aus",
+        "DRAFT": "Entwurf",
+        "AUTO": "Auto"
+      },
+      "AUTO_DISABLED_HINT": "Aktiviere diese Prozedur, bevor ein Kanal darauf auf Auto gesetzt werden kann.",
+      "AUTO_LIMITED_HINT": "Auto ist hier gespeichert, sendet auf diesem Kanal aber noch nichts automatisch -- jeder Entwurf wird als „Bestellung nicht verifiziert“ abgelehnt, da sich die Identität eines Besuchers auf diesem Kanal fälschen lässt.",
+      "AUTHORISES_VERSION": "Autorisiert v{version}",
+      "REVOKE": "Widerrufen"
+    }
+  }
+}

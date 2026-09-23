@@ -10,6 +10,8 @@ import ApiClient from '../ApiClient';
  *   POST   /api/v1/accounts/:account_id/gotchu/procedures
  *   PATCH  /api/v1/accounts/:account_id/gotchu/procedures/:id
  *   POST   /api/v1/accounts/:account_id/gotchu/procedures/:id/status
+ *   GET    /api/v1/accounts/:account_id/gotchu/procedures/:id/bindings
+ *   PUT    /api/v1/accounts/:account_id/gotchu/procedures/:id/bindings/:channel
  *   POST   /api/v1/accounts/:account_id/gotchu/procedures/replay
  *
  * Administrators only -- the controller enforces it with its own
@@ -52,6 +54,30 @@ class ProceduresAPI extends ApiClient {
   /** testing | active | archived. */
   changeStatus(id, status) {
     return axios.post(`${this.url}/${id}/status`, { status });
+  }
+
+  /**
+   * One row per channel currently bound -- a channel absent from the array
+   * is off (there is no `off` tier value, see ChannelTiers.vue).
+   */
+  bindings(id) {
+    return axios.get(`${this.url}/${id}/bindings`);
+  }
+
+  /**
+   * `tier` is 'draft' | 'auto' | null -- null turns the channel off.
+   * `expectedVersion` is the procedure revision the edit screen had loaded
+   * when this row was changed; ChannelTiers.vue always sends the one it
+   * loaded, so a write against a procedure someone else has since revised
+   * is refused (409) rather than silently landing on top of it. Never
+   * `version` or `authorisedVersion` -- the gateway derives and stamps the
+   * authorised version itself when raising a channel to auto.
+   */
+  setBinding(id, channel, { tier, expectedVersion }) {
+    return axios.put(`${this.url}/${id}/bindings/${channel}`, {
+      tier,
+      expected_version: expectedVersion,
+    });
   }
 
   /**

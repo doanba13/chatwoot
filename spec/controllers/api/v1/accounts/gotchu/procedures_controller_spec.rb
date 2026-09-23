@@ -54,6 +54,19 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
       .to_return(status: status, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
   end
 
+  # Same shape as stub_write, for the one route on this surface that writes
+  # with PUT rather than POST (bindings/:channel — it replaces one channel's
+  # binding, which is what PUT means; every other write here creates a new
+  # row, which is why they are POST).
+  def stub_put(url, status: 200, body: {})
+    stub_request(:put, url)
+      .with(query: { secret: gateway_secret }) do |request|
+        sent << JSON.parse(request.body)
+        true
+      end
+      .to_return(status: status, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+  end
+
   def forwarded_body
     sent.last
   end
@@ -381,6 +394,235 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
 
         expect(response).to have_http_status(:not_found)
         expect(response.parsed_body['reason']).to eq('not_found')
+      end
+    end
+  end
+
+  describe 'GET /api/v1/accounts/{account.id}/gotchu/procedures/{id}/bindings' do
+    let(:bindings_endpoint) { "#{gateway_url}/api/procedures/9/bindings" }
+
+    def bindings_url(id)
+      "#{procedure_url(id)}/bindings"
+    end
+
+    it 'refuses an agent who is not an administrator' do
+      configure_gateway
+
+      get bindings_url(9), headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:get, bindings_endpoint)).not_to have_been_made
+    end
+
+    context 'when it is an administrator' do
+      it 'relays the gateway bindings list' do
+        configure_gateway
+        stub_request(:get, bindings_endpoint)
+          .with(query: { secret: gateway_secret }, headers: { 'x-gesture-secret' => gesture_secret })
+          .to_return(
+            status: 200,
+            body: {
+              bindings: [
+                { procedureId: 9, channel: 'email', tier: 'auto', authorisedVersion: 3, setBy: 'chatwoot:1',
+                  setAt: '2026-09-23T00:00:00Z' }
+              ]
+            }.to_json,
+            headers: { 'Content-Type' => 'application/json' }
+          )
+
+        get bindings_url(9), headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['bindings']).to eq(
+          [
+            { 'procedureId' => 9, 'channel' => 'email', 'tier' => 'auto', 'authorisedVersion' => 3,
+              'setBy' => 'chatwoot:1', 'setAt' => '2026-09-23T00:00:00Z' }
+          ]
+        )
+      end
+
+      it 'reports an unknown procedure id as not found' do
+        configure_gateway
+        stub_request(:get, bindings_endpoint)
+          .with(query: { secret: gateway_secret })
+          .to_return(status: 404, body: { error: 'no such procedure' }.to_json,
+                     headers: { 'Content-Type' => 'application/json' })
+
+        get bindings_url(9), headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(response.parsed_body['reason']).to eq('not_found')
+      end
+    end
+  end
+
+  describe 'PUT /api/v1/accounts/{account.id}/gotchu/procedures/{id}/bindings/{channel}' do
+    let(:binding_endpoint) { "#{gateway_url}/api/procedures/9/bindings/email" }
+
+    def binding_url(id, channel)
+      "#{procedure_url(id)}/bindings/#{channel}"
+    end
+
+    it 'refuses an agent who is not an administrator' do
+      configure_gateway
+
+      put binding_url(9, 'email'), params: { tier: 'auto', expected_version: 3 }, headers: agent.create_new_auth_token,
+                                    as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:put, binding_endpoint)).not_to have_been_made
+    end
+
+    context 'when it is an administrator' do
+      it 'raises the channel to a tier and relays the gateway response' do
+        configure_gateway
+        stub_put(binding_endpoint, body: { procedureId: 9, channel: 'email', tier: 'draft', authorisedVersion: nil,
+                                            setBy: 'chatwoot:1', setAt: '2026-09-23T00:00:00Z' })
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['tier']).to eq('draft')
+      end
+
+      it 'takes the actor from the session, never from the body' do
+        configure_gateway
+        stub_put(binding_endpoint, body: { channel: 'email', tier: 'draft' })
+
+        put binding_url(9, 'email'),
+            params: { tier: 'draft', expected_version: 3, actor: 'chatwoot:999' },
+            headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body['actor']).to eq("chatwoot:#{admin.id}")
+      end
+
+      it 'sends tier, actor and expectedVersion, and only those three keys' do
+        configure_gateway
+        stub_put(binding_endpoint, body: { channel: 'email', tier: 'draft' })
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body.keys).to contain_exactly('tier', 'actor', 'expectedVersion')
+        expect(forwarded_body['expectedVersion']).to eq(3)
+      end
+
+      it 'never forwards params[:version] or params[:authorised_version] -- only params[:expected_version] becomes expectedVersion' do
+        configure_gateway
+        stub_put(binding_endpoint, body: { channel: 'email', tier: 'draft' })
+
+        put binding_url(9, 'email'),
+            params: { tier: 'draft', expected_version: 3, version: 999, authorised_version: 999 },
+            headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body['expectedVersion']).to eq(3)
+        expect(forwarded_body).not_to have_key('version')
+        expect(forwarded_body).not_to have_key('authorisedVersion')
+        expect(forwarded_body).not_to have_key('authorised_version')
+      end
+
+      it 'sends an explicit tier: null to turn a channel off' do
+        configure_gateway
+        stub_put(binding_endpoint, body: { channel: 'email', tier: nil })
+
+        put binding_url(9, 'email'), params: { tier: nil, expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body).to have_key('tier')
+        expect(forwarded_body['tier']).to be_nil
+      end
+
+      it 'rejects a tier outside draft|auto|null with 422, and never calls the gateway' do
+        configure_gateway
+
+        put binding_url(9, 'email'), params: { tier: 'bogus', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['reason']).to eq('invalid')
+        expect(a_request(:put, binding_endpoint)).not_to have_been_made
+      end
+
+      it 'sends both credentials, the secret in the query and the gesture secret in the header' do
+        configure_gateway
+        stub_put(binding_endpoint, body: { channel: 'email', tier: 'draft' })
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:put, binding_endpoint).with(
+            query: { secret: gateway_secret },
+            headers: { 'x-gesture-secret' => gesture_secret, 'Content-Type' => 'application/json' }
+          )
+        ).to have_been_made
+      end
+
+      it 'reports an unknown procedure id as not found' do
+        configure_gateway
+        stub_put(binding_endpoint, status: 404, body: { error: 'no such procedure' })
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(response.parsed_body['reason']).to eq('not_found')
+      end
+
+      it 'reports a stale version conflict and tells the admin to reload' do
+        configure_gateway
+        stub_put(binding_endpoint, status: 409, body: { error: 'the procedure changed since you opened it' })
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:conflict)
+        expect(response.parsed_body['reason']).to eq('stale_version')
+      end
+
+      it 'reports auto on a non-active procedure as its own conflict reason' do
+        configure_gateway
+        stub_put(binding_endpoint, status: 409, body: { error: 'only an active procedure can be raised to auto' })
+
+        put binding_url(9, 'email'), params: { tier: 'auto', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:conflict)
+        expect(response.parsed_body['reason']).to eq('not_active_for_auto')
+      end
+
+      it 'reports could not confirm, not a fabricated conflict reason, on a 409 body this build does not recognise' do
+        configure_gateway
+        stub_put(binding_endpoint, status: 409, body: { error: 'some future reason nobody wrote a case for' })
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:bad_gateway)
+        expect(response.parsed_body['reason']).to eq('unavailable')
+      end
+
+      it 'reports a bad request from the gateway as unprocessable' do
+        configure_gateway
+        stub_put(binding_endpoint, status: 400, body: { error: 'unknown channel' })
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['reason']).to eq('invalid')
+      end
+
+      it 'could not confirm, rather than failed, when the gateway does not answer' do
+        configure_gateway
+        stub_request(:put, binding_endpoint).with(query: { secret: gateway_secret }).to_timeout
+
+        put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
+                                      headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:bad_gateway)
+        expect(response.parsed_body['reason']).to eq('unavailable')
       end
     end
   end

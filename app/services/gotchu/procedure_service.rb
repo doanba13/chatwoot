@@ -29,6 +29,22 @@ class Gotchu::ProcedureService
   # that already has a procedure.
   class ConflictError < StandardError; end
 
+  # A binding write's 409 covers two different reasons under one status code
+  # (apps/gateway/src/procedures.ts, the bindings route): the procedure was
+  # revised after the screen read `expected_version` ("the procedure changed
+  # since you opened it" -- reload and retry), or this channel is being
+  # raised to auto on a procedure that is not currently 'active' ("only an
+  # active procedure can be raised to auto"). Both messages are fixed,
+  # contract strings the gateway itself defines -- never merchant- or
+  # customer-authored free text, so `conflict_error_for` matching on them
+  # below does not reopen the "never trust upstream text" rule the rest of
+  # this codebase follows for scan text/grounded_in/etc.; the raw string
+  # still never reaches the controller's JSON response, only the choice of
+  # error class does. Subclasses ConflictError so a caller that only cares
+  # "was this a conflict" still catches either with one rescue.
+  class StaleVersionError < ConflictError; end
+  class NotActiveForAutoError < ConflictError; end
+
   # A settings-screen submit, and the administrator is waiting on a keypress.
   # Same budget as the gesture routes in InstructService, for the same
   # reason: the gateway answers from a database read/write behind a local hop.
@@ -128,6 +144,37 @@ class Gotchu::ProcedureService
     )
   end
 
+  # The channel bindings currently set on one procedure -- one row per bound
+  # channel; a channel with no row is "off" (global constraint: off is the
+  # absence of a binding, never a tier value), so an empty `bindings` array
+  # is a normal, fully-off answer, not a refusal.
+  def bindings(id:)
+    request(verb: :get, path: "/api/procedures/#{id}/bindings", refusals: { NotFoundError => [404] })
+  end
+
+  # `tier` is 'draft' | 'auto' | nil. `nil` ("off") is sent as an explicit
+  # `tier: null` in the body -- the gateway's own contract for removing this
+  # channel's binding -- so unlike create/revise's bodies this one is never
+  # run through `.compact`.
+  #
+  # `expected_version` is a PRECONDITION only: the procedure revision the
+  # edit screen had loaded when this row was changed. It travels as
+  # `expectedVersion`, never `authorisedVersion` and never `version` -- the
+  # gateway derives and stamps the authorised version itself, inside the
+  # transaction that raises a channel to auto (sibling repo invariant 36).
+  # Optional at the gateway, but this proxy's one caller (ChannelTiers.vue)
+  # always has a loaded procedure version and always sends it, so a stale
+  # write is refused (409) rather than silently overwriting a race.
+  def set_binding(id:, channel:, tier:, expected_version:)
+    request(
+      verb: :put,
+      path: "/api/procedures/#{id}/bindings/#{channel}",
+      body: { tier: tier, actor: actor, expectedVersion: expected_version },
+      refusals: { ValidationError => [400], NotFoundError => [404] },
+      conflict_classifier: method(:conflict_error_for)
+    )
+  end
+
   # Match counts over the last N days — a collection route, not a member one:
   # a replay answers "what would my whole procedure SET have matched", scored
   # over the set. Narrowing to one procedure is `procedure_id`, a field in the
@@ -149,6 +196,26 @@ class Gotchu::ProcedureService
     "chatwoot:#{@actor_id}"
   end
 
+  # See StaleVersionError/NotActiveForAutoError above for why matching the
+  # gateway's own fixed strings here is safe. Anything else -- a future
+  # third reason this build has no class for, or a body it can't even parse
+  # -- falls back to UnavailableError, not the generic ConflictError:
+  # ConflictError's only current meaning is create's "duplicate slug"
+  # (render_conflict's own hardcoded wording), which would be actively
+  # misleading on this route. "Opaque and unconfirmed" is the same posture
+  # `request` already takes for a status code it doesn't recognise at all.
+  CONFLICT_MESSAGES = {
+    'the procedure changed since you opened it' => StaleVersionError,
+    'only an active procedure can be raised to auto' => NotActiveForAutoError
+  }.freeze
+
+  def conflict_error_for(response)
+    message = JSON.parse(response.body.to_s)['error']
+    CONFLICT_MESSAGES.fetch(message, UnavailableError)
+  rescue JSON::ParserError
+    UnavailableError
+  end
+
   # `refusals` maps an exception class to the status codes THIS call's own
   # gateway route can answer with something other than success — see
   # procedures.ts's individual handlers, which vary per route (list only
@@ -160,14 +227,26 @@ class Gotchu::ProcedureService
   # Takes `**opts` rather than five more named keywords purely to stay under
   # rubocop's Metrics/ParameterLists — every caller below still passes named
   # arguments, just gathered into one hash first.
+  #
+  # `conflict_classifier`, when given, is called on a 409 response *before*
+  # `refusals` is consulted, and must return the exception class to raise —
+  # `set_binding`'s own `conflict_error_for` is the one caller that needs
+  # this, because that single route's 409 covers two distinct causes
+  # (`conflict_error_for`'s own comment). Every other call site leaves it
+  # nil and keeps mapping 409 through the plain `refusals` table.
   def request(verb:, path:, **opts)
     query = opts.fetch(:query, {})
     body = opts[:body]
     timeout = opts.fetch(:timeout, TIMEOUT_SECONDS)
     refusals = opts.fetch(:refusals, {})
+    conflict_classifier = opts[:conflict_classifier]
 
     response = perform_http(verb, path, query, body, timeout)
     return parse(response) if response.code == 200
+
+    if conflict_classifier && response.code == 409
+      raise conflict_classifier.call(response), "gateway responded with #{response.code}"
+    end
 
     refusals.each do |error_class, codes|
       raise error_class, "gateway responded with #{response.code}" if codes.include?(response.code)

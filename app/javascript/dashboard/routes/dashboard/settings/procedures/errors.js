@@ -13,6 +13,11 @@ export const PROCEDURE_ERROR_KEYS = Object.freeze({
   invalid: 'PROCEDURES_MGMT.ERRORS.INVALID',
   duplicate_slug: 'PROCEDURES_MGMT.ERRORS.DUPLICATE_SLUG',
   not_found: 'PROCEDURES_MGMT.ERRORS.NOT_FOUND',
+  // Task 13's two binding-write conflict reasons
+  // (Gotchu::ProceduresController#render_stale_version /
+  // #render_not_active_for_auto).
+  stale_version: 'PROCEDURES_MGMT.ERRORS.STALE_VERSION',
+  not_active_for_auto: 'PROCEDURES_MGMT.ERRORS.NOT_ACTIVE_FOR_AUTO',
 });
 
 /**

@@ -10,11 +10,25 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # taken here.
   before_action :check_admin_authorization?
 
+  # 'off' is deliberately absent: off is the absence of a binding row, never
+  # a tier value (global constraint) -- so `update_binding` maps a blank
+  # `params[:tier]` to `nil`, not to a fourth string here.
+  ALLOWED_TIERS = %w[draft auto].freeze
+
   rescue_from Gotchu::ProcedureService::ConfigurationError, with: :render_unconfigured
   rescue_from Gotchu::ProcedureService::UnavailableError, with: :render_unavailable
   rescue_from Gotchu::ProcedureService::ValidationError, with: :render_invalid
   rescue_from Gotchu::ProcedureService::ConflictError, with: :render_conflict
   rescue_from Gotchu::ProcedureService::NotFoundError, with: :render_not_found
+  # Registered AFTER the generic ConflictError above, on purpose: Rails'
+  # rescue_from resolves the handler registered LAST among every one that
+  # matches an exception's ancestry, and both of these are ConflictError
+  # subclasses (Gotchu::ProcedureService), so registering them first would
+  # let the generic "duplicate slug" handler answer a stale-version or
+  # not-active-for-auto binding conflict instead of its own, more useful,
+  # message.
+  rescue_from Gotchu::ProcedureService::StaleVersionError, with: :render_stale_version
+  rescue_from Gotchu::ProcedureService::NotActiveForAutoError, with: :render_not_active_for_auto
 
   # The one read on this surface, and the one action that checks `available?`
   # itself rather than letting ConfigurationError reach the rescue above: an
@@ -54,6 +68,39 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
 
   def status
     render json: service.set_status(id: params[:id].to_i, status: params[:status])
+  end
+
+  # One row per channel currently bound; a channel absent from the array is
+  # off (global constraint: off is the absence of a binding row, never a
+  # tier value), so this action never has an "empty" case to special-case.
+  def bindings
+    render json: service.bindings(id: params[:id].to_i)
+  end
+
+  # `params[:tier]` is 'draft' | 'auto' | blank (blank means "off", sent to
+  # the gateway as an explicit `tier: null`). Anything else is rejected here
+  # rather than forwarded, so a typo never reaches the gateway as a request
+  # it also has to validate.
+  #
+  # `params[:expected_version]` is read under that one name only -- never
+  # `params[:version]` and never `params[:authorised_version]` -- and passed
+  # straight through as the service's `expected_version:` precondition. The
+  # gateway itself derives and stamps the procedure's authorised version; no
+  # input on this surface can set one (sibling repo invariant 36).
+  def update_binding
+    tier = params[:tier].presence
+    if tier && ALLOWED_TIERS.exclude?(tier)
+      render json: { error: 'tier must be one of: draft, auto, or absent/null for off', reason: 'invalid' },
+             status: :unprocessable_entity
+      return
+    end
+
+    render json: service.set_binding(
+      id: params[:id].to_i,
+      channel: params[:channel],
+      tier: tier,
+      expected_version: params[:expected_version].presence&.to_i
+    )
   end
 
   # Match counts over the last N days, scored over the whole procedure set.
@@ -111,5 +158,17 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   def render_not_found(exception)
     Rails.logger.warn("Gotchu found no such procedure for account #{params[:account_id]}: #{exception.message}")
     render json: { error: 'No such procedure', reason: 'not_found' }, status: :not_found
+  end
+
+  def render_stale_version(exception)
+    Rails.logger.warn("Gotchu refused a binding write because the procedure changed for account #{params[:account_id]}: #{exception.message}")
+    render json: { error: 'The procedure changed since you opened it. Reload and try again.', reason: 'stale_version' },
+           status: :conflict
+  end
+
+  def render_not_active_for_auto(exception)
+    Rails.logger.warn("Gotchu refused raising a channel to auto on a non-active procedure for account #{params[:account_id]}: #{exception.message}")
+    render json: { error: 'Only an active procedure can be raised to auto.', reason: 'not_active_for_auto' },
+           status: :conflict
   end
 end

@@ -42,7 +42,9 @@
       "UNAVAILABLE": "Could not confirm the request reached Gotchu. Check the gateway before trying again.",
       "INVALID": "Gotchu rejected this procedure. Check the slug format, the length limits, and that the title, body and trigger phrases don't name a specific customer or order.",
       "DUPLICATE_SLUG": "A procedure with this slug already exists for this store.",
-      "NOT_FOUND": "This procedure no longer exists. Reload the list."
+      "NOT_FOUND": "This procedure no longer exists. Reload the list.",
+      "STALE_VERSION": "The procedure changed since you opened it. Reload the page and try again.",
+      "NOT_ACTIVE_FOR_AUTO": "Only an active procedure can be raised to auto. Activate it first."
     },
     "FORM": {
       "SLUG": {
@@ -103,6 +105,25 @@
       "SCOPE_CAPPED": "Scanned the last {considered} conversations -- more exist in the window than this scan covers.",
       "TIMED_OUT": "The scan did not finish in time. These numbers are partial.",
       "CLOSE": "Close"
+    },
+    "CHANNEL_TIERS": {
+      "TITLE": "Channels",
+      "DESCRIPTION": "Turn this procedure on per channel. Draft lets Gotchu propose a reply for a supporter to send; Auto lets it send without review.",
+      "LOADING": "Loading channel settings",
+      "CHANNELS": {
+        "EMAIL": "Email",
+        "MESSENGER": "Messenger",
+        "WEB": "Web widget"
+      },
+      "TIERS": {
+        "OFF": "Off",
+        "DRAFT": "Draft",
+        "AUTO": "Auto"
+      },
+      "AUTO_DISABLED_HINT": "Activate this procedure before a channel on it can be raised to auto.",
+      "AUTO_LIMITED_HINT": "Auto is saved here, but nothing sends automatically on this channel yet -- every draft is refused as \"order not verified\", because a visitor's identity on this channel can be spoofed.",
+      "AUTHORISES_VERSION": "Authorises v{version}",
+      "REVOKE": "Revoke"
     }
   }
 }

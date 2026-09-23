@@ -1,0 +1,27 @@
+{
+  "PROCEDURES_MGMT": {
+    "ERRORS": {
+      "STALE_VERSION": "La procédure a changé depuis que vous l'avez ouverte. Rechargez la page et réessayez.",
+      "NOT_ACTIVE_FOR_AUTO": "Seule une procédure active peut passer en mode Auto. Activez-la d'abord."
+    },
+    "CHANNEL_TIERS": {
+      "TITLE": "Canaux",
+      "DESCRIPTION": "Activez cette procédure par canal. Brouillon permet à Gotchu de proposer une réponse qu'un support enverra ; Auto lui permet d'envoyer sans relecture.",
+      "LOADING": "Chargement des paramètres de canal",
+      "CHANNELS": {
+        "EMAIL": "E-mail",
+        "MESSENGER": "Messenger",
+        "WEB": "Widget web"
+      },
+      "TIERS": {
+        "OFF": "Désactivé",
+        "DRAFT": "Brouillon",
+        "AUTO": "Auto"
+      },
+      "AUTO_DISABLED_HINT": "Activez cette procédure avant qu'un canal ne puisse passer en mode Auto.",
+      "AUTO_LIMITED_HINT": "Auto est enregistré ici, mais rien n'est encore envoyé automatiquement sur ce canal -- chaque brouillon est refusé comme « commande non vérifiée », car l'identité d'un visiteur peut être usurpée sur ce canal.",
+      "AUTHORISES_VERSION": "Autorise la v{version}",
+      "REVOKE": "Révoquer"
+    }
+  }
+}

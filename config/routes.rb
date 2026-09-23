@@ -299,6 +299,13 @@ Rails.application.routes.draw do
             resources :procedures, only: [:index, :create, :update] do
               member do
                 post :status
+                # The per-channel tiers screen (task 13): one read, and one
+                # write scoped to a single channel by the route itself so a
+                # write can never land on a channel the gateway does not
+                # recognise (email/messenger/web, exact) before it even
+                # leaves Rails.
+                get :bindings
+                put 'bindings/:channel', action: :update_binding, constraints: { channel: /email|messenger|web/ }
               end
               collection do
                 # A collection route, not a member one: a replay answers "what

@@ -19,6 +19,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import UnconfiguredNotice from './UnconfiguredNotice.vue';
+import ChannelTiers from './ChannelTiers.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -155,6 +156,12 @@ onBeforeMount(loadProcedure);
           }}
         </span>
       </div>
+
+      <ChannelTiers
+        :procedure-id="procedure.id"
+        :procedure-status="procedure.status"
+        :procedure-version="procedure.version"
+      />
 
       <form class="flex flex-col gap-5" @submit.prevent="submit">
         <Input

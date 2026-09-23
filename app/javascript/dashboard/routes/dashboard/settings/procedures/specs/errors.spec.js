@@ -19,6 +19,12 @@ describe('#procedureErrorKey', () => {
     expect(procedureErrorKey(errorWithReason('not_found'))).toEqual(
       PROCEDURE_ERROR_KEYS.not_found
     );
+    expect(procedureErrorKey(errorWithReason('stale_version'))).toEqual(
+      PROCEDURE_ERROR_KEYS.stale_version
+    );
+    expect(procedureErrorKey(errorWithReason('not_active_for_auto'))).toEqual(
+      PROCEDURE_ERROR_KEYS.not_active_for_auto
+    );
   });
 
   it('never collapses distinct reasons onto the same message', () => {
