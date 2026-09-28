@@ -95,8 +95,44 @@ class Gotchu::ProcedureService
   # InstructService's own `actor_id` follows, for the same reason (invariant
   # 5 in the sibling repo: an unattributable change to merchant-authored
   # behaviour is precisely what this field exists to prevent).
-  def initialize(actor_id:)
+  #
+  # `account_id` is likewise the SESSION's account (`Current.account.id`),
+  # never a param: it picks which gateway secret this request sends (see
+  # `resolved_secret` below) and rides along as the `X-Chatwoot-Account-Id`
+  # cross-check header the gateway compares against the secret it derived --
+  # so a caller cannot ask this proxy to speak for an account it isn't
+  # currently authenticated as.
+  def initialize(actor_id:, account_id:)
     @actor_id = actor_id
+    @account_id = account_id
+  end
+
+  # `GOTCHU_GATEWAY_SECRETS` is `accountId:secret,accountId:secret,...` --
+  # one gateway account may hold several Chatwoot accounts once a second
+  # merchant is onboarded, each with its own credential, so a single shared
+  # variable can no longer name all of them. A malformed entry (no colon, a
+  # non-integer id, a blank secret) is skipped rather than raised: the whole
+  # env var is boot-time config for every account on this install, and one
+  # typo must not take every other account's credential down with it. The
+  # warning names the entry's INDEX only -- never the entry's own text, which
+  # is exactly where a secret typo'd into the wrong slot would otherwise end
+  # up in the log.
+  #
+  # A public class method (not folded into an instance method) so it can be
+  # tested directly against a raw string, the same way `accountForSecret` is
+  # a free function on the gateway side of this same change.
+  def self.parse_account_secrets(raw)
+    raw.to_s.split(',').each_with_index.with_object({}) do |(entry, index), acc|
+      account_id_part, secret_part = entry.split(':', 2)
+      account_id = account_id_part.to_s.strip
+      secret = secret_part.to_s.strip
+
+      if account_id.match?(/\A\d+\z/) && secret.present?
+        acc[account_id.to_i] = secret
+      else
+        Rails.logger.warn("GOTCHU_GATEWAY_SECRETS entry #{index} is malformed and was ignored")
+      end
+    end
   end
 
   # `?store=<key>` list. No store names every procedure, any store, for an
@@ -280,7 +316,14 @@ class Gotchu::ProcedureService
     h = {
       # Required on every procedure route, the list included — the one read
       # among the gesture-guarded routes, but still behind both secrets.
-      'x-gesture-secret' => gesture_secret
+      # Install-level, and unchanged by this account-scoping work: every
+      # account on this install still shares the one gesture secret.
+      'x-gesture-secret' => gesture_secret,
+      # A cross-check only -- the gateway derives the account from the query
+      # secret above, never from this header alone. Lets the gateway log and
+      # refuse a request whose secret and claimed account disagree, without
+      # this proxy needing to know why they might.
+      'X-Chatwoot-Account-Id' => @account_id.to_s
     }
     # Not sent on the list route: it is a GET with no body, and the gateway
     # does not demand a content type there (server.ts's own isProcedureList
@@ -301,9 +344,23 @@ class Gotchu::ProcedureService
                   raise(ConfigurationError, 'GOTCHU_GATEWAY_URL is not set')
   end
 
+  # The calling account's own secret when `GOTCHU_GATEWAY_SECRETS` names one,
+  # falling back to the single, install-wide `GOTCHU_GATEWAY_SECRET` for any
+  # account the map doesn't mention -- so today's one-account deployment
+  # keeps working with no new env var at all. Raised as the same
+  # `ConfigurationError` a missing gateway URL already raises: neither the
+  # map nor the fallback naming this account is an operator error, not a
+  # request this account's admin can do anything about, and it is raised
+  # from inside `perform_http`'s own `query: { secret: secret }` -- before
+  # `HTTParty.public_send` runs -- so no request ever reaches the gateway.
   def secret
-    @secret ||= ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).presence ||
-                raise(ConfigurationError, 'GOTCHU_GATEWAY_SECRET is not set')
+    @secret ||= resolved_secret ||
+                raise(ConfigurationError, "no gateway secret is configured for account #{@account_id}")
+  end
+
+  def resolved_secret
+    self.class.parse_account_secrets(ENV.fetch('GOTCHU_GATEWAY_SECRETS', nil))[@account_id] ||
+      ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).presence
   end
 
   def gesture_secret

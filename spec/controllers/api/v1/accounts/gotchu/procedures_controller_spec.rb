@@ -16,10 +16,14 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
     { slug: 'return-window', title: 'Return window', body: 'Offer a 30 day return window.', phrases: ['I want to return this'] }
   end
 
-  def configure_gateway(url: gateway_url, secret: gateway_secret, gesture: gesture_secret)
+  def configure_gateway(url: gateway_url, secret: gateway_secret, gesture: gesture_secret, secrets: nil)
     allow(ENV).to receive(:fetch).and_call_original
     allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_URL', nil).and_return(url)
     allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return(secret)
+    # accountId:secret,accountId:secret -- nil (the default) means no
+    # per-account entries at all, so every account falls back to `secret`
+    # above, which is exactly today's one-account deployment.
+    allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return(secrets)
     allow(ENV).to receive(:fetch).with('GOTCHU_GESTURE_SECRET', nil).and_return(gesture)
   end
 
@@ -758,6 +762,72 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
 
         expect(response).to have_http_status(:bad_gateway)
         expect(response.parsed_body['reason']).to eq('unavailable')
+      end
+    end
+  end
+
+  # Task 11: the gateway is becoming multi-tenant, so this proxy must send
+  # the calling account's own secret rather than one shared by every
+  # account, plus a header the gateway can cross-check the secret against.
+  describe 'account-scoped gateway credentials' do
+    context 'when it is an administrator' do
+      it "sends the account's own secret from GOTCHU_GATEWAY_SECRETS, not the shared single variable" do
+        own_secret = 'only-for-this-account'
+        configure_gateway(secrets: "#{account.id}:#{own_secret}")
+        stub_list(query: { secret: own_secret })
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(a_request(:get, procedures_endpoint).with(query: { secret: own_secret })).to have_been_made
+        expect(a_request(:get, procedures_endpoint).with(query: { secret: gateway_secret })).not_to have_been_made
+      end
+
+      it 'sends X-Chatwoot-Account-Id naming the calling account' do
+        configure_gateway
+        stub_list
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:get, procedures_endpoint).with(
+            query: { secret: gateway_secret }, headers: { 'X-Chatwoot-Account-Id' => account.id.to_s }
+          )
+        ).to have_been_made
+      end
+
+      it 'still sends the install-level gesture header unchanged, alongside the new account header' do
+        configure_gateway
+        stub_list
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:get, procedures_endpoint).with(
+            query: { secret: gateway_secret },
+            headers: { 'x-gesture-secret' => gesture_secret, 'X-Chatwoot-Account-Id' => account.id.to_s }
+          )
+        ).to have_been_made
+      end
+
+      it 'falls back to the single GOTCHU_GATEWAY_SECRET for an account the map does not list' do
+        configure_gateway(secrets: '999999:someone-elses-secret')
+        stub_list
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(a_request(:get, procedures_endpoint).with(query: { secret: gateway_secret })).to have_been_made
+      end
+
+      it 'answers 503 and makes no request when neither the map nor the single variable name this account' do
+        configure_gateway(secret: nil, secrets: '999999:someone-elses-secret')
+
+        post procedures_url, params: valid_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:service_unavailable)
+        expect(response.parsed_body['reason']).to eq('unconfigured')
+        expect(a_request(:post, procedures_endpoint)).not_to have_been_made
       end
     end
   end

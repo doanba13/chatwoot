@@ -130,7 +130,7 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   private
 
   def service
-    @service ||= Gotchu::ProcedureService.new(actor_id: Current.user.id)
+    @service ||= Gotchu::ProcedureService.new(actor_id: Current.user.id, account_id: Current.account.id)
   end
 
   # Server config, answered per read — the same reason AiDraftsController's

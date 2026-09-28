@@ -12,12 +12,14 @@ RSpec.describe Gotchu::ProcedureService do
   let(:gateway_url) { 'http://gateway.test:8137' }
   let(:gateway_secret) { 'a-shared-secret' }
   let(:gesture_secret) { 'a-gesture-secret' }
-  let(:service) { described_class.new(actor_id: 42) }
+  let(:account_id) { 1 }
+  let(:service) { described_class.new(actor_id: 42, account_id: account_id) }
 
   before do
     allow(ENV).to receive(:fetch).and_call_original
     allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_URL', nil).and_return(gateway_url)
     allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return(gateway_secret)
+    allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return(nil)
     allow(ENV).to receive(:fetch).with('GOTCHU_GESTURE_SECRET', nil).and_return(gesture_secret)
   end
 
@@ -32,7 +34,7 @@ RSpec.describe Gotchu::ProcedureService do
         "#{gateway_url}/api/procedures/7/bindings",
         hash_including(
           query: { secret: gateway_secret },
-          headers: { 'x-gesture-secret' => gesture_secret }
+          headers: { 'x-gesture-secret' => gesture_secret, 'X-Chatwoot-Account-Id' => account_id.to_s }
         )
       ).and_return(response)
 
@@ -63,7 +65,9 @@ RSpec.describe Gotchu::ProcedureService do
       expect(HTTParty).to receive(:put) do |url, options|
         expect(url).to eq("#{gateway_url}/api/procedures/7/bindings/email")
         expect(options[:query]).to eq(secret: gateway_secret)
-        expect(options[:headers]).to eq('x-gesture-secret' => gesture_secret, 'Content-Type' => 'application/json')
+        expect(options[:headers]).to eq('x-gesture-secret' => gesture_secret,
+                                         'X-Chatwoot-Account-Id' => account_id.to_s,
+                                         'Content-Type' => 'application/json')
         body = JSON.parse(options[:body])
         expect(body.keys).to contain_exactly('tier', 'actor', 'expectedVersion')
         expect(body).to eq('tier' => 'auto', 'actor' => 'chatwoot:42', 'expectedVersion' => 5)
@@ -162,6 +166,60 @@ RSpec.describe Gotchu::ProcedureService do
 
       expect { service.set_binding(id: 7, channel: 'email', tier: 'draft', expected_version: 5) }
         .to raise_error(Gotchu::ProcedureService::UnavailableError)
+    end
+  end
+
+  # Task 11: the gateway becomes multi-tenant, so this proxy must send the
+  # calling account's own secret rather than one shared by everyone. The
+  # end-to-end behaviour (which secret and header actually leave the
+  # process) is covered by procedures_controller_spec.rb; this block is the
+  # parser in isolation, including the one requirement that request-spec
+  # style can't observe directly: that a malformed entry is logged by index
+  # only, never by its own text.
+  describe '.parse_account_secrets' do
+    it 'maps each entry by its integer account id' do
+      expect(described_class.parse_account_secrets('1:one,2:two')).to eq(1 => 'one', 2 => 'two')
+    end
+
+    it 'treats a blank or nil input as an empty map' do
+      expect(described_class.parse_account_secrets(nil)).to eq({})
+      expect(described_class.parse_account_secrets('')).to eq({})
+    end
+
+    it 'ignores a malformed entry and warns naming its index, never its text' do
+      expect(Rails.logger).to receive(:warn).with('GOTCHU_GATEWAY_SECRETS entry 0 is malformed and was ignored')
+      expect(Rails.logger).to receive(:warn).with('GOTCHU_GATEWAY_SECRETS entry 2 is malformed and was ignored')
+
+      result = described_class.parse_account_secrets('not-a-number:s3cr3t,1:one,2')
+
+      expect(result).to eq(1 => 'one')
+    end
+  end
+
+  describe 'account-scoped gateway secret (#list, exercising the resolver every method shares)' do
+    it "sends the account's own secret when GOTCHU_GATEWAY_SECRETS names one, not the shared variable" do
+      own_secret = 'only-for-account-1'
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return("#{account_id}:#{own_secret}")
+      response = json_response(200, { procedures: [] })
+      expect(HTTParty).to receive(:get).with(anything, hash_including(query: { secret: own_secret })).and_return(response)
+
+      service.list
+    end
+
+    it 'falls back to the single GOTCHU_GATEWAY_SECRET for an account the map does not list' do
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return('999:someone-elses-secret')
+      response = json_response(200, { procedures: [] })
+      expect(HTTParty).to receive(:get).with(anything, hash_including(query: { secret: gateway_secret })).and_return(response)
+
+      service.list
+    end
+
+    it 'raises ConfigurationError, and makes no request, when neither the map nor the fallback name the account' do
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return(nil)
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return('999:someone-elses-secret')
+      expect(HTTParty).not_to receive(:get)
+
+      expect { service.list }.to raise_error(Gotchu::ProcedureService::ConfigurationError)
     end
   end
 end
