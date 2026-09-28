@@ -315,6 +315,11 @@ Rails.application.routes.draw do
                 post :replay
               end
             end
+
+            # The inbox -> store mapping (sibling repo item 6.3): one read and
+            # one whole-mapping replace, account-level like procedures.
+            get 'store_routes', to: 'store_routes#index'
+            put 'store_routes', to: 'store_routes#update'
           end
           resources :inboxes, only: [:index, :show, :create, :update, :destroy] do
             get :assignable_agents, on: :member
