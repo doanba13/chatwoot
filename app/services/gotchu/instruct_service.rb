@@ -58,18 +58,23 @@ class Gotchu::InstructService
     EOFError
   ].freeze
 
-  # Whether an instruction can reach the gateway from this deployment at all.
-  #
-  # Three env vars, because the write route demands two credentials: the shared
-  # `/api/*` secret in the query string AND `GESTURE_SHARED_SECRET` in the
-  # `x-gesture-secret` header. Both server-side only.
+  # Whether an instruction can reach the gateway from this deployment, for
+  # THIS account. The URL and the gesture secret are install-wide, but the
+  # gateway secret is resolved per account (`Gotchu::GatewaySecret.for_account`),
+  # so this has to be too -- the same reasoning
+  # `ProcedureService.available?` already follows: an account named only in
+  # `GOTCHU_GATEWAY_SECRETS`, with no install-wide `GOTCHU_GATEWAY_SECRET`
+  # fallback set, is genuinely available even though the single shared
+  # variable this used to check is blank. Takes `account_id:` rather than
+  # reading `Current.account` itself, for the same reason `initialize` does:
+  # a class method has no request context of its own.
   #
   # Read at CALL TIME, never memoized and never a build-time constant: this is
   # what the dashboard's `capabilities.instruct` is computed from, so turning the
   # field on is an env var plus a container restart and never an image rebuild.
-  def self.available?
+  def self.available?(account_id:)
     ENV.fetch('GOTCHU_GATEWAY_URL', nil).present? &&
-      ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).present? &&
+      Gotchu::GatewaySecret.for_account(account_id).present? &&
       ENV.fetch('GOTCHU_GESTURE_SECRET', nil).present?
   end
 

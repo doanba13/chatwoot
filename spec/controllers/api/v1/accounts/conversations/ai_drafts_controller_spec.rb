@@ -237,6 +237,22 @@ RSpec.describe 'Conversation AI Drafts API', type: :request do
         expect(response.parsed_body['error']).to eq('AI draft service is not configured')
         expect(a_request(:post, draft_endpoint)).not_to have_been_made
       end
+
+      # Coordinator ruling, Task 11 follow-up: `InstructService.available?`
+      # (what `capabilities.instruct` is computed from) must answer from
+      # per-account resolution, not the global variable alone.
+      it 'reports the instruction capability as available for an account named only in the per-account map, with no single fallback secret' do
+        own_secret = 'only-for-this-account'
+        configure_gateway(secret: nil, secrets: "#{account.id}:#{own_secret}", gesture: 'a-gesture-secret')
+        stub_request(:post, draft_endpoint)
+          .with(query: { secret: own_secret })
+          .to_return(status: 200, body: payload.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        get draft_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['capabilities']).to eq({ 'instruct' => true })
+      end
     end
   end
 end

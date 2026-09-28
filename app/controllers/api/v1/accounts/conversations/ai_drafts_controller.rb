@@ -38,6 +38,6 @@ class Api::V1::Accounts::Conversations::AiDraftsController < Api::V1::Accounts::
   # 404 either way (see InstructService::REFUSED_CODES), so a press against a dark
   # surface is reported as a refusal rather than as a capability that lied.
   def capabilities
-    { 'instruct' => Gotchu::InstructService.available? }
+    { 'instruct' => Gotchu::InstructService.available?(account_id: Current.account.id) }
   end
 end
