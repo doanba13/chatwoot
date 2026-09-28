@@ -320,10 +320,10 @@ class Gotchu::ProcedureService
                   raise(ConfigurationError, 'GOTCHU_GATEWAY_URL is not set')
   end
 
-  # The calling account's own secret when `GOTCHU_GATEWAY_SECRETS` names one,
-  # falling back to the single, install-wide `GOTCHU_GATEWAY_SECRET` for any
-  # account the map doesn't mention -- so today's one-account deployment
-  # keeps working with no new env var at all. Raised as the same
+  # The calling account's own secret from `GOTCHU_GATEWAY_SECRETS`, or the
+  # single `GOTCHU_GATEWAY_SECRET` only while that map is unset -- so today's
+  # one-account deployment keeps working with no new env var, and an account
+  # a set map does not list gets none (`Gotchu::GatewaySecret.for_account`). Raised as the same
   # `ConfigurationError` a missing gateway URL already raises: neither the
   # map nor the fallback naming this account is an operator error, not a
   # request this account's admin can do anything about, and it is raised

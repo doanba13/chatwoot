@@ -160,10 +160,10 @@ class Gotchu::InstructService
                   raise(ConfigurationError, 'GOTCHU_GATEWAY_URL is not set')
   end
 
-  # The calling account's own secret when `GOTCHU_GATEWAY_SECRETS` names one,
-  # falling back to the single, install-wide `GOTCHU_GATEWAY_SECRET` for any
-  # account the map doesn't mention -- so today's one-account deployment
-  # keeps working with no new env var at all. Raised before `post_instruction`'s
+  # The calling account's own secret from `GOTCHU_GATEWAY_SECRETS`, or the
+  # single `GOTCHU_GATEWAY_SECRET` only while that map is unset -- so today's
+  # one-account deployment keeps working with no new env var, and an account
+  # a set map does not list gets none (`Gotchu::GatewaySecret.for_account`). Raised before `post_instruction`'s
   # own `HTTParty.post` runs, so no request ever reaches the gateway.
   def secret
     @secret ||= Gotchu::GatewaySecret.for_account(@account_id) ||

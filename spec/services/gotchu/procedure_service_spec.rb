@@ -186,12 +186,12 @@ RSpec.describe Gotchu::ProcedureService do
       service.list
     end
 
-    it 'falls back to the single GOTCHU_GATEWAY_SECRET for an account the map does not list' do
+    # Fix wave E: once the map is set, the single variable is not a fallback.
+    it 'raises ConfigurationError, and makes no request, for an account a set map does not list' do
       allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return('999:someone-elses-secret')
-      response = json_response(200, { procedures: [] })
-      expect(HTTParty).to receive(:get).with(anything, hash_including(query: { secret: gateway_secret })).and_return(response)
+      expect(HTTParty).not_to receive(:get)
 
-      service.list
+      expect { service.list }.to raise_error(Gotchu::ProcedureService::ConfigurationError)
     end
 
     it 'raises ConfigurationError, and makes no request, when neither the map nor the fallback name the account' do
@@ -218,6 +218,13 @@ RSpec.describe Gotchu::ProcedureService do
 
     it 'is false for an account the map does not list, with no single fallback secret set' do
       allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return(nil)
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return('999:someone-elses-secret')
+
+      expect(described_class.available?(account_id: account_id)).to be(false)
+    end
+
+    it 'is false for an account a set map does not list, even with the single variable set' do
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return(gateway_secret)
       allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return('999:someone-elses-secret')
 
       expect(described_class.available?(account_id: account_id)).to be(false)

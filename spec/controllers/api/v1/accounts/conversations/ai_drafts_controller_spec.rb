@@ -218,14 +218,16 @@ RSpec.describe 'Conversation AI Drafts API', type: :request do
         ).to have_been_made
       end
 
-      it 'falls back to the single GOTCHU_GATEWAY_SECRET for an account the map does not list' do
+      # Fix wave E: once GOTCHU_GATEWAY_SECRETS exists, an account it does
+      # not list gets no secret at all -- never the legacy account's single
+      # variable -- so the fork answers 503 without calling the gateway.
+      it 'answers 503 and makes no request for an account a set map does not list, even with the single variable set' do
         configure_gateway(secrets: '999999:someone-elses-secret')
-        stub_gateway
 
         get draft_url, headers: agent.create_new_auth_token, as: :json
 
-        expect(response).to have_http_status(:success)
-        expect(a_request(:post, draft_endpoint).with(query: { secret: gateway_secret })).to have_been_made
+        expect(response).to have_http_status(:service_unavailable)
+        expect(a_request(:any, /\A#{Regexp.escape(draft_endpoint)}/)).not_to have_been_made
       end
 
       it 'answers 503 and makes no request when neither the map nor the single variable name this account' do

@@ -37,14 +37,19 @@ module Gotchu::GatewaySecret
     end
   end
 
-  # The given account's own secret when `GOTCHU_GATEWAY_SECRETS` names one,
-  # falling back to the single, install-wide `GOTCHU_GATEWAY_SECRET` for any
-  # account the map doesn't mention -- so today's one-account deployment
-  # needs no new env var at all. `nil` when neither names the account: every
-  # caller already has its own `ConfigurationError` with its own message, so
-  # this resolver raises nothing itself.
+  # The given account's own secret from `GOTCHU_GATEWAY_SECRETS`. The single,
+  # install-wide `GOTCHU_GATEWAY_SECRET` is used ONLY while that map is unset
+  # or blank -- today's one-account deployment, which needs no new env var.
+  # Once the map exists the install is multi-account and the single variable
+  # is the legacy account's credential, so an account the map does not list
+  # gets NO secret rather than the legacy one (fix wave E): handing it over
+  # would let that account act as the legacy account at the gateway. `nil`
+  # then, and every caller's own `ConfigurationError` answers 503 before any
+  # request is made; this resolver raises nothing itself.
   def self.for_account(account_id)
-    parse(ENV.fetch('GOTCHU_GATEWAY_SECRETS', nil))[account_id] ||
-      ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).presence
+    raw = ENV.fetch('GOTCHU_GATEWAY_SECRETS', nil)
+    return ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).presence if raw.blank?
+
+    parse(raw)[account_id]
   end
 end

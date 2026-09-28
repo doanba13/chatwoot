@@ -38,8 +38,18 @@ RSpec.describe Gotchu::GatewaySecret do
       expect(described_class.for_account(1)).to eq('only-for-account-1')
     end
 
-    it 'falls back to the single GOTCHU_GATEWAY_SECRET for an account the map does not list' do
+    # Fix wave E. Once the map exists the install is multi-account, and the
+    # single variable is the LEGACY account's credential: handing it to an
+    # account the map forgot would let that account act as the legacy one.
+    it 'gives no secret to an account a set map does not list, even with the single variable set' do
       allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return('999:someone-elses-secret')
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return('shared-secret')
+
+      expect(described_class.for_account(1)).to be_nil
+    end
+
+    it 'falls back to the single variable when GOTCHU_GATEWAY_SECRETS is set but blank' do
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return('  ')
       allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return('shared-secret')
 
       expect(described_class.for_account(1)).to eq('shared-secret')
