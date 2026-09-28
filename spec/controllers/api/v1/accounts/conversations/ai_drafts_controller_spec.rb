@@ -14,11 +14,15 @@ RSpec.describe 'Conversation AI Drafts API', type: :request do
   end
 
   # `gesture` defaults to unset, which is the state every host is in: the read
-  # needs neither that credential nor the write route behind it.
-  def configure_gateway(url: gateway_url, secret: gateway_secret, gesture: nil)
+  # needs neither that credential nor the write route behind it. `secrets`
+  # defaults to unset too -- no per-account entries at all, so every account
+  # falls back to `secret` above, which is exactly today's one-account
+  # deployment.
+  def configure_gateway(url: gateway_url, secret: gateway_secret, gesture: nil, secrets: nil)
     allow(ENV).to receive(:fetch).and_call_original
     allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_URL', nil).and_return(url)
     allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return(secret)
+    allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return(secrets)
     allow(ENV).to receive(:fetch).with('GOTCHU_GESTURE_SECRET', nil).and_return(gesture)
   end
 
@@ -181,6 +185,57 @@ RSpec.describe 'Conversation AI Drafts API', type: :request do
 
         expect(response).to have_http_status(:bad_gateway)
         expect(response.parsed_body['error']).to eq('AI draft service is unavailable')
+      end
+
+      # Task 11: the gateway is becoming multi-tenant, so this read must send
+      # the calling account's own secret rather than one shared by every
+      # account, plus a header the gateway can cross-check the secret
+      # against -- the same resolver ProcedureService uses (Gotchu::GatewaySecret).
+      it "sends the account's own secret from GOTCHU_GATEWAY_SECRETS, not the shared single variable" do
+        own_secret = 'only-for-this-account'
+        configure_gateway(secrets: "#{account.id}:#{own_secret}")
+        stub_request(:post, draft_endpoint)
+          .with(query: { secret: own_secret })
+          .to_return(status: 200, body: payload.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        get draft_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(a_request(:post, draft_endpoint).with(query: { secret: own_secret })).to have_been_made
+        expect(a_request(:post, draft_endpoint).with(query: { secret: gateway_secret })).not_to have_been_made
+      end
+
+      it 'sends X-Chatwoot-Account-Id naming the calling account' do
+        configure_gateway
+        stub_gateway
+
+        get draft_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:post, draft_endpoint).with(
+            query: { secret: gateway_secret }, headers: { 'X-Chatwoot-Account-Id' => account.id.to_s }
+          )
+        ).to have_been_made
+      end
+
+      it 'falls back to the single GOTCHU_GATEWAY_SECRET for an account the map does not list' do
+        configure_gateway(secrets: '999999:someone-elses-secret')
+        stub_gateway
+
+        get draft_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(a_request(:post, draft_endpoint).with(query: { secret: gateway_secret })).to have_been_made
+      end
+
+      it 'answers 503 and makes no request when neither the map nor the single variable name this account' do
+        configure_gateway(secret: nil, secrets: '999999:someone-elses-secret')
+
+        get draft_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:service_unavailable)
+        expect(response.parsed_body['error']).to eq('AI draft service is not configured')
+        expect(a_request(:post, draft_endpoint)).not_to have_been_made
       end
     end
   end

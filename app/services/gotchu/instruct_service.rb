@@ -76,12 +76,24 @@ class Gotchu::InstructService
   # `actor_id` is the SESSION's user id, established by the controller from
   # `Current.user` and never read out of the request body. It is what makes the
   # gesture attributable (invariant 5); a body-supplied actor is a claim.
-  def initialize(conversation:, actor_id:, cycle_id:, request_id:, text:)
+  #
+  # `account_id` is likewise the SESSION's account (`Current.account.id`),
+  # never a param -- it picks which gateway secret this request sends (see
+  # `secret` below, via `Gotchu::GatewaySecret`) and rides along as the
+  # `X-Chatwoot-Account-Id` cross-check header the gateway compares against
+  # the secret it derived.
+  # Six independently required, equally-weighted identity/content fields;
+  # none is an "extra option" that could be gathered into an opts hash
+  # without hurting readability at the call site (compare
+  # ProcedureService#request's `**opts`, which exists for the opposite
+  # shape: a few required args plus a genuine long tail of optional ones).
+  def initialize(conversation:, actor_id:, cycle_id:, request_id:, text:, account_id:) # rubocop:disable Metrics/ParameterLists
     @conversation = conversation
     @actor_id = actor_id
     @cycle_id = cycle_id
     @request_id = request_id
     @text = text
+    @account_id = account_id
   end
 
   # Returns true when the gateway accepted the gesture. Raises otherwise — there
@@ -111,7 +123,10 @@ class Gotchu::InstructService
         # a CORS-simple POST, which is the shape a leaked credential would be
         # fired in from any page.
         'Content-Type' => 'application/json',
-        'x-gesture-secret' => gesture_secret
+        'x-gesture-secret' => gesture_secret,
+        # A cross-check only -- the gateway derives the account from the
+        # query secret above, never from this header alone.
+        'X-Chatwoot-Account-Id' => @account_id.to_s
       },
       timeout: TIMEOUT_SECONDS
     )
@@ -140,9 +155,14 @@ class Gotchu::InstructService
                   raise(ConfigurationError, 'GOTCHU_GATEWAY_URL is not set')
   end
 
+  # The calling account's own secret when `GOTCHU_GATEWAY_SECRETS` names one,
+  # falling back to the single, install-wide `GOTCHU_GATEWAY_SECRET` for any
+  # account the map doesn't mention -- so today's one-account deployment
+  # keeps working with no new env var at all. Raised before `post_instruction`'s
+  # own `HTTParty.post` runs, so no request ever reaches the gateway.
   def secret
-    @secret ||= ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).presence ||
-                raise(ConfigurationError, 'GOTCHU_GATEWAY_SECRET is not set')
+    @secret ||= Gotchu::GatewaySecret.for_account(@account_id) ||
+                raise(ConfigurationError, "no gateway secret is configured for account #{@account_id}")
   end
 
   def gesture_secret

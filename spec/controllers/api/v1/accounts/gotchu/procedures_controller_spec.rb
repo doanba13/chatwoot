@@ -829,6 +829,20 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         expect(response.parsed_body['reason']).to eq('unconfigured')
         expect(a_request(:post, procedures_endpoint)).not_to have_been_made
       end
+
+      # Coordinator ruling, Task 11 follow-up: `available?` (which the index
+      # action and `capabilities` both call) must answer from per-account
+      # resolution, not the global variable alone.
+      it 'reports the capability as available for an account named only in the per-account map, with no single fallback secret' do
+        own_secret = 'only-for-this-account'
+        configure_gateway(secret: nil, secrets: "#{account.id}:#{own_secret}")
+        stub_list(query: { secret: own_secret })
+
+        get procedures_url, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['capabilities']).to eq({ 'procedures' => true })
+      end
     end
   end
 end

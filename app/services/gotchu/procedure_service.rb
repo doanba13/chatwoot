@@ -73,20 +73,24 @@ class Gotchu::ProcedureService
     JSON::ParserError
   ].freeze
 
-  # Whether the procedure screen can reach the gateway from this deployment at
-  # all. Three env vars, because every procedure route — including the list,
-  # unlike DraftService's read — demands both credentials: the shared
-  # `/api/*` secret in the query string AND `GESTURE_SHARED_SECRET` in the
-  # `x-gesture-secret` header (server.ts: "GET /api/procedures is the one
-  # read among them... still gated by the dark switch and both secrets like
-  # everything else in this block").
+  # Whether the procedure screen can reach the gateway from this deployment
+  # for THIS account -- the URL is install-wide, the gesture secret is
+  # install-wide, but the gateway secret is now resolved per account (see
+  # `Gotchu::GatewaySecret.for_account`), so `available?` has to be too: an
+  # account named only in `GOTCHU_GATEWAY_SECRETS`, with no install-wide
+  # `GOTCHU_GATEWAY_SECRET` fallback set, is genuinely available even though
+  # the single shared variable this used to check is blank. Takes
+  # `account_id:` rather than reading `Current.account` itself, the same
+  # reason `initialize` does: a class method has no request context of its
+  # own, and a caller passing it explicitly is what makes this testable
+  # without a controller in the loop.
   #
   # Read at call time, never memoized: this is what the controller's index
   # action uses to decide whether to call the gateway at all, so turning the
   # feature on is an env var and a container restart, never a rebuild.
-  def self.available?
+  def self.available?(account_id:)
     ENV.fetch('GOTCHU_GATEWAY_URL', nil).present? &&
-      ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).present? &&
+      Gotchu::GatewaySecret.for_account(account_id).present? &&
       ENV.fetch('GOTCHU_GESTURE_SECRET', nil).present?
   end
 
@@ -98,41 +102,13 @@ class Gotchu::ProcedureService
   #
   # `account_id` is likewise the SESSION's account (`Current.account.id`),
   # never a param: it picks which gateway secret this request sends (see
-  # `resolved_secret` below) and rides along as the `X-Chatwoot-Account-Id`
-  # cross-check header the gateway compares against the secret it derived --
-  # so a caller cannot ask this proxy to speak for an account it isn't
-  # currently authenticated as.
+  # `secret` below, via `Gotchu::GatewaySecret`) and rides along as the
+  # `X-Chatwoot-Account-Id` cross-check header the gateway compares against
+  # the secret it derived -- so a caller cannot ask this proxy to speak for
+  # an account it isn't currently authenticated as.
   def initialize(actor_id:, account_id:)
     @actor_id = actor_id
     @account_id = account_id
-  end
-
-  # `GOTCHU_GATEWAY_SECRETS` is `accountId:secret,accountId:secret,...` --
-  # one gateway account may hold several Chatwoot accounts once a second
-  # merchant is onboarded, each with its own credential, so a single shared
-  # variable can no longer name all of them. A malformed entry (no colon, a
-  # non-integer id, a blank secret) is skipped rather than raised: the whole
-  # env var is boot-time config for every account on this install, and one
-  # typo must not take every other account's credential down with it. The
-  # warning names the entry's INDEX only -- never the entry's own text, which
-  # is exactly where a secret typo'd into the wrong slot would otherwise end
-  # up in the log.
-  #
-  # A public class method (not folded into an instance method) so it can be
-  # tested directly against a raw string, the same way `accountForSecret` is
-  # a free function on the gateway side of this same change.
-  def self.parse_account_secrets(raw)
-    raw.to_s.split(',').each_with_index.with_object({}) do |(entry, index), acc|
-      account_id_part, secret_part = entry.split(':', 2)
-      account_id = account_id_part.to_s.strip
-      secret = secret_part.to_s.strip
-
-      if account_id.match?(/\A\d+\z/) && secret.present?
-        acc[account_id.to_i] = secret
-      else
-        Rails.logger.warn("GOTCHU_GATEWAY_SECRETS entry #{index} is malformed and was ignored")
-      end
-    end
   end
 
   # `?store=<key>` list. No store names every procedure, any store, for an
@@ -354,13 +330,8 @@ class Gotchu::ProcedureService
   # from inside `perform_http`'s own `query: { secret: secret }` -- before
   # `HTTParty.public_send` runs -- so no request ever reaches the gateway.
   def secret
-    @secret ||= resolved_secret ||
+    @secret ||= Gotchu::GatewaySecret.for_account(@account_id) ||
                 raise(ConfigurationError, "no gateway secret is configured for account #{@account_id}")
-  end
-
-  def resolved_secret
-    self.class.parse_account_secrets(ENV.fetch('GOTCHU_GATEWAY_SECRETS', nil))[@account_id] ||
-      ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).presence
   end
 
   def gesture_secret

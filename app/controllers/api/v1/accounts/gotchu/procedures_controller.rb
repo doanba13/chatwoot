@@ -36,7 +36,7 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # configured" state, the way AiDraftsController already reports
   # `capabilities.instruct` — never fail the whole screen the way a 503 would.
   def index
-    if Gotchu::ProcedureService.available?
+    if Gotchu::ProcedureService.available?(account_id: Current.account.id)
       render json: service.list(store: params[:store]).merge('capabilities' => capabilities)
     else
       render json: { 'procedures' => [], 'capabilities' => capabilities }
@@ -137,7 +137,7 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # own `capabilities` is: turning the screen on is an env var and a
   # container restart, never a dashboard rebuild.
   def capabilities
-    { 'procedures' => Gotchu::ProcedureService.available? }
+    { 'procedures' => Gotchu::ProcedureService.available?(account_id: Current.account.id) }
   end
 
   def render_unconfigured(exception)

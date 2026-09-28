@@ -48,6 +48,9 @@ class Api::V1::Accounts::Conversations::AiDraftInstructionsController < Api::V1:
       # whole of what makes the gesture attributable (invariant 5). A body field
       # by that name is ignored, and there is deliberately no way to override it.
       actor_id: Current.user.id,
+      # THE SESSION'S account, for the same reason: it picks which gateway
+      # secret this request sends, never a value a caller could name.
+      account_id: Current.account.id,
       cycle_id: params[:cycle_id].to_i,
       request_id: params[:request_id].to_s,
       text: instruction_text

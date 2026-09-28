@@ -28,8 +28,16 @@ class Gotchu::DraftService
     JSON::ParserError
   ].freeze
 
-  def initialize(conversation:)
+  # `account_id` is the SESSION's account (`Current.account.id`), never a
+  # param -- it picks which gateway secret this request sends (see `secret`
+  # below, via `Gotchu::GatewaySecret`) and rides along as the
+  # `X-Chatwoot-Account-Id` cross-check header the gateway compares against
+  # the secret it derived. `@conversation` is already scoped to this same
+  # account by the controller's own `Current.account.conversations.find_by!`,
+  # so the two can never disagree.
+  def initialize(conversation:, account_id:)
     @conversation = conversation
+    @account_id = account_id
   end
 
   # Returns the gateway's payload: { 'cycle' => {...} | nil, 'draft' => {...} | nil }
@@ -56,7 +64,12 @@ class Gotchu::DraftService
       # secret never leaves this process.
       query: { secret: secret },
       body: { conversationId: gateway_conversation_id }.to_json,
-      headers: { 'Content-Type' => 'application/json' },
+      headers: {
+        'Content-Type' => 'application/json',
+        # A cross-check only -- the gateway derives the account from the
+        # query secret above, never from this header alone.
+        'X-Chatwoot-Account-Id' => @account_id.to_s
+      },
       timeout: TIMEOUT_SECONDS
     )
   end
@@ -78,8 +91,13 @@ class Gotchu::DraftService
                   raise(ConfigurationError, 'GOTCHU_GATEWAY_URL is not set')
   end
 
+  # The calling account's own secret when `GOTCHU_GATEWAY_SECRETS` names one,
+  # falling back to the single, install-wide `GOTCHU_GATEWAY_SECRET` for any
+  # account the map doesn't mention -- so today's one-account deployment
+  # keeps working with no new env var at all. Raised before `fetch_draft`'s
+  # own `HTTParty.post` runs, so no request ever reaches the gateway.
   def secret
-    @secret ||= ENV.fetch('GOTCHU_GATEWAY_SECRET', nil).presence ||
-                raise(ConfigurationError, 'GOTCHU_GATEWAY_SECRET is not set')
+    @secret ||= Gotchu::GatewaySecret.for_account(@account_id) ||
+                raise(ConfigurationError, "no gateway secret is configured for account #{@account_id}")
   end
 end

@@ -15,10 +15,14 @@ RSpec.describe 'Conversation AI Draft Instructions API', type: :request do
   # travelled is about the request that travelled.
   let(:sent) { [] }
 
-  def configure_gateway(url: gateway_url, secret: gateway_secret, gesture: gesture_secret)
+  # `secrets` defaults to unset -- no per-account entries at all, so every
+  # account falls back to `secret` above, which is exactly today's
+  # one-account deployment.
+  def configure_gateway(url: gateway_url, secret: gateway_secret, gesture: gesture_secret, secrets: nil)
     allow(ENV).to receive(:fetch).and_call_original
     allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_URL', nil).and_return(url)
     allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return(secret)
+    allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return(secrets)
     allow(ENV).to receive(:fetch).with('GOTCHU_GESTURE_SECRET', nil).and_return(gesture)
   end
 
@@ -285,6 +289,58 @@ RSpec.describe 'Conversation AI Draft Instructions API', type: :request do
 
         expect(response).to have_http_status(:conflict)
         expect(response.parsed_body['reason']).to eq('refused')
+      end
+
+      # Task 11: the gateway is becoming multi-tenant, so this write must
+      # send the calling account's own secret rather than one shared by
+      # every account, plus a header the gateway can cross-check the secret
+      # against -- the same resolver ProcedureService uses (Gotchu::GatewaySecret).
+      it "sends the account's own secret from GOTCHU_GATEWAY_SECRETS, not the shared single variable" do
+        own_secret = 'only-for-this-account'
+        configure_gateway(secrets: "#{account.id}:#{own_secret}")
+        stub_request(:post, instruct_endpoint)
+          .with(query: { secret: own_secret })
+          .to_return(status: 202, body: { queued: true }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        post instruct_url, params: params, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:accepted)
+        expect(a_request(:post, instruct_endpoint).with(query: { secret: own_secret })).to have_been_made
+        expect(a_request(:post, instruct_endpoint).with(query: { secret: gateway_secret })).not_to have_been_made
+      end
+
+      it 'sends X-Chatwoot-Account-Id naming the calling account, alongside the unchanged gesture header' do
+        configure_gateway
+        stub_gateway
+
+        post instruct_url, params: params, headers: agent.create_new_auth_token, as: :json
+
+        expect(
+          a_request(:post, instruct_endpoint).with(
+            query: { secret: gateway_secret },
+            headers: { 'x-gesture-secret' => gesture_secret, 'X-Chatwoot-Account-Id' => account.id.to_s }
+          )
+        ).to have_been_made
+      end
+
+      it 'falls back to the single GOTCHU_GATEWAY_SECRET for an account the map does not list' do
+        configure_gateway(secrets: '999999:someone-elses-secret')
+        stub_gateway
+
+        post instruct_url, params: params, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:accepted)
+        expect(a_request(:post, instruct_endpoint).with(query: { secret: gateway_secret })).to have_been_made
+      end
+
+      it 'answers 503 and makes no request when neither the map nor the single variable name this account' do
+        configure_gateway(secret: nil, secrets: '999999:someone-elses-secret')
+
+        post instruct_url, params: params, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:service_unavailable)
+        expect(response.parsed_body['reason']).to eq('unconfigured')
+        expect(a_request(:post, instruct_endpoint)).not_to have_been_made
       end
     end
   end
