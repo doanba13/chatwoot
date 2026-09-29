@@ -169,6 +169,47 @@ RSpec.describe Gotchu::ProcedureService do
     end
   end
 
+  # Task 5 fix round 2: this class's transport-error redaction was fixed in
+  # the same fix round as StoreRoutesService's own (same secret in the same
+  # position -- `query: { secret: secret }` -- so the same leak, the same
+  # fix), but had no spec of its own here. Without this block, reverting
+  # `raise UnavailableError, e.class.to_s` back to
+  # `raise UnavailableError, "#{e.class}: #{e.message}"` passed the whole
+  # suite. Mirrors store_routes_service_spec.rb's own `transport-error
+  # handling` block.
+  describe 'transport-error handling' do
+    it 'raises UnavailableError carrying only the exception class, never a message or a log line that could hold the secret' do
+      secret = 's3cr3t'
+      leaky_message = "getaddrinfo failed for #{gateway_url}/api/procedures/7/bindings?secret=#{secret}"
+      allow(HTTParty).to receive(:get).and_raise(SocketError, leaky_message)
+
+      # Nothing in ProcedureService itself logs today, but the guard this
+      # spec exists for is exactly the kind of thing a future rescue clause
+      # could reintroduce (`Rails.logger.warn(e.message)`) without touching
+      # the raised error at all -- so every log level is watched, not just
+      # the exception message.
+      logged = []
+      %i[debug info warn error fatal].each do |level|
+        allow(Rails.logger).to receive(level) do |msg = nil, &blk|
+          logged << (blk ? blk.call : msg).to_s
+        end
+      end
+
+      expect { service.bindings(id: 7) }.to raise_error(Gotchu::ProcedureService::UnavailableError) do |error|
+        expect(error.message).to eq('SocketError')
+        expect(error.message).not_to include(secret)
+      end
+      expect(logged.join(' ')).not_to include(secret)
+    end
+
+    it 'never follows a redirect, so a redirect target cannot be handed the query secret' do
+      response = json_response(200, { bindings: [] })
+      expect(HTTParty).to receive(:get).with(anything, hash_including(follow_redirects: false)).and_return(response)
+
+      service.bindings(id: 7)
+    end
+  end
+
   # Task 11: the gateway becomes multi-tenant, so this proxy must send the
   # calling account's own secret rather than one shared by everyone. The
   # parser itself (`Gotchu::GatewaySecret.parse`) is shared by every
