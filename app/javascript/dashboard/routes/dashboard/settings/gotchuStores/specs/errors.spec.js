@@ -39,6 +39,9 @@ describe('#storeRoutesErrorKey', () => {
     expect(
       storeRoutesErrorKey(errorWithReason('unlisted_inbox_dropped'))
     ).toEqual(STORE_ROUTES_ERROR_KEYS.unlisted_inbox_dropped);
+    expect(storeRoutesErrorKey(errorWithReason('too_many_saves'))).toEqual(
+      STORE_ROUTES_ERROR_KEYS.too_many_saves
+    );
   });
 
   it('has its own message for every reason, not the unavailable fallback', () => {

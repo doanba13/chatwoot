@@ -57,7 +57,8 @@
       "ONE_PER_CHANNEL": "Une boutique peut avoir une boîte de réception par canal. Laissez l'autre partagée.",
       "STORES_CHANGED": "Vos boutiques ont changé depuis l'ouverture de cette page. Rechargez et réessayez.",
       "UNCONFIRMED": "Impossible de confirmer l'enregistrement. Rechargez la page pour voir s'il a été pris en compte.",
-      "UNLISTED_INBOX_DROPPED": "La boîte de réception {ids} n'est plus visible et n'a pas été confirmée pour suppression. Rechargez la page et décidez à nouveau."
+      "UNLISTED_INBOX_DROPPED": "La boîte de réception {ids} n'est plus visible et n'a pas été confirmée pour suppression. Rechargez la page et décidez à nouveau.",
+      "TOO_MANY_SAVES": "Trop d'enregistrements en peu de temps. Attendez une minute, puis enregistrez à nouveau."
     }
   }
 }

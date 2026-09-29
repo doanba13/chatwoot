@@ -57,7 +57,8 @@
       "ONE_PER_CHANNEL": "A store can hold one inbox per channel. Leave the other one shared.",
       "STORES_CHANGED": "Your stores changed since this page was opened. Reload and try again.",
       "UNCONFIRMED": "Could not confirm the save. Reload the page to see whether it landed.",
-      "UNLISTED_INBOX_DROPPED": "Inbox {ids} is no longer visible and was not acknowledged for removal. Reload the page and decide again."
+      "UNLISTED_INBOX_DROPPED": "Inbox {ids} is no longer visible and was not acknowledged for removal. Reload the page and decide again.",
+      "TOO_MANY_SAVES": "Too many saves in a short time. Wait a minute, then save again."
     }
   }
 }

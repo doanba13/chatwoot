@@ -12,6 +12,7 @@ class Api::V1::Accounts::Gotchu::StoreRoutesController < Api::V1::Accounts::Base
   rescue_from Gotchu::StoreRoutesService::StoresChangedError, with: :render_stores_changed
   rescue_from Gotchu::StoreRoutesService::UnlistedInboxDroppedError, with: :render_unlisted_inbox_dropped
   rescue_from Gotchu::StoreRoutesService::UnconfirmedError, with: :render_unconfirmed
+  rescue_from Gotchu::StoreRoutesService::TooManySavesError, with: :render_too_many_saves
 
   def index
     if Gotchu::StoreRoutesService.available?(account_id: Current.account.id)
@@ -118,6 +119,11 @@ class Api::V1::Accounts::Gotchu::StoreRoutesController < Api::V1::Accounts::Base
     Rails.logger.warn("Gotchu refused to drop an unacknowledged inbox for account #{params[:account_id]}")
     render json: { error: 'unlisted_inbox_dropped', reason: 'unlisted_inbox_dropped', inboxIds: exception.inbox_ids },
            status: :conflict
+  end
+
+  def render_too_many_saves(_exception)
+    Rails.logger.warn("Gotchu throttled a store-routes save for account #{params[:account_id]}")
+    render json: { error: 'Too many saves in a short time', reason: 'too_many_saves' }, status: :too_many_requests
   end
 
   # A PUT 500 is opaque at this end: it means the gateway's own reload was

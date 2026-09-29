@@ -28,6 +28,9 @@ export const STORE_ROUTES_ERROR_KEYS = Object.freeze({
   stores_changed: 'GOTCHU_STORES.ERRORS.STORES_CHANGED',
   unconfirmed: 'GOTCHU_STORES.ERRORS.UNCONFIRMED',
   unlisted_inbox_dropped: 'GOTCHU_STORES.ERRORS.UNLISTED_INBOX_DROPPED',
+  // The gateway's per-account save throttle (security review M1, final 6.3):
+  // the proxy relays its 429 under this reason.
+  too_many_saves: 'GOTCHU_STORES.ERRORS.TOO_MANY_SAVES',
 });
 
 export function storeRoutesErrorKey(error) {

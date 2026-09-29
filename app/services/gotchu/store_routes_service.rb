@@ -10,6 +10,10 @@ class Gotchu::StoreRoutesService
   class UnavailableError < StandardError; end
   class NotFoundError < StandardError; end
   class StoresChangedError < StandardError; end
+  # The gateway throttles saves per account (security review M1, final 6.3)
+  # and answered 429. Its own class, not UnavailableError: the admin's fix is
+  # to wait, and "could not confirm" would send them reloading instead.
+  class TooManySavesError < StandardError; end
 
   # The save the admin submitted would drop a mapped inbox Chatwoot's live
   # list no longer shows (deleted, or invisible to a non-administrator
@@ -138,6 +142,9 @@ class Gotchu::StoreRoutesService
     when 400 then raise ValidationError, reason_of(response)
     when 404 then raise(body ? NotFoundError : UnavailableError, 'gateway responded with 404')
     when 409 then raise conflict_error_for(response)
+    # Only a save is throttled; a 429 on the list is not something the
+    # gateway answers, so it stays opaque.
+    when 429 then raise(body ? TooManySavesError : UnavailableError, 'gateway responded with 429')
     when 500 then raise(body ? UnconfirmedError : UnavailableError, 'gateway responded with 500')
     else raise UnavailableError, "gateway responded with #{response.code}"
     end

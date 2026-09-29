@@ -213,6 +213,17 @@ RSpec.describe 'Gotchu Store Routes API', type: :request do
         expect(response.parsed_body['reason']).to eq('not_found')
       end
 
+      # Security review M1 (final, 6.3): the gateway throttles saves per
+      # account and answers 429; the screen needs its own reason for it, not
+      # the generic "did not confirm", because waiting is the whole fix.
+      it 'maps a gateway 429 to too_many_saves' do
+        configure_gateway
+        stub_replace(status: 429, body: { error: 'too_many_saves' })
+        put routes_url, params: update_params, headers: admin.create_new_auth_token, as: :json
+        expect(response).to have_http_status(:too_many_requests)
+        expect(response.parsed_body).to eq('error' => 'Too many saves in a short time', 'reason' => 'too_many_saves')
+      end
+
       it 'maps a 409 to stores_changed' do
         configure_gateway
         stub_replace(status: 409, body: { error: 'the stores changed', reason: 'stores_changed' })

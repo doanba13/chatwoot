@@ -73,6 +73,14 @@ describe('Gotchu stores mapping section (InboxMapping.vue)', () => {
     expect(wrapper.emitted('updated')).toBeUndefined();
   });
 
+  it('tells the admin to wait when the gateway throttled the save', async () => {
+    refuseWith(429, { error: 'Too many saves', reason: 'too_many_saves' });
+    await pressSave(mountSection());
+    expect(useAlert).toHaveBeenCalledWith(
+      'Too many saves in a short time. Wait a minute, then save again.'
+    );
+  });
+
   it('emits the saved mapping and says so on success', async () => {
     const saved = { stores: STORES, inboxes: INBOXES };
     StoreRoutesAPI.replace.mockResolvedValue({ data: saved });
