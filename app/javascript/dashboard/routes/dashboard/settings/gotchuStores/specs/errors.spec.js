@@ -1,4 +1,12 @@
-import { storeRoutesErrorKey, STORE_ROUTES_ERROR_KEYS } from '../errors';
+import {
+  storeRoutesErrorKey,
+  storeRoutesReadErrorKey,
+  STORE_ROUTES_ERROR_KEYS,
+  STORE_ROUTES_READ_ERROR_KEYS,
+} from '../errors';
+import en from 'dashboard/i18n/locale/en/gotchuStores.json';
+import de from 'dashboard/i18n/locale/de/gotchuStores.json';
+import fr from 'dashboard/i18n/locale/fr/gotchuStores.json';
 
 const errorWithReason = reason => ({ response: { data: { reason } } });
 
@@ -28,6 +36,17 @@ describe('#storeRoutesErrorKey', () => {
     expect(storeRoutesErrorKey(errorWithReason('unconfirmed'))).toEqual(
       STORE_ROUTES_ERROR_KEYS.unconfirmed
     );
+    expect(
+      storeRoutesErrorKey(errorWithReason('unlisted_inbox_dropped'))
+    ).toEqual(STORE_ROUTES_ERROR_KEYS.unlisted_inbox_dropped);
+  });
+
+  it('has its own message for every reason, not the unavailable fallback', () => {
+    Object.entries(STORE_ROUTES_ERROR_KEYS)
+      .filter(([reason]) => !['unavailable', 'not_found'].includes(reason))
+      .forEach(([, key]) => {
+        expect(key).not.toEqual(STORE_ROUTES_ERROR_KEYS.unavailable);
+      });
   });
 
   it('reads not_found the same as stores_changed -- both mean "reload and try again"', () => {
@@ -56,4 +75,54 @@ describe('#storeRoutesErrorKey', () => {
       STORE_ROUTES_ERROR_KEYS.unavailable
     );
   });
+});
+
+describe('#storeRoutesReadErrorKey', () => {
+  // A failed READ must never borrow a save's words ("did not confirm the
+  // change") -- nothing was changed -- nor fall through to the empty state.
+  it('says why the stores could not be loaded, by reason', () => {
+    expect(storeRoutesReadErrorKey(errorWithReason('unconfigured'))).toEqual(
+      STORE_ROUTES_READ_ERROR_KEYS.unconfigured
+    );
+    expect(storeRoutesReadErrorKey(errorWithReason('unavailable'))).toEqual(
+      STORE_ROUTES_READ_ERROR_KEYS.unavailable
+    );
+  });
+
+  it('reads anything else, and no response at all, as unavailable', () => {
+    expect(storeRoutesReadErrorKey(errorWithReason('invalid'))).toEqual(
+      STORE_ROUTES_READ_ERROR_KEYS.unavailable
+    );
+    expect(storeRoutesReadErrorKey(new Error('network down'))).toEqual(
+      STORE_ROUTES_READ_ERROR_KEYS.unavailable
+    );
+  });
+
+  it('never answers with a save message', () => {
+    Object.values(STORE_ROUTES_READ_ERROR_KEYS).forEach(key => {
+      expect(Object.values(STORE_ROUTES_ERROR_KEYS)).not.toContain(key);
+    });
+  });
+});
+
+describe('gotchuStores copy', () => {
+  const lookup = (catalogue, key) =>
+    key.split('.').reduce((node, part) => node?.[part], catalogue);
+
+  it.each([
+    ['en', en],
+    ['de', de],
+    ['fr', fr],
+  ])(
+    'has %s copy for every reason key, save and read',
+    (_locale, catalogue) => {
+      [
+        ...Object.values(STORE_ROUTES_ERROR_KEYS),
+        ...Object.values(STORE_ROUTES_READ_ERROR_KEYS),
+        'GOTCHU_STORES.LOAD_FAILED.TITLE',
+      ].forEach(key => {
+        expect(typeof lookup(catalogue, key)).toBe('string');
+      });
+    }
+  );
 });

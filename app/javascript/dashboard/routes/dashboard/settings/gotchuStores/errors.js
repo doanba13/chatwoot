@@ -34,3 +34,25 @@ export function storeRoutesErrorKey(error) {
   const reason = error?.response?.data?.reason;
   return STORE_ROUTES_ERROR_KEYS[reason] ?? STORE_ROUTES_ERROR_KEYS.unavailable;
 }
+
+/**
+ * What to say when the screen's one READ did not land (final code review I1).
+ * Never a save's words -- "did not confirm the change" describes a change,
+ * and a read made none -- and never the NO_STORES empty state, which a failed
+ * read used to fall through to: "connect a store first" sends an admin whose
+ * stores are fine off to connect one again. Only two reasons can come back
+ * from the list (the proxy's unconfigured and unavailable); anything else,
+ * or no response at all, reads as unavailable.
+ */
+export const STORE_ROUTES_READ_ERROR_KEYS = Object.freeze({
+  unconfigured: 'GOTCHU_STORES.LOAD_FAILED.UNCONFIGURED',
+  unavailable: 'GOTCHU_STORES.LOAD_FAILED.UNAVAILABLE',
+});
+
+export function storeRoutesReadErrorKey(error) {
+  const reason = error?.response?.data?.reason;
+  return (
+    STORE_ROUTES_READ_ERROR_KEYS[reason] ??
+    STORE_ROUTES_READ_ERROR_KEYS.unavailable
+  );
+}

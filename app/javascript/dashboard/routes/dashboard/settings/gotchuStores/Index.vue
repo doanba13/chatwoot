@@ -1,10 +1,9 @@
 <script setup>
 import { onBeforeMount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useAlert } from 'dashboard/composables';
 
 import StoreRoutesAPI from 'dashboard/api/gotchu/storeRoutes';
-import { storeRoutesErrorKey } from './errors';
+import { storeRoutesReadErrorKey } from './errors';
 
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
@@ -25,6 +24,11 @@ const isLoading = ref(true);
 const available = ref(true);
 const stores = ref([]);
 const inboxes = ref([]);
+// The i18n key of why the read failed, or null. A failed read is its own
+// state (final code review I1): left as it was, `available` stayed true and
+// `stores` empty, so the page told an admin with working stores to go and
+// connect one -- and toasted about a "change" a read never made.
+const loadFailedKey = ref(null);
 
 const applyData = data => {
   stores.value = data.stores || [];
@@ -33,12 +37,13 @@ const applyData = data => {
 
 const fetchRoutes = async () => {
   isLoading.value = true;
+  loadFailedKey.value = null;
   try {
     const { data } = await StoreRoutesAPI.get();
     available.value = data.capabilities?.store_routes === true;
     applyData(data);
   } catch (error) {
-    useAlert(t(storeRoutesErrorKey(error)));
+    loadFailedKey.value = storeRoutesReadErrorKey(error);
   } finally {
     isLoading.value = false;
   }
@@ -59,7 +64,13 @@ onBeforeMount(fetchRoutes);
       />
     </template>
     <template #body>
-      <p v-if="!available" class="py-20 text-center text-n-slate-11">
+      <div v-if="loadFailedKey" class="py-20 text-center">
+        <p class="mb-1 text-base font-medium text-n-slate-12">
+          {{ t('GOTCHU_STORES.LOAD_FAILED.TITLE') }}
+        </p>
+        <p class="text-n-slate-11">{{ t(loadFailedKey) }}</p>
+      </div>
+      <p v-else-if="!available" class="py-20 text-center text-n-slate-11">
         {{ t('GOTCHU_STORES.UNCONFIGURED') }}
       </p>
       <p v-else-if="!stores.length" class="py-20 text-center text-n-slate-11">

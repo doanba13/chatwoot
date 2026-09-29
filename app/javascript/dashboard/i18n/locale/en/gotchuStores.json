@@ -5,6 +5,11 @@
     "LOADING": "Fetching inboxes and stores",
     "NO_STORES": "No Shopify store is connected to this account yet. Connect a store first, then map its inboxes here.",
     "UNCONFIGURED": "Gotchu is not configured on this Chatwoot. An operator needs to set GOTCHU_GATEWAY_URL, a gateway secret for this account, and GOTCHU_GESTURE_SECRET.",
+    "LOAD_FAILED": {
+      "TITLE": "Could not load your stores",
+      "UNAVAILABLE": "Gotchu did not answer. Reload the page to try again.",
+      "UNCONFIGURED": "Gotchu is not configured on this Chatwoot."
+    },
     "SAVE": "Save mapping",
     "SAVED": "Mapping saved. New conversations are routed with it from now on.",
     "SHARED": "Shared / not one store",

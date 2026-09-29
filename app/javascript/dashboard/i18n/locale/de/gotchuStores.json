@@ -5,6 +5,11 @@
     "LOADING": "Posteingänge und Shops werden geladen",
     "NO_STORES": "Mit diesem Konto ist noch kein Shopify-Shop verbunden. Verbinde zuerst einen Shop und ordne dann hier seine Posteingänge zu.",
     "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet. Ein Betreiber muss GOTCHU_GATEWAY_URL, ein Gateway-Secret für dieses Konto und GOTCHU_GESTURE_SECRET setzen.",
+    "LOAD_FAILED": {
+      "TITLE": "Deine Shops konnten nicht geladen werden",
+      "UNAVAILABLE": "Gotchu hat nicht geantwortet. Lade die Seite neu, um es erneut zu versuchen.",
+      "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet."
+    },
     "SAVE": "Zuordnung speichern",
     "SAVED": "Zuordnung gespeichert. Neue Unterhaltungen werden ab jetzt danach zugeordnet.",
     "SHARED": "Geteilt / kein einzelner Shop",
