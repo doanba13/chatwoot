@@ -1,0 +1,58 @@
+{
+  "GOTCHU_STORES": {
+    "HEADER": "Gotchu-Shops",
+    "DESCRIPTION": "Sag Gotchu, zu welchem Shop jeder Posteingang gehört. Eine Messenger-Seite oder ein Website-Widget gehört meist zu einem Shop. Ein Postfach, in das mehrere Shops weiterleiten, gehört zu keinem: lass es geteilt und trag unten die Adresse jedes Shops ein.",
+    "LOADING": "Posteingänge und Shops werden geladen",
+    "NO_STORES": "Mit diesem Konto ist noch kein Shopify-Shop verbunden. Verbinde zuerst einen Shop und ordne dann hier seine Posteingänge zu.",
+    "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet. Ein Betreiber muss GOTCHU_GATEWAY_URL, ein Gateway-Secret für dieses Konto und GOTCHU_GESTURE_SECRET setzen.",
+    "SAVE": "Zuordnung speichern",
+    "SAVED": "Zuordnung gespeichert. Neue Unterhaltungen werden ab jetzt danach zugeordnet.",
+    "SHARED": "Geteilt / kein einzelner Shop",
+    "CHANNEL": {
+      "EMAIL": "E-Mail",
+      "MESSENGER": "Messenger",
+      "WEB": "Website",
+      "UNSUPPORTED": "Sonstiges"
+    },
+    "INBOXES": {
+      "TITLE": "Posteingänge",
+      "EMPTY": "Dieses Konto hat noch keine Posteingänge.",
+      "UNSUPPORTED": "Noch nicht unterstützt",
+      "TABLE_HEADER": {
+        "INBOX": "Posteingang",
+        "CHANNEL": "Kanal",
+        "STORE": "Shop"
+      }
+    },
+    "SHOP_EMAILS": {
+      "TITLE": "Shop-Adressen",
+      "DESCRIPTION": "Adressen, die in ein geteiltes Postfach weiterleiten. Gotchu liest die Weiterleitungsadresse der ersten Nachricht einer Unterhaltung und ordnet sie diesem Shop zu.",
+      "PLACEHOLDER": "kontakt{'@'}deinshop.de",
+      "LIMIT": "Bis zu 20 Adressen pro Shop."
+    },
+    "SHARED_WARNING": {
+      "TITLE": "Ist dieses Postfach geteilt?",
+      "DESCRIPTION": "Leiten mehrere deiner Shops in dieses Postfach weiter? Dann lass es geteilt und trag stattdessen die Shop-Adressen ein.",
+      "CONFIRM": "Es gehört nur zu diesem Shop",
+      "CANCEL": "Geteilt lassen"
+    },
+    "UNLISTED": {
+      "TITLE": "Für Gotchu nicht mehr sichtbare Posteingänge",
+      "DESCRIPTION": "Diese Posteingänge sind noch zugeordnet, aber Chatwoot listet sie für Gotchu nicht mehr -- gelöscht, oder für Gotchus Chatwoot-Nutzer nicht sichtbar. Beim Speichern bleibt jeder seinem aktuellen Shop zugeordnet, sofern du ihn nicht unten entfernst.",
+      "ITEM": "Posteingang #{id} ({channel}), zugeordnet zu {store}",
+      "PENDING_REMOVAL": "Wird beim Speichern von {store} entfernt",
+      "REMOVE": "Zuordnung entfernen",
+      "UNDO": "Rückgängig"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet.",
+      "UNAVAILABLE": "Gotchu hat die Änderung nicht bestätigt. Lade die Seite neu, um zu sehen, was gespeichert wurde.",
+      "INVALID": "Ein oder mehrere Posteingänge oder Adressen können nicht verwendet werden. Prüfe die Adressen und versuch es erneut.",
+      "DUPLICATE": "Ein Posteingang oder eine Adresse ist mehr als einem Shop zugeordnet.",
+      "ONE_PER_CHANNEL": "Ein Shop kann einen Posteingang pro Kanal haben. Lass den anderen geteilt.",
+      "STORES_CHANGED": "Deine Shops haben sich geändert, seit diese Seite geöffnet wurde. Lade neu und versuch es erneut.",
+      "UNCONFIRMED": "Die Speicherung konnte nicht bestätigt werden. Lade die Seite neu, um zu sehen, ob sie übernommen wurde.",
+      "UNLISTED_INBOX_DROPPED": "Posteingang {ids} ist nicht mehr sichtbar und wurde nicht zur Entfernung bestätigt. Lade die Seite neu und entscheide erneut."
+    }
+  }
+}

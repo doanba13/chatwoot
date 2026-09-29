@@ -20,6 +20,7 @@ import datePicker from './datePicker.json';
 import emoji from './emoji.json';
 import general from './general.json';
 import generalSettings from './generalSettings.json';
+import gotchuStores from './gotchuStores.json';
 import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
@@ -66,6 +67,7 @@ export default {
   ...emoji,
   ...general,
   ...generalSettings,
+  ...gotchuStores,
   ...helpCenter,
   ...inbox,
   ...inboxMgmt,

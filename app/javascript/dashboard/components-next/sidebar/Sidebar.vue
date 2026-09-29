@@ -900,6 +900,13 @@ const menuItems = computed(() => {
           to: accountScopedRoute('procedures_list'),
         },
         {
+          name: 'Settings Gotchu Stores',
+          label: t('SIDEBAR.GOTCHU_STORES'),
+          icon: 'i-lucide-store',
+          activeOn: ['gotchu_stores_index'],
+          to: accountScopedRoute('gotchu_stores_index'),
+        },
+        {
           name: 'Settings Canned Responses',
           label: t('SIDEBAR.CANNED_RESPONSES'),
           icon: 'i-lucide-message-square-quote',

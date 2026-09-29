@@ -1,0 +1,58 @@
+{
+  "GOTCHU_STORES": {
+    "HEADER": "Gotchu stores",
+    "DESCRIPTION": "Tell Gotchu which store each inbox belongs to. A Messenger page or a website widget usually belongs to one shop. A mailbox that several shops forward into belongs to none: leave it shared and list each shop's address below.",
+    "LOADING": "Fetching inboxes and stores",
+    "NO_STORES": "No Shopify store is connected to this account yet. Connect a store first, then map its inboxes here.",
+    "UNCONFIGURED": "Gotchu is not configured on this Chatwoot. An operator needs to set GOTCHU_GATEWAY_URL, a gateway secret for this account, and GOTCHU_GESTURE_SECRET.",
+    "SAVE": "Save mapping",
+    "SAVED": "Mapping saved. New conversations are routed with it from now on.",
+    "SHARED": "Shared / not one store",
+    "CHANNEL": {
+      "EMAIL": "Email",
+      "MESSENGER": "Messenger",
+      "WEB": "Website",
+      "UNSUPPORTED": "Other"
+    },
+    "INBOXES": {
+      "TITLE": "Inboxes",
+      "EMPTY": "This account has no inboxes yet.",
+      "UNSUPPORTED": "Not supported yet",
+      "TABLE_HEADER": {
+        "INBOX": "Inbox",
+        "CHANNEL": "Channel",
+        "STORE": "Store"
+      }
+    },
+    "SHOP_EMAILS": {
+      "TITLE": "Shop addresses",
+      "DESCRIPTION": "Addresses that forward into a shared mailbox. Gotchu reads the forwarding address on a conversation's first message and files it under that shop.",
+      "PLACEHOLDER": "contact{'@'}yourshop.com",
+      "LIMIT": "Up to 20 addresses per store."
+    },
+    "SHARED_WARNING": {
+      "TITLE": "Is this mailbox shared?",
+      "DESCRIPTION": "Several of your shops forward into this mailbox? Leave it shared and list the shop addresses instead.",
+      "CONFIRM": "It belongs to this shop only",
+      "CANCEL": "Keep it shared"
+    },
+    "UNLISTED": {
+      "TITLE": "Inboxes no longer visible to Gotchu",
+      "DESCRIPTION": "These inboxes are still mapped, but Chatwoot no longer lists them for Gotchu -- deleted, or not visible to Gotchu's Chatwoot user. Saving keeps each one mapped to its current store unless you remove it below.",
+      "ITEM": "Inbox #{id} ({channel}), mapped to {store}",
+      "PENDING_REMOVAL": "Will be removed from {store} when you save",
+      "REMOVE": "Remove mapping",
+      "UNDO": "Undo"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Gotchu is not configured on this Chatwoot.",
+      "UNAVAILABLE": "Gotchu did not confirm the change. Reload to see what was saved.",
+      "INVALID": "One or more inboxes or addresses cannot be used. Check the addresses and try again.",
+      "DUPLICATE": "An inbox or an address is assigned to more than one store.",
+      "ONE_PER_CHANNEL": "A store can hold one inbox per channel. Leave the other one shared.",
+      "STORES_CHANGED": "Your stores changed since this page was opened. Reload and try again.",
+      "UNCONFIRMED": "Could not confirm the save. Reload the page to see whether it landed.",
+      "UNLISTED_INBOX_DROPPED": "Inbox {ids} is no longer visible and was not acknowledged for removal. Reload the page and decide again."
+    }
+  }
+}

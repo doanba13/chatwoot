@@ -1,0 +1,58 @@
+{
+  "GOTCHU_STORES": {
+    "HEADER": "Boutiques Gotchu",
+    "DESCRIPTION": "Indiquez à Gotchu à quelle boutique appartient chaque boîte de réception. Une page Messenger ou un widget de site appartient en général à une seule boutique. Une boîte mail vers laquelle plusieurs boutiques transfèrent n'appartient à aucune : laissez-la partagée et indiquez plus bas l'adresse de chaque boutique.",
+    "LOADING": "Chargement des boîtes de réception et des boutiques",
+    "NO_STORES": "Aucune boutique Shopify n'est encore connectée à ce compte. Connectez d'abord une boutique, puis associez ici ses boîtes de réception.",
+    "UNCONFIGURED": "Gotchu n'est pas configuré sur ce Chatwoot. Un opérateur doit définir GOTCHU_GATEWAY_URL, un secret de passerelle pour ce compte et GOTCHU_GESTURE_SECRET.",
+    "SAVE": "Enregistrer l'association",
+    "SAVED": "Association enregistrée. Les nouvelles conversations sont désormais réparties avec elle.",
+    "SHARED": "Partagée / pas une seule boutique",
+    "CHANNEL": {
+      "EMAIL": "E-mail",
+      "MESSENGER": "Messenger",
+      "WEB": "Site web",
+      "UNSUPPORTED": "Autre"
+    },
+    "INBOXES": {
+      "TITLE": "Boîtes de réception",
+      "EMPTY": "Ce compte n'a encore aucune boîte de réception.",
+      "UNSUPPORTED": "Pas encore pris en charge",
+      "TABLE_HEADER": {
+        "INBOX": "Boîte de réception",
+        "CHANNEL": "Canal",
+        "STORE": "Boutique"
+      }
+    },
+    "SHOP_EMAILS": {
+      "TITLE": "Adresses des boutiques",
+      "DESCRIPTION": "Adresses qui transfèrent vers une boîte mail partagée. Gotchu lit l'adresse de transfert du premier message d'une conversation et la classe sous cette boutique.",
+      "PLACEHOLDER": "contact{'@'}votreboutique.fr",
+      "LIMIT": "Jusqu'à 20 adresses par boutique."
+    },
+    "SHARED_WARNING": {
+      "TITLE": "Cette boîte mail est-elle partagée ?",
+      "DESCRIPTION": "Plusieurs de vos boutiques transfèrent vers cette boîte mail ? Laissez-la partagée et indiquez plutôt les adresses des boutiques.",
+      "CONFIRM": "Elle appartient à cette boutique seulement",
+      "CANCEL": "La laisser partagée"
+    },
+    "UNLISTED": {
+      "TITLE": "Boîtes de réception non visibles pour Gotchu",
+      "DESCRIPTION": "Ces boîtes de réception sont toujours associées, mais Chatwoot ne les liste plus pour Gotchu -- supprimées, ou non visibles pour l'utilisateur Chatwoot de Gotchu. L'enregistrement garde chacune associée à sa boutique actuelle, sauf si vous la retirez ci-dessous.",
+      "ITEM": "Boîte de réception #{id} ({channel}), associée à {store}",
+      "PENDING_REMOVAL": "Sera retirée de {store} lors de l'enregistrement",
+      "REMOVE": "Retirer l'association",
+      "UNDO": "Annuler"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Gotchu n'est pas configuré sur ce Chatwoot.",
+      "UNAVAILABLE": "Gotchu n'a pas confirmé la modification. Rechargez pour voir ce qui a été enregistré.",
+      "INVALID": "Une ou plusieurs boîtes de réception ou adresses ne peuvent pas être utilisées. Vérifiez les adresses et réessayez.",
+      "DUPLICATE": "Une boîte de réception ou une adresse est associée à plus d'une boutique.",
+      "ONE_PER_CHANNEL": "Une boutique peut avoir une boîte de réception par canal. Laissez l'autre partagée.",
+      "STORES_CHANGED": "Vos boutiques ont changé depuis l'ouverture de cette page. Rechargez et réessayez.",
+      "UNCONFIRMED": "Impossible de confirmer l'enregistrement. Rechargez la page pour voir s'il a été pris en compte.",
+      "UNLISTED_INBOX_DROPPED": "La boîte de réception {ids} n'est plus visible et n'a pas été confirmée pour suppression. Rechargez la page et décidez à nouveau."
+    }
+  }
+}

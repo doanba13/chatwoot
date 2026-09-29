@@ -214,6 +214,13 @@ const GO_TO_COMMANDS = [
     routeName: 'procedures_list',
   },
   {
+    id: 'open_gotchu_stores_settings',
+    title: 'COMMAND_BAR.COMMANDS.GO_TO_SETTINGS_GOTCHU_STORES',
+    section: SECTION_SETTINGS,
+    icon: ICON_INBOX,
+    routeName: 'gotchu_stores_index',
+  },
+  {
     id: 'open_canned_response_settings',
     title: 'COMMAND_BAR.COMMANDS.GO_TO_SETTINGS_CANNED_RESPONSES',
     section: SECTION_SETTINGS,

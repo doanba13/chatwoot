@@ -19,6 +19,7 @@ import integrations from './integrations/integrations.routes';
 import labels from './labels/labels.routes';
 import macros from './macros/macros.routes';
 import procedures from './procedures/procedures.routes';
+import gotchuStores from './gotchuStores/gotchuStores.routes';
 import reports from './reports/reports.routes';
 import store from '../../../store';
 import sla from './sla/sla.routes';
@@ -65,6 +66,7 @@ export default {
     ...labels.routes,
     ...macros.routes,
     ...procedures.routes,
+    ...gotchuStores.routes,
     ...reports.routes,
     ...sla.routes,
     ...teams.routes,
