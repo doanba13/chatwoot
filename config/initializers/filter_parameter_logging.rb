@@ -11,3 +11,9 @@ filter_regex = /\A(?!.*\bwebsite_token\b).*token/i
 
 # Apply the regex for filtering
 Rails.application.config.filter_parameters += [filter_regex]
+
+# Shopify's OAuth return (item 6.4) puts a one-time authorization code, its
+# state and an HMAC in the query string -- on the stores page landing and again
+# in the body of the proxy's `complete` call, as one `query` string. Anchored
+# exact keys, so `country_code` and the like are left alone.
+Rails.application.config.filter_parameters += [/\A(query|code|hmac|state|host)\z/]

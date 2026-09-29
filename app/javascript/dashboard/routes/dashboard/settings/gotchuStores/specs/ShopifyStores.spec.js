@@ -14,9 +14,21 @@ vi.mock('dashboard/api/gotchu/shopify', () => ({
 }));
 vi.mock('dashboard/composables', () => ({ useAlert: vi.fn() }));
 
+// The router mock models the one thing that matters: replace({ query: {} })
+// empties the current route's query, as vue-router's currentRoute does.
 let routeQuery = {};
+let routerCalls = [];
+const routerReplace = vi.fn(async to => {
+  routerCalls.push('router.replace');
+  routeQuery = to.query;
+});
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ query: routeQuery }),
+  useRoute: () => ({
+    get query() {
+      return routeQuery;
+    },
+  }),
+  useRouter: () => ({ replace: routerReplace }),
 }));
 
 withFullI18n();
@@ -43,29 +55,18 @@ const mountSection = async () => {
 };
 
 describe('Connect a Shopify store (ShopifyStores.vue)', () => {
-  let calls;
   let assign;
-  let replaceState;
 
   beforeEach(() => {
     vi.clearAllMocks();
     routeQuery = {};
-    calls = [];
+    routerCalls = [];
     assign = vi.fn();
-    replaceState = vi
-      .spyOn(window.history, 'replaceState')
-      .mockImplementation(() => calls.push('replaceState'));
-    vi.stubGlobal('location', {
-      ...window.location,
-      pathname: '/app/accounts/1/settings/gotchu-stores',
-      hash: '',
-      assign,
-    });
+    vi.stubGlobal('location', { ...window.location, assign });
     GotchuShopifyAPI.stores.mockResolvedValue(LIVE);
   });
 
   afterEach(() => {
-    replaceState.mockRestore();
     vi.unstubAllGlobals();
   });
 
@@ -121,21 +122,32 @@ describe('Connect a Shopify store (ShopifyStores.vue)', () => {
       };
     });
 
-    it('drops the query from the address bar before it posts, and posts none of shopify_return', async () => {
+    it('empties the router query before it posts, posts none of shopify_return, and posts once', async () => {
       GotchuShopifyAPI.complete.mockImplementation(async query => {
-        calls.push('complete');
+        routerCalls.push('complete');
+        // The address bar and the router are already clean when the POST goes.
+        expect(routeQuery).toEqual({});
         expect(query).toBe(
           'code=c0de&hmac=abc&shop=acme.myshopify.com&state=s&timestamp=1'
         );
         return { data: { storeKey: 'acme', prefixNeedsReview: false } };
       });
       await mountSection();
-      expect(calls).toEqual(['replaceState', 'complete']);
-      const [, , url] = replaceState.mock.calls[0];
-      expect(url).toBe('/app/accounts/1/settings/gotchu-stores');
+      expect(routerCalls).toEqual(['router.replace', 'complete']);
+      expect(routerReplace).toHaveBeenCalledWith({ query: {} });
+      expect(GotchuShopifyAPI.complete).toHaveBeenCalledTimes(1);
       expect(GotchuShopifyAPI.complete.mock.calls[0][0]).not.toContain(
         'shopify_return'
       );
+    });
+
+    it('does not post again when the page remounts after the query was emptied', async () => {
+      GotchuShopifyAPI.complete.mockResolvedValue({
+        data: { storeKey: 'acme', prefixNeedsReview: false },
+      });
+      await mountSection();
+      await mountSection();
+      expect(GotchuShopifyAPI.complete).toHaveBeenCalledTimes(1);
     });
 
     it('shows the connected store, and the prefix review sentence when asked', async () => {
@@ -172,7 +184,7 @@ describe('Connect a Shopify store (ShopifyStores.vue)', () => {
       routeQuery = { connected: 'acme' };
       await mountSection();
       expect(GotchuShopifyAPI.complete).not.toHaveBeenCalled();
-      expect(replaceState).not.toHaveBeenCalled();
+      expect(routerReplace).not.toHaveBeenCalled();
     });
   });
 });

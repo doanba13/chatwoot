@@ -2,10 +2,19 @@ import { mount, flushPromises } from '@vue/test-utils';
 import { withFullI18n } from 'test-i18n';
 import StoreRoutesAPI from 'dashboard/api/gotchu/storeRoutes';
 import { useAlert } from 'dashboard/composables';
+import GotchuShopifyAPI from 'dashboard/api/gotchu/shopify';
 import Index from '../Index.vue';
 
 vi.mock('dashboard/api/gotchu/storeRoutes', () => ({
   default: { get: vi.fn(), replace: vi.fn() },
+}));
+vi.mock('dashboard/api/gotchu/shopify', () => ({
+  default: { stores: vi.fn(), complete: vi.fn() },
+}));
+vi.mock('vue-router', async importOriginal => ({
+  ...(await importOriginal()),
+  useRoute: () => ({ query: { shopify_return: '1', code: 'c', state: 's' } }),
+  useRouter: () => ({ replace: vi.fn() }),
 }));
 vi.mock('dashboard/composables', () => ({ useAlert: vi.fn() }));
 
@@ -14,16 +23,17 @@ withFullI18n();
 
 const NO_STORES = 'No Shopify store is connected';
 
+const PAGE_STUBS = {
+  BaseSettingsHeader: true,
+  InboxMapping: true,
+  'woot-loading-state': true,
+};
+
 const mountPage = async () => {
   const wrapper = mount(Index, {
     global: {
       // Page chrome this spec is not about; the body slot is rendered for real.
-      stubs: {
-        BaseSettingsHeader: true,
-        InboxMapping: true,
-        ShopifyStores: true,
-        'woot-loading-state': true,
-      },
+      stubs: PAGE_STUBS,
     },
   });
   await flushPromises();
@@ -39,6 +49,9 @@ const failWith = (status, data) => {
 describe('Gotchu stores page (Index.vue)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    GotchuShopifyAPI.stores.mockResolvedValue({
+      data: { stores: [], capabilities: { shopify_app: false } },
+    });
   });
 
   // Final code review I1: a failed read used to leave `available` true and
@@ -93,9 +106,50 @@ describe('Gotchu stores page (Index.vue)', () => {
     StoreRoutesAPI.get.mockResolvedValue({
       data: { stores: [], inboxes: [], capabilities: { store_routes: true } },
     });
+    GotchuShopifyAPI.stores.mockResolvedValue({
+      data: { stores: [], capabilities: { shopify_app: true } },
+    });
+    GotchuShopifyAPI.complete.mockResolvedValue({
+      data: { storeKey: 'acme', prefixNeedsReview: false },
+    });
     const wrapper = await mountPage();
     expect(wrapper.findComponent({ name: 'ShopifyStores' }).exists()).toBe(
       true
     );
+  });
+
+  // Finding 2: a zero-store merchant used to read "Connected acme." over "No
+  // Shopify store is connected", and could not map the new store's inboxes.
+  it('re-reads the store routes after a successful install, without remounting the section', async () => {
+    StoreRoutesAPI.get
+      .mockResolvedValueOnce({
+        data: { stores: [], inboxes: [], capabilities: { store_routes: true } },
+      })
+      .mockResolvedValue({
+        data: {
+          stores: [{ key: 'acme', name: 'Acme', shopEmails: [], inboxes: [] }],
+          inboxes: [],
+          capabilities: { store_routes: true },
+        },
+      });
+    GotchuShopifyAPI.stores.mockResolvedValue({
+      data: { stores: [], capabilities: { shopify_app: true } },
+    });
+    GotchuShopifyAPI.complete.mockResolvedValue({
+      data: { storeKey: 'acme', prefixNeedsReview: false },
+    });
+    const wrapper = mount(Index, { global: { stubs: PAGE_STUBS } });
+    await flushPromises();
+    const sectionUid = wrapper.findComponent({ name: 'ShopifyStores' }).vm.$
+      .uid;
+    await flushPromises();
+    expect(GotchuShopifyAPI.complete).toHaveBeenCalledTimes(1);
+    expect(StoreRoutesAPI.get).toHaveBeenCalledTimes(2);
+    expect(wrapper.findComponent({ name: 'ShopifyStores' }).vm.$.uid).toBe(
+      sectionUid
+    );
+    expect(wrapper.text()).toContain('Connected acme.');
+    expect(wrapper.text()).not.toContain(NO_STORES);
+    expect(wrapper.findComponent({ name: 'InboxMapping' }).exists()).toBe(true);
   });
 });

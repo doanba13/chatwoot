@@ -14,7 +14,7 @@ import ShopifyStores from './ShopifyStores.vue';
 // shared by every section this route mounts. It owns the one GET this
 // screen needs and passes the result down -- InboxMapping.vue is a
 // presentational section that reports back via `@updated` rather than
-// fetching for itself. `<ShopifyStores />` (sub-item 4) reads its own
+// fetching for itself. `<ShopifyStores @connected="onConnected" />` (sub-item 4) reads its own
 // endpoint instead: it is a different gateway route with its own
 // availability, and it is mounted ABOVE and OUTSIDE the v-if chain below so a
 // merchant with no store yet -- the one who needs its Connect form -- still
@@ -39,8 +39,11 @@ const applyData = data => {
   inboxes.value = data.inboxes || [];
 };
 
-const fetchRoutes = async () => {
-  isLoading.value = true;
+// `silent` re-reads without the loading state: SettingsLayout renders the body
+// behind a v-else, so toggling isLoading would remount ShopifyStores in the
+// middle of finishing an install.
+const fetchRoutes = async ({ silent = false } = {}) => {
+  if (!silent) isLoading.value = true;
   loadFailedKey.value = null;
   try {
     const { data } = await StoreRoutesAPI.get();
@@ -52,6 +55,10 @@ const fetchRoutes = async () => {
     isLoading.value = false;
   }
 };
+
+// A store was just connected: the mapping section below must see it without a
+// reload.
+const onConnected = () => fetchRoutes({ silent: true });
 
 onBeforeMount(fetchRoutes);
 </script>
@@ -68,7 +75,7 @@ onBeforeMount(fetchRoutes);
       />
     </template>
     <template #body>
-      <ShopifyStores />
+      <ShopifyStores @connected="onConnected" />
       <div v-if="loadFailedKey" class="py-20 text-center">
         <p class="mb-1 text-base font-medium text-n-slate-12">
           {{ t('GOTCHU_STORES.LOAD_FAILED.TITLE') }}

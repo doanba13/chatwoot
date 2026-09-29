@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 
@@ -9,6 +9,7 @@ import { shopifyError } from './shopifyErrors';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 
+const emit = defineEmits(['connected']);
 // The "Connect a Shopify store" section (item 6.4). It sits above the inbox
 // mapping in Index.vue, outside its v-if chain, so a merchant with no store
 // yet -- exactly who needs the button -- still sees it.
@@ -20,7 +21,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 // rather than to whoever holds a link.
 const { t } = useI18n();
 const route = useRoute();
-
+const router = useRouter();
 // False until the first read says otherwise, so a dark app never flashes a
 // form it cannot use.
 const available = ref(false);
@@ -73,15 +74,11 @@ const returnQuery = () => {
   return params.toString();
 };
 
-// The callback query carries a one-time code and state. It leaves the address
-// bar (and with it history and any copy-paste) before anything else happens.
-const dropQueryFromAddressBar = () => {
-  window.history.replaceState(
-    window.history.state,
-    '',
-    `${window.location.pathname}${window.location.hash}`
-  );
-};
+// The callback query carries a one-time code and state. It leaves the router's
+// current route (and with it history.state, so a remount or a navigation
+// spreading the current route cannot bring it back and complete twice) and
+// the address bar before anything else happens.
+const dropQueryFromAddressBar = () => router.replace({ query: {} });
 
 const completeInstall = async query => {
   completing.value = true;
@@ -89,6 +86,7 @@ const completeInstall = async query => {
     const { data } = await GotchuShopifyAPI.complete(query);
     connectedKey.value = data.storeKey;
     needsPrefixReview.value = data.prefixNeedsReview === true;
+    emit('connected', data.storeKey);
     await load();
   } catch (error) {
     alertFor(error);
@@ -128,7 +126,7 @@ const savePrefix = async key => {
 
 onMounted(async () => {
   const query = returnQuery();
-  if (query !== null) dropQueryFromAddressBar();
+  if (query !== null) await dropQueryFromAddressBar();
   await load();
   // A dark app has nothing to complete; it also has no way to have sent the
   // merchant here.

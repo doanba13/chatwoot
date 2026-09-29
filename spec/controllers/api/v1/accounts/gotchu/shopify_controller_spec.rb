@@ -309,6 +309,32 @@ RSpec.describe 'Gotchu Shopify API', type: :request do
     end
   end
 
+  # Shopify's one-time code, state and HMAC must not reach the logs: not in the
+  # `complete` POST's params (Rails and lograge both read the filtered copy) and
+  # not in the landing GET's path.
+  describe 'logging of the OAuth return' do
+    it 'filters the callback query out of the params the complete POST logs' do
+      configure_gateway
+      stub_gateway(:post, '/api/shopify/complete', body: { storeKey: 'acme', prefixNeedsReview: false })
+      logged = []
+      subscriber = ActiveSupport::Notifications.subscribe('process_action.action_controller') { |*, payload| logged << payload[:params] }
+      post "#{base}/complete", params: { query: callback_query }, headers: admin.create_new_auth_token, as: :json
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+      expect(logged.to_json).not_to include('c0de')
+      expect(logged.to_json).not_to include('hmac=abc')
+      expect(logged.first['query']).to eq('[FILTERED]')
+    end
+
+    it 'filters code, state, hmac and host out of the landing path, and leaves country_code alone' do
+      path = '/app/accounts/1/settings/gotchu-stores?shopify_return=1&code=c0de&hmac=abc&state=s&host=aG9zdA&country_code=DE'
+      # The env key Rails' request stack sets from config.filter_parameters.
+      env = Rack::MockRequest.env_for(path).merge('action_dispatch.parameter_filter' => Rails.application.config.filter_parameters)
+      filtered = ActionDispatch::Request.new(env).filtered_path
+      expect(filtered).not_to match(/c0de|hmac=abc|state=s|aG9zdA/)
+      expect(filtered).to include('country_code=DE')
+    end
+  end
+
   describe 'an agent-bot access token' do
     let(:agent_bot) { create(:agent_bot, account: account) }
 
