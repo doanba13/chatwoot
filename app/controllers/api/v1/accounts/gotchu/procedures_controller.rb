@@ -129,6 +129,17 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
 
   private
 
+  # Api::BaseController's own check calls `Current.account_user.administrator?`
+  # and raises NoMethodError -- a 500 -- when no account_user is set, which is
+  # what an agent-bot token carries. Chatwoot's validate_bot_access_token!
+  # refuses bots on this controller before this runs today; the safe
+  # navigation keeps this check correct on its own rather than by that
+  # ordering (security review L2, final 6.3). Overridden here, not upstream,
+  # so the fork's core files stay as Chatwoot ships them.
+  def check_admin_authorization?
+    raise Pundit::NotAuthorizedError unless Current.account_user&.administrator?
+  end
+
   def service
     @service ||= Gotchu::ProcedureService.new(actor_id: Current.user.id, account_id: Current.account.id)
   end

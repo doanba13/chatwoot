@@ -126,6 +126,29 @@ RSpec.describe 'Gotchu Store Routes API', type: :request do
     end
   end
 
+  # Security review L2 (final, 6.3): an agent-bot token carries no
+  # account_user. It must be refused, never reach the gateway, and never 500.
+  describe 'an agent-bot access token' do
+    let(:agent_bot) { create(:agent_bot, account: account) }
+
+    it 'is refused on the read and on the save, without reaching the gateway' do
+      configure_gateway
+      get routes_url, headers: { api_access_token: agent_bot.access_token.token }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      put routes_url, params: update_params, headers: { api_access_token: agent_bot.access_token.token }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:any, endpoint)).not_to have_been_made
+    end
+
+    it 'is refused by the admin check itself when no account_user is set, rather than raising NoMethodError' do
+      controller = Api::V1::Accounts::Gotchu::StoreRoutesController.new
+      Current.account_user = nil
+      expect { controller.send(:check_admin_authorization?) }.to raise_error(Pundit::NotAuthorizedError)
+    ensure
+      Current.reset
+    end
+  end
+
   describe 'PUT /api/v1/accounts/{account.id}/gotchu/store_routes' do
     it 'refuses an agent who is not an administrator' do
       configure_gateway
