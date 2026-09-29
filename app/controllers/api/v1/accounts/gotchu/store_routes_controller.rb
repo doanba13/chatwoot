@@ -48,15 +48,18 @@ class Api::V1::Accounts::Gotchu::StoreRoutesController < Api::V1::Accounts::Base
   end
 
   # Mapped-but-invisible inbox ids the admin was shown and chose to drop
-  # anyway. `nil` when the field is absent at all, so StoreRoutesService can
-  # tell "nothing to acknowledge" apart from "acknowledged nothing" and the
+  # anyway. `permit(acknowledge_removed: [])` is what makes this a scalar
+  # array or nothing: a Hash or any other non-Array shape under this key is
+  # filtered out by strong parameters rather than coerced by `Array(...)`,
+  # which would otherwise wrap a stray Hash into a one-element array and
+  # forward it. `nil` (absent, or filtered out) lets StoreRoutesService tell
+  # "nothing to acknowledge" apart from "acknowledged nothing", so the
   # gateway body carries no `acknowledgeRemoved` key for a save that never
   # mentioned one. Elementwise validation (positive integers) is left to the
   # gateway's own schema, the same posture `stores_param` already takes for
   # `inbox_ids`.
   def acknowledge_removed_param
-    raw = params[:acknowledge_removed]
-    raw.nil? ? nil : Array(raw)
+    params.permit(acknowledge_removed: [])[:acknowledge_removed]
   end
 
   def service
@@ -102,19 +105,20 @@ class Api::V1::Accounts::Gotchu::StoreRoutesController < Api::V1::Accounts::Base
   # the admin could not already see.
   def render_unlisted_inbox_dropped(exception)
     Rails.logger.warn("Gotchu refused to drop an unacknowledged inbox for account #{params[:account_id]}")
-    render json: { error: 'unlisted_inbox_dropped', inboxIds: exception.inbox_ids }, status: :conflict
+    render json: { error: 'unlisted_inbox_dropped', reason: 'unlisted_inbox_dropped', inboxIds: exception.inbox_ids },
+           status: :conflict
   end
 
-  # The write committed at the gateway; only the registry reload afterwards
-  # was refused. Answering this the same way as render_unavailable would
-  # tell the admin nothing happened when it might have, so it gets its own
-  # reason and its own message (progress.md "Carry to Task 5/6": "saved,
-  # could not confirm -- reload").
+  # A PUT 500 is opaque at this end: it means the gateway's own reload was
+  # refused after a committed write (storeRoutes.ts's store_routes.reload_
+  # refused), OR it means the write itself never happened -- a Postgres
+  # outage hits the same gateway catch-all and answers the same bare 500.
+  # This proxy cannot tell those apart, so neither the log line nor the
+  # response may claim the save landed; "could not confirm" is the only
+  # honest thing to say either way (Task 5 fix round 1).
   def render_unconfirmed(exception)
-    Rails.logger.error(
-      "Gotchu store routes may have saved but the reload was not confirmed for account #{params[:account_id]}: #{exception.message}"
-    )
-    render json: { error: 'Saved, but could not confirm. Reload the page to check.', reason: 'unconfirmed' },
+    Rails.logger.error("Gotchu store routes could not confirm a save for account #{params[:account_id]}: #{exception.message}")
+    render json: { error: 'Could not confirm the save. Reload the page to see whether it landed.', reason: 'unconfirmed' },
            status: :internal_server_error
   end
 end

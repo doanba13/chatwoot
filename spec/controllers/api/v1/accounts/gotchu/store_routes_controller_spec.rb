@@ -110,6 +110,19 @@ RSpec.describe 'Gotchu Store Routes API', type: :request do
         expect(response).to have_http_status(:bad_gateway)
         expect(response.parsed_body['reason']).to eq('unavailable')
       end
+
+      # Fix round 1: a PUT 500 is genuinely ambiguous (reload refused after a
+      # real commit, or a write that never happened at all -- see the
+      # service's UnconfirmedError comment), which is why it gets its own
+      # reason there. A GET never writes anything, so there is nothing for it
+      # to have "possibly landed"; it stays plain unavailable.
+      it 'reads a gateway 500 on the list as unavailable, never unconfirmed, since a read has nothing to have half-landed' do
+        configure_gateway
+        stub_read(status: 500, body: { error: 'internal error' })
+        get routes_url, headers: admin.create_new_auth_token, as: :json
+        expect(response).to have_http_status(:bad_gateway)
+        expect(response.parsed_body['reason']).to eq('unavailable')
+      end
     end
   end
 
@@ -215,12 +228,27 @@ RSpec.describe 'Gotchu Store Routes API', type: :request do
         expect(sent.last).not_to have_key('acknowledgeRemoved')
       end
 
-      it 'relays a 409 unlisted_inbox_dropped as its own error and inbox id list, distinct from stores_changed' do
+      # Fix round 1: acknowledge_removed is read through
+      # `params.permit(acknowledge_removed: [])`, which only ever yields a
+      # scalar array or nil -- never `Array(raw)`'s old behaviour of wrapping
+      # a stray Hash into a one-element array and forwarding it.
+      it 'does not forward acknowledge_removed when it is a hash rather than a scalar array' do
+        configure_gateway
+        stub_replace
+        body = update_params.merge(acknowledge_removed: { sneaky: 'thing' })
+        put routes_url, params: body, headers: admin.create_new_auth_token, as: :json
+        expect(response).to have_http_status(:ok)
+        expect(sent.last).not_to have_key('acknowledgeRemoved')
+      end
+
+      it 'relays a 409 unlisted_inbox_dropped as its own error, reason and inbox id list, distinct from stores_changed' do
         configure_gateway
         stub_replace(status: 409, body: { error: 'unlisted_inbox_dropped', inboxIds: [5, 7] })
         put routes_url, params: update_params, headers: admin.create_new_auth_token, as: :json
         expect(response).to have_http_status(:conflict)
-        expect(response.parsed_body).to eq('error' => 'unlisted_inbox_dropped', 'inboxIds' => [5, 7])
+        expect(response.parsed_body).to eq(
+          'error' => 'unlisted_inbox_dropped', 'reason' => 'unlisted_inbox_dropped', 'inboxIds' => [5, 7]
+        )
       end
 
       it 'reads a 409 body it does not recognise as unavailable rather than guessing which conflict it was' do
@@ -231,12 +259,18 @@ RSpec.describe 'Gotchu Store Routes API', type: :request do
         expect(response.parsed_body['reason']).to eq('unavailable')
       end
 
-      it 'relays a gateway 500 as unconfirmed, since the write may have landed even though the reload did not' do
+      # Fix round 1: a PUT 500 covers BOTH the reload-refused path (the write
+      # committed) and the gateway's own catch-all (e.g. a Postgres outage,
+      # where the write never happened at all) -- this proxy cannot tell
+      # them apart, so the message must not claim the save landed.
+      it 'relays a gateway 500 as unconfirmed, without claiming a save that may not have happened' do
         configure_gateway
         stub_replace(status: 500, body: { error: 'internal error' })
         put routes_url, params: update_params, headers: admin.create_new_auth_token, as: :json
         expect(response).to have_http_status(:internal_server_error)
-        expect(response.parsed_body['reason']).to eq('unconfirmed')
+        expect(response.parsed_body).to eq(
+          'error' => 'Could not confirm the save. Reload the page to see whether it landed.', 'reason' => 'unconfirmed'
+        )
         expect(response.body).not_to include('internal error')
       end
     end

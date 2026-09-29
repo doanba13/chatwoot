@@ -272,7 +272,13 @@ class Gotchu::ProcedureService
 
     raise UnavailableError, "gateway responded with #{response.code}"
   rescue *TRANSPORT_ERRORS => e
-    raise UnavailableError, "#{e.class}: #{e.message}"
+    # e.class only, never e.message: several of TRANSPORT_ERRORS (SocketError,
+    # OpenSSL::SSL::SSLError, ...) build their own message from the request
+    # they failed on, including its query string -- which is exactly where
+    # the gateway secret lives (`query: { secret: secret }` below). The class
+    # name is enough to distinguish a DNS failure from a timeout from a TLS
+    # failure without risking that.
+    raise UnavailableError, e.class.to_s
   end
 
   def perform_http(verb, path, query, body, timeout)
@@ -282,7 +288,10 @@ class Gotchu::ProcedureService
       # addition, never instead.
       query: { secret: secret }.merge(query),
       headers: headers(body),
-      timeout: timeout
+      timeout: timeout,
+      # A redirect response would otherwise have HTTParty replay this exact
+      # query -- secret included -- against whatever Location header named.
+      follow_redirects: false
     }
     options[:body] = body.to_json if body
     HTTParty.public_send(verb, "#{base_url}#{path}", options)

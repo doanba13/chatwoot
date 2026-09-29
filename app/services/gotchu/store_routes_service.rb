@@ -27,12 +27,18 @@ class Gotchu::StoreRoutesService
     end
   end
 
-  # The write committed at the gateway (setAccountRoutes returned) but the
-  # registry reload afterwards was refused (storeRoutes.ts's
-  # store_routes.reload_refused): the row is already in Postgres and the
-  # watcher's own poll will pick it up. Folding this into UnavailableError
-  # would tell the admin nothing happened when it might well have, so it
-  # gets its own class and its own message.
+  # A PUT answered 500. That can mean the write committed at the gateway
+  # (setAccountRoutes returned) and only the registry reload afterwards was
+  # refused (storeRoutes.ts's store_routes.reload_refused) -- the row is
+  # already in Postgres and the watcher's own poll will pick it up. It can
+  # ALSO mean the write itself never happened: a Postgres outage or any other
+  # unhandled failure inside the gateway's own request handler hits the same
+  # catch-all and answers the same bare 500, with no way for this proxy to
+  # tell the two apart (Task 5 fix round 1). Folding this into UnavailableError
+  # would say "could not confirm the REQUEST" when a save may well have
+  # landed; but this class must not claim the save happened either, since it
+  # might not have. See the controller's render_unconfirmed for the wording
+  # this lands on.
   class UnconfirmedError < StandardError; end
 
   # A 400 carries the gateway's reason CODE, never its words, and only a code
@@ -96,24 +102,37 @@ class Gotchu::StoreRoutesService
   private
 
   def request(verb, body)
-    options = { query: { secret: secret }, headers: headers(body), timeout: TIMEOUT_SECONDS }
+    # follow_redirects: false -- the query carries the gateway secret
+    # (`query: { secret: secret }` below), and a redirect response would
+    # otherwise have HTTParty replay the exact same query, secret included,
+    # against whatever Location header the response named.
+    options = {
+      query: { secret: secret }, headers: headers(body), timeout: TIMEOUT_SECONDS, follow_redirects: false
+    }
     options[:body] = body.to_json if body
     response = HTTParty.public_send(verb, "#{base_url}#{PATH}", options)
     return parse(response) if response.code == 200
 
     raise_for(response, body)
   rescue *TRANSPORT_ERRORS => e
-    raise UnavailableError, "#{e.class}: #{e.message}"
+    # e.class only, never e.message: several of TRANSPORT_ERRORS (SocketError,
+    # OpenSSL::SSL::SSLError, ...) build their own message from the request
+    # they failed on, including its query string -- which is exactly where
+    # the gateway secret lives. The class name is enough to distinguish a
+    # DNS failure from a timeout from a TLS failure without risking that.
+    raise UnavailableError, e.class.to_s
   end
 
   # A 404 on the list can only mean the gateway surface is dark (the list
   # names no store); on a replace it means a store key was refused. A 500 on
-  # the list would be opaque -- GET never writes anything, so there is
-  # nothing to have "possibly landed" -- but on a replace it means
-  # setAccountRoutes committed and the reload afterwards was refused, which
-  # is not the same failure as "nothing happened". `body` here is the
-  # OUTGOING request body (nil for GET, present for PUT), reused as the same
-  # GET/PUT discriminator the 404 branch already relies on.
+  # the list is plain UnavailableError -- GET never writes anything, so
+  # nothing could have landed either way. A 500 on a replace is genuinely
+  # ambiguous (see UnconfirmedError's own comment: reload-refused after a
+  # real commit, or a write that never happened at all, answer the same bare
+  # 500), which is exactly why it gets its own class rather than being folded
+  # into either NotFoundError's or UnavailableError's story. `body` here is
+  # the OUTGOING request body (nil for GET, present for PUT), reused as the
+  # same GET/PUT discriminator the 404 branch already relies on.
   def raise_for(response, body)
     case response.code
     when 400 then raise ValidationError, reason_of(response)
