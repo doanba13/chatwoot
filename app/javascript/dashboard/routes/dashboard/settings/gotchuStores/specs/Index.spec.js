@@ -21,6 +21,7 @@ const mountPage = async () => {
       stubs: {
         BaseSettingsHeader: true,
         InboxMapping: true,
+        ShopifyStores: true,
         'woot-loading-state': true,
       },
     },
@@ -84,5 +85,17 @@ describe('Gotchu stores page (Index.vue)', () => {
     const text = (await mountPage()).text();
     expect(text).toContain(NO_STORES);
     expect(text).not.toContain('Could not load your stores');
+  });
+
+  // A15: the Connect form is what a merchant with no store needs, so it must
+  // not live inside the branch that only renders once a store exists.
+  it('mounts the Connect section even when the account has no stores', async () => {
+    StoreRoutesAPI.get.mockResolvedValue({
+      data: { stores: [], inboxes: [], capabilities: { store_routes: true } },
+    });
+    const wrapper = await mountPage();
+    expect(wrapper.findComponent({ name: 'ShopifyStores' }).exists()).toBe(
+      true
+    );
   });
 });

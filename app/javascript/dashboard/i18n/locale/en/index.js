@@ -20,6 +20,7 @@ import datePicker from './datePicker.json';
 import emoji from './emoji.json';
 import general from './general.json';
 import generalSettings from './generalSettings.json';
+import gotchuShopify from './gotchuShopify.json';
 import gotchuStores from './gotchuStores.json';
 import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
@@ -70,6 +71,7 @@ export default {
   ...emoji,
   ...general,
   ...generalSettings,
+  ...gotchuShopify,
   ...gotchuStores,
   ...helpCenter,
   ...inbox,

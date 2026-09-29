@@ -1,9 +1,9 @@
 {
   "GOTCHU_STORES": {
     "HEADER": "Boutiques Gotchu",
-    "DESCRIPTION": "Indiquez à Gotchu à quelle boutique appartient chaque boîte de réception. Une page Messenger ou un widget de site appartient en général à une seule boutique. Une boîte mail vers laquelle plusieurs boutiques transfèrent n'appartient à aucune : laissez-la partagée et indiquez plus bas l'adresse de chaque boutique.",
+    "DESCRIPTION": "Indiquez à Gotchu à quelle boutique appartient chaque boîte de réception. Une page Messenger ou un widget de site appartient en général à une seule boutique. Une boîte mail vers laquelle plusieurs boutiques transfèrent n'appartient à aucune : laissez-la partagée et indiquez plus bas l'adresse de chaque boutique. Connectez vos boutiques Shopify en haut de cette page ; Gotchu ne lit leurs commandes et livraisons qu'après votre autorisation sur Shopify.",
     "LOADING": "Chargement des boîtes de réception et des boutiques",
-    "NO_STORES": "Aucune boutique Shopify n'est encore connectée à ce compte. Connectez d'abord une boutique, puis associez ici ses boîtes de réception.",
+    "NO_STORES": "Aucune boutique Shopify n'est encore connectée à ce compte. Connectez une boutique ci-dessus, puis associez ici ses boîtes de réception.",
     "UNCONFIGURED": "Gotchu n'est pas configuré sur ce Chatwoot. Un opérateur doit définir GOTCHU_GATEWAY_URL, un secret de passerelle pour ce compte et GOTCHU_GESTURE_SECRET.",
     "LOAD_FAILED": {
       "TITLE": "Impossible de charger vos boutiques",

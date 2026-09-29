@@ -1,0 +1,31 @@
+{
+  "GOTCHU_SHOPIFY": {
+    "SHOP_LABEL": "Your Shopify store",
+    "SHOP_PLACEHOLDER": "your-store.myshopify.com",
+    "CONNECT": "Connect a Shopify store",
+    "RECONNECT": "Reconnect",
+    "EMPTY": "No store is connected yet.",
+    "COMPLETING": "Finishing the connection with Shopify",
+    "CONNECTED": "Connected {key}.",
+    "PREFIX_REVIEW": "Check its order prefix below: we could not read it from your orders.",
+    "PREFIX_LABEL": "Order prefix",
+    "PREFIX_SAVE": "Save",
+    "PREFIX_SAVED": "Order prefix saved.",
+    "STATUS": {
+      "ACTIVE": "Connected",
+      "DISCONNECTED": "Disconnected"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Gotchu is not configured on this Chatwoot. An operator needs to set GOTCHU_GATEWAY_URL, a gateway secret for this account, and GOTCHU_GESTURE_SECRET.",
+      "UNAVAILABLE": "Gotchu did not confirm the request. Try again in a moment.",
+      "INVALID_SHOP": "Enter your store's myshopify.com address, for example your-store.myshopify.com.",
+      "INVALID_PREFIX": "Use 1 to 10 letters or digits, including at least one letter.",
+      "INVALID_QUERY": "Shopify's reply could not be read. Start the connection again.",
+      "NOT_FOUND": "That store was not found. Reload the page and try again.",
+      "PREFIX_UNAVAILABLE": "That order prefix is already in use. Choose another.",
+      "TOO_MANY_SAVES": "Too many requests in a short time. Wait a minute and try again.",
+      "INSTALL_FAILED": "The store could not be connected. Start the connection again.",
+      "INSTALL_FAILED_REFERENCE": "The store could not be connected. Start the connection again. If it keeps failing, quote reference {reference}."
+    }
+  }
+}

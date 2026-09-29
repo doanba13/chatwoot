@@ -1,9 +1,9 @@
 {
   "GOTCHU_STORES": {
     "HEADER": "Gotchu-Shops",
-    "DESCRIPTION": "Sag Gotchu, zu welchem Shop jeder Posteingang gehört. Eine Messenger-Seite oder ein Website-Widget gehört meist zu einem Shop. Ein Postfach, in das mehrere Shops weiterleiten, gehört zu keinem: lass es geteilt und trag unten die Adresse jedes Shops ein.",
+    "DESCRIPTION": "Sag Gotchu, zu welchem Shop jeder Posteingang gehört. Eine Messenger-Seite oder ein Website-Widget gehört meist zu einem Shop. Ein Postfach, in das mehrere Shops weiterleiten, gehört zu keinem: lass es geteilt und trag unten die Adresse jedes Shops ein. Oben auf dieser Seite verbindest du deine Shopify-Shops; Gotchu liest Bestellungen und Sendungen erst, nachdem du den Zugriff bei Shopify bestätigt hast.",
     "LOADING": "Posteingänge und Shops werden geladen",
-    "NO_STORES": "Mit diesem Konto ist noch kein Shopify-Shop verbunden. Verbinde zuerst einen Shop und ordne dann hier seine Posteingänge zu.",
+    "NO_STORES": "Mit diesem Konto ist noch kein Shopify-Shop verbunden. Verbinde oben einen Shop und ordne dann hier seine Posteingänge zu.",
     "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet. Ein Betreiber muss GOTCHU_GATEWAY_URL, ein Gateway-Secret für dieses Konto und GOTCHU_GESTURE_SECRET setzen.",
     "LOAD_FAILED": {
       "TITLE": "Deine Shops konnten nicht geladen werden",

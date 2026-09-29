@@ -1,0 +1,31 @@
+{
+  "GOTCHU_SHOPIFY": {
+    "SHOP_LABEL": "Votre boutique Shopify",
+    "SHOP_PLACEHOLDER": "votre-boutique.myshopify.com",
+    "CONNECT": "Connecter une boutique Shopify",
+    "RECONNECT": "Reconnecter",
+    "EMPTY": "Aucune boutique connectée pour l'instant.",
+    "COMPLETING": "Finalisation de la connexion avec Shopify",
+    "CONNECTED": "{key} connectée.",
+    "PREFIX_REVIEW": "Vérifiez le préfixe de commande ci-dessous : nous n'avons pas pu le lire dans vos commandes.",
+    "PREFIX_LABEL": "Préfixe de commande",
+    "PREFIX_SAVE": "Enregistrer",
+    "PREFIX_SAVED": "Préfixe de commande enregistré.",
+    "STATUS": {
+      "ACTIVE": "Connectée",
+      "DISCONNECTED": "Déconnectée"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Gotchu n'est pas configuré sur ce Chatwoot. Un opérateur doit définir GOTCHU_GATEWAY_URL, un secret de passerelle pour ce compte et GOTCHU_GESTURE_SECRET.",
+      "UNAVAILABLE": "Gotchu n'a pas confirmé la demande. Réessayez dans un instant.",
+      "INVALID_SHOP": "Saisissez l'adresse myshopify.com de votre boutique, par exemple votre-boutique.myshopify.com.",
+      "INVALID_PREFIX": "De 1 à 10 lettres ou chiffres, dont au moins une lettre.",
+      "INVALID_QUERY": "La réponse de Shopify n'a pas pu être lue. Relancez la connexion.",
+      "NOT_FOUND": "Cette boutique est introuvable. Rechargez la page et réessayez.",
+      "PREFIX_UNAVAILABLE": "Ce préfixe de commande est déjà utilisé. Choisissez-en un autre.",
+      "TOO_MANY_SAVES": "Trop de demandes en peu de temps. Patientez une minute et réessayez.",
+      "INSTALL_FAILED": "La boutique n'a pas pu être connectée. Relancez la connexion.",
+      "INSTALL_FAILED_REFERENCE": "La boutique n'a pas pu être connectée. Relancez la connexion. Si cela échoue encore, indiquez la référence {reference}."
+    }
+  }
+}

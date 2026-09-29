@@ -320,6 +320,18 @@ Rails.application.routes.draw do
             # one whole-mapping replace, account-level like procedures.
             get 'store_routes', to: 'store_routes#index'
             put 'store_routes', to: 'store_routes#update'
+
+            # Item 6.4: Gotchu's own Shopify app. The install hands back
+            # Shopify's consent URL; Shopify's return lands on the gateway's
+            # public host, which forwards the browser to the stores page, and
+            # the page then completes the install through `complete` -- as the
+            # signed-in administrator, never on an unauthenticated request.
+            resource :shopify, only: [], controller: 'shopify' do
+              post :install
+              post :complete
+              get :stores
+              put 'stores/:store_key/prefix', action: :update_prefix, constraints: { store_key: /[a-z0-9-]{1,64}/ }
+            end
           end
           resources :inboxes, only: [:index, :show, :create, :update, :destroy] do
             get :assignable_agents, on: :member

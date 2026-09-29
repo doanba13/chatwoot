@@ -1,9 +1,9 @@
 {
   "GOTCHU_STORES": {
     "HEADER": "Gotchu stores",
-    "DESCRIPTION": "Tell Gotchu which store each inbox belongs to. A Messenger page or a website widget usually belongs to one shop. A mailbox that several shops forward into belongs to none: leave it shared and list each shop's address below.",
+    "DESCRIPTION": "Tell Gotchu which store each inbox belongs to. A Messenger page or a website widget usually belongs to one shop. A mailbox that several shops forward into belongs to none: leave it shared and list each shop's address below. Connect your Shopify stores at the top of this page; Gotchu reads their orders and shipping only after you approve access on Shopify.",
     "LOADING": "Fetching inboxes and stores",
-    "NO_STORES": "No Shopify store is connected to this account yet. Connect a store first, then map its inboxes here.",
+    "NO_STORES": "No Shopify store is connected to this account yet. Connect one above, then map its inboxes here.",
     "UNCONFIGURED": "Gotchu is not configured on this Chatwoot. An operator needs to set GOTCHU_GATEWAY_URL, a gateway secret for this account, and GOTCHU_GESTURE_SECRET.",
     "LOAD_FAILED": {
       "TITLE": "Could not load your stores",

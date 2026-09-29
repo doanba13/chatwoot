@@ -8,13 +8,17 @@ import { storeRoutesReadErrorKey } from './errors';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import InboxMapping from './InboxMapping.vue';
+import ShopifyStores from './ShopifyStores.vue';
 
 // The page shell: SettingsLayout, the header, and the loading/empty states
 // shared by every section this route mounts. It owns the one GET this
 // screen needs and passes the result down -- InboxMapping.vue is a
 // presentational section that reports back via `@updated` rather than
-// fetching for itself, so a later `<ShopifyStores />` (sub-item 4) can share
-// the same read instead of each section polling the gateway on its own.
+// fetching for itself. `<ShopifyStores />` (sub-item 4) reads its own
+// endpoint instead: it is a different gateway route with its own
+// availability, and it is mounted ABOVE and OUTSIDE the v-if chain below so a
+// merchant with no store yet -- the one who needs its Connect form -- still
+// sees it.
 const { t } = useI18n();
 
 const isLoading = ref(true);
@@ -64,6 +68,7 @@ onBeforeMount(fetchRoutes);
       />
     </template>
     <template #body>
+      <ShopifyStores />
       <div v-if="loadFailedKey" class="py-20 text-center">
         <p class="mb-1 text-base font-medium text-n-slate-12">
           {{ t('GOTCHU_STORES.LOAD_FAILED.TITLE') }}
