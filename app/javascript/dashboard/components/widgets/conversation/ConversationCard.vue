@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getLastMessage } from 'dashboard/helper/conversationHelper';
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
@@ -12,6 +13,7 @@ import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard
 import SLACardLabel from './components/SLACardLabel.vue';
 import VoiceCallStatus from './VoiceCallStatus.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
+import { queueChip } from 'dashboard/components-next/gotchu/queueChip';
 import { mailSubjectFor } from 'dashboard/components-next/Conversation/ConversationCard/helpers/mailSubject';
 
 const props = defineProps({
@@ -33,6 +35,8 @@ const emit = defineEmits([
   'selectConversation',
   'deSelectConversation',
 ]);
+
+const { t } = useI18n();
 
 const hovered = ref(false);
 
@@ -75,6 +79,7 @@ const showLabelsSection = computed(() => {
 // so the server casing is the shape that arrives here — this condensed row is
 // the list the desk scans all day, and the reason the subject is worth showing.
 const mailSubject = computed(() => mailSubjectFor(props.chat));
+const gotchuChip = computed(() => queueChip(props.chat.custom_attributes, t));
 
 // The timestamp and the unread badge are absolutely positioned over the right
 // edge of this column, so every full-width line under the name has to leave the
@@ -219,6 +224,25 @@ watch(
         :class="unreadBadgeClearanceClass"
       >
         {{ mailSubject }}
+      </p>
+      <p
+        v-if="gotchuChip"
+        data-testid="card-gotchu-queue"
+        class="my-0 mx-2 flex items-center gap-1.5 text-xs leading-5 text-n-slate-11 truncate"
+      >
+        <span
+          class="inline-flex items-center gap-1 rounded-md px-1.5"
+          :class="
+            gotchuChip.agent
+              ? 'bg-[var(--g-agent-tint)] ring-1 ring-inset ring-[var(--g-agent-border)]'
+              : 'bg-[var(--g-slate-tint)]'
+          "
+        >
+          {{ gotchuChip.label
+          }}<template v-if="gotchuChip.procedure">
+            · {{ gotchuChip.procedure }}</template
+          >
+        </span>
       </p>
       <VoiceCallStatus
         v-if="voiceCallData.status"
