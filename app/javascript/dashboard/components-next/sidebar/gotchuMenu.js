@@ -14,6 +14,7 @@ export function gotchuMenu({
   settingsGroup,
   helpCenterGroup,
   contactsTo,
+  folders = [],
 }) {
   return [
     {
@@ -58,19 +59,39 @@ export function gotchuMenu({
           to: accountScopedRoute('conversation_mentions'),
           activeOn: ['conversation_through_mentions'],
         },
+        // Saved folders, as the old Conversation > Folders group built them.
+        ...folders.map(view => ({
+          name: `${view.name}-${view.id}`,
+          label: view.name,
+          icon: 'i-lucide-folder',
+          to: accountScopedRoute('folder_conversations', { id: view.id }),
+          activeOn: ['conversations_through_folders'],
+        })),
       ],
     },
+    // Until the per-procedure Insights page exists, Insights is Chatwoot's
+    // report pages, passed through unchanged so each keeps its own permission
+    // gate: an agent allowed some reports but not the overview still sees them.
     {
       name: 'Insights',
       label: t('SIDEBAR.INSIGHTS'),
       icon: 'i-lucide-chart-spline',
-      to: reportsGroup.children[0].to,
+      children: reportsGroup.children,
     },
     {
       name: 'Customers',
       label: t('SIDEBAR.CUSTOMERS'),
       icon: 'i-lucide-contact',
       to: contactsTo,
+      activeOn: [
+        'contacts_dashboard_index',
+        'contacts_dashboard_active',
+        'contacts_dashboard_segments_index',
+        'contacts_dashboard_labels_index',
+        'contacts_edit',
+        'contacts_edit_segment',
+        'contacts_edit_label',
+      ],
     },
     helpCenterGroup,
     settingsGroup,

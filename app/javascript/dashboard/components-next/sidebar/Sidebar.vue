@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
@@ -50,7 +50,6 @@ const { width: windowWidth } = useWindowSize();
 const isMobile = computed(() => windowWidth.value < 768);
 
 const accountId = useMapGetter('getCurrentAccountId');
-const currentUserId = useMapGetter('getCurrentUserID');
 const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
@@ -62,35 +61,12 @@ const hasAdvancedAssignment = computed(() => {
   );
 });
 
-const hasConversationUnreadCounts = computed(() => {
-  return isFeatureEnabledonAccount.value(
-    accountId.value,
-    FEATURE_FLAGS.CONVERSATION_UNREAD_COUNTS
-  );
-});
-
 const hasDataImport = computed(() => {
   return isFeatureEnabledonAccount.value(
     accountId.value,
     FEATURE_FLAGS.DATA_IMPORT
   );
 });
-
-const fetchConversationUnreadCounts = ([currentAccountId, isEnabled]) => {
-  if (!currentAccountId) return;
-
-  if (!isEnabled) {
-    store.dispatch('conversationUnreadCounts/clear');
-    return;
-  }
-
-  store.dispatch('conversationUnreadCounts/get');
-};
-
-const fetchSidebarSortPreferences = ([currentAccountId, userId]) => {
-  if (!currentAccountId || !userId) return;
-  store.dispatch('sidebarSortPreferences/initialize');
-};
 
 const toggleShortcutModalFn = show => {
   if (show) {
@@ -196,13 +172,9 @@ onMounted(() => {
   store.dispatch('customViews/get', 'contact');
 });
 
-watch([accountId, hasConversationUnreadCounts], fetchConversationUnreadCounts, {
-  immediate: true,
-});
-
-watch([accountId, currentUserId], fetchSidebarSortPreferences, {
-  immediate: true,
-});
+const conversationCustomViews = useMapGetter(
+  'customViews/getConversationCustomViews'
+);
 
 const closeMobileSidebar = () => {
   if (!props.isMobileSidebarOpen) return;
@@ -507,6 +479,7 @@ const menuItems = computed(() =>
       {},
       { page: 1, search: undefined }
     ),
+    folders: conversationCustomViews.value,
   })
 );
 </script>
