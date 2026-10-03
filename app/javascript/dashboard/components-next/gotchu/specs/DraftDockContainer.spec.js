@@ -1041,7 +1041,7 @@ describe('DraftDockContainer instruction outcome', () => {
     );
 
     await vi.advanceTimersByTimeAsync(2_000);
-    expect(dock(wrapper).text()).toContain('Kein Entwurf.');
+    expect(wrapper.text()).toContain('Kein Entwurf.');
     expect(dock(wrapper).text()).toContain(body);
 
     const before = AiDraftAPI.getDraft.mock.calls.length;
@@ -1071,7 +1071,7 @@ describe('DraftDockContainer instruction outcome', () => {
 
     await vi.advanceTimersByTimeAsync(2_000);
 
-    expect(dock(wrapper).text()).toContain(sentence);
+    expect(wrapper.text()).toContain(sentence);
   });
 
   it('labels a redraft by its version and shows the new body', async () => {
@@ -1099,9 +1099,7 @@ describe('DraftDockContainer instruction outcome', () => {
 
     await vi.advanceTimersByTimeAsync(4_000);
 
-    expect(dock(wrapper).text()).toContain(
-      "Gotchu couldn't finish that. Try again."
-    );
+    expect(wrapper.text()).toContain("Gotchu couldn't finish that. Try again.");
     expect(input(wrapper).element.value).toBe(
       'Bitte die Sendungsnummer nennen.'
     );
@@ -1115,10 +1113,89 @@ describe('DraftDockContainer instruction outcome', () => {
 
     await vi.advanceTimersByTimeAsync(2_000);
 
-    expect(dock(wrapper).text()).toContain(
-      "Gotchu couldn't finish that. Try again."
-    );
+    expect(wrapper.text()).toContain("Gotchu couldn't finish that. Try again.");
     expect(input(wrapper).element.value).toBe('wärmer schreiben');
+  });
+
+  it('still renders an outcome that lands after the backstop, replacing the failed line', async () => {
+    // Spec §3.2: the backstop is a client guess, not a second source of truth.
+    const { wrapper, requestId } = await inFlightFor('kürzer bitte');
+    await vi.advanceTimersByTimeAsync(182_000);
+    expect(wrapper.text()).toContain("Gotchu couldn't finish that. Try again.");
+    // The field is back with the text, and the dock is no longer working.
+    expect(input(wrapper).element.value).toBe('kürzer bitte');
+    expect(dock(wrapper).text()).not.toContain('working on your instruction');
+
+    // Resting pace from here, and still asking about the instruction.
+    const before = AiDraftAPI.getDraft.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(14_000);
+    expect(readsSince(before)).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(readsSince(before)).toEqual([[3580, { requestId }]]);
+
+    // At ~200 s the worker finally answers.
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered(
+        { state: 'answered', answer: 'Kein Entwurf.' },
+        { version: 1, body }
+      )
+    );
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    expect(wrapper.text()).toContain('Kein Entwurf.');
+    expect(wrapper.text()).not.toContain("Gotchu couldn't finish that.");
+
+    // Settled: the request id is dropped.
+    const after = AiDraftAPI.getDraft.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(readsSince(after)).toEqual([[3580, { requestId: undefined }]]);
+  });
+
+  it('lets a new instruction go after the backstop, under a new token', async () => {
+    const { wrapper, requestId } = await inFlightFor('kürzer bitte');
+    await vi.advanceTimersByTimeAsync(182_000);
+
+    await input(wrapper).setValue('wärmer schreiben');
+    await arrow(wrapper).trigger('click');
+    await flushPromises();
+
+    const next = AiDraftAPI.instruct.mock.calls.at(-1)[1].requestId;
+    expect(AiDraftAPI.instruct).toHaveBeenCalledTimes(2);
+    expect(next).not.toBe(requestId);
+    expect(dock(wrapper).text()).toContain('working on your instruction');
+    expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3580, {
+      requestId: next,
+    });
+  });
+
+  it('shows a refusal that arrives once the cycle is finished and no draft is left', async () => {
+    const { wrapper } = await inFlightFor();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered({ state: 'refused', reasonCode: 'terminal' }, null, {
+        cycle: reviewing({ state: 'sent' }),
+      })
+    );
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(dock(wrapper).exists()).toBe(false);
+    expect(wrapper.text()).toContain(
+      'This draft is finished — nothing more to change.'
+    );
+  });
+
+  it('shows an answer that arrives while a redraft is being written', async () => {
+    const { wrapper } = await inFlightFor();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered({ state: 'answered', answer: 'Kein Entwurf.' }, null, {
+        cycle: reviewing({ state: 'redrafting' }),
+      })
+    );
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(dock(wrapper).text()).toContain('Writing a new draft…');
+    expect(wrapper.text()).toContain('Kein Entwurf.');
   });
 
   it('offers no instruction field while one is in flight', async () => {
@@ -1140,7 +1217,7 @@ describe('DraftDockContainer instruction outcome', () => {
 
     await wrapper.find('button[aria-label="Dismiss"]').trigger('click');
 
-    expect(dock(wrapper).text()).not.toContain('Kein Entwurf.');
+    expect(wrapper.text()).not.toContain('Kein Entwurf.');
   });
 
   it('forgets the instruction in flight when the agent switches conversation', async () => {

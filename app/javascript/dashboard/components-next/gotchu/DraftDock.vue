@@ -162,6 +162,31 @@ const reviewLabel = computed(() => {
 </script>
 
 <template>
+  <!-- What the last instruction came to, when it was not a new draft. Outside
+    the band on purpose: an outcome often arrives when there is no draft to show
+    — a refusal on a cycle already sent, an answer while a redraft is being
+    written — and a line that only renders inside a ready band would be consumed
+    with nobody seeing it. In the agent's voice, because it is the agent's
+    answer; a failure is muted rather than red, like the read notices. -->
+  <div
+    v-if="outcome"
+    class="draft-dock__outcome flex items-start gap-2 px-3 py-1.5 text-sm border-b bg-[var(--g-surface-tank)] border-[var(--g-agent-border)]"
+    :class="
+      outcome.kind === 'failed'
+        ? 'text-[var(--g-text-muted)]'
+        : 'text-[var(--g-agent)]'
+    "
+  >
+    <span class="flex-1 min-w-0 text-pretty">{{ outcome.text }}</span>
+    <button
+      type="button"
+      class="flex items-center p-0 bg-transparent border-0 cursor-pointer text-[var(--g-text-muted)] hover:text-[var(--g-text)]"
+      :aria-label="$t('GOTCHU.DRAFT.DISMISS')"
+      @click="$emit('dismissOutcome')"
+    >
+      <Icon icon="i-lucide-x" class="size-3.5" />
+    </button>
+  </div>
   <div
     v-if="state !== 'none'"
     class="draft-dock flex flex-col gap-2 px-3 py-2.5 border-b bg-[var(--g-surface-tank)] border-[var(--g-agent-border)]"
@@ -251,28 +276,6 @@ const reviewLabel = computed(() => {
       nobody has read. A header that does not move is worth an animation; a
       reachable send button is not. -->
     <template v-if="!isStreaming">
-      <!-- What the last instruction came to, when it was not a new draft. In the
-        agent's voice, because it is the agent's answer; a failure is muted
-        rather than red, the same reasoning as the read notices. -->
-      <div
-        v-if="outcome"
-        class="draft-dock__outcome flex items-start gap-2 text-sm"
-        :class="
-          outcome.kind === 'failed'
-            ? 'text-[var(--g-text-muted)]'
-            : 'text-[var(--g-agent)]'
-        "
-      >
-        <span class="flex-1 min-w-0 text-pretty">{{ outcome.text }}</span>
-        <button
-          type="button"
-          class="flex items-center p-0 bg-transparent border-0 cursor-pointer text-[var(--g-text-muted)] hover:text-[var(--g-text)]"
-          :aria-label="$t('GOTCHU.DRAFT.DISMISS')"
-          @click="$emit('dismissOutcome')"
-        >
-          <Icon icon="i-lucide-x" class="size-3.5" />
-        </button>
-      </div>
       <AITrace v-if="trace.length" :steps="trace" />
       <!-- Capped, because an uncapped draft takes the screen the customer's
         message needs. Measured against real production drafts on staging in a

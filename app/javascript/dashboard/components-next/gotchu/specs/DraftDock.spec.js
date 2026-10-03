@@ -426,7 +426,9 @@ describe('DraftDock streaming loader', () => {
     // confidence chip takes once the draft is ready — rather than a place in the
     // label. So becoming ready still reveals a body under a header that has not
     // moved, which is what the header's own comment protects.
-    const title = streaming().element.firstElementChild.firstElementChild;
+    const title =
+      streaming().find('.draft-dock').element.firstElementChild
+        .firstElementChild;
 
     expect(title.textContent).toContain('Writing a new draft…');
     expect(title.querySelector('.draft-dock__dot')).toBeNull();
@@ -495,6 +497,20 @@ describe('DraftDock trace and outcome', () => {
 
     expect(wrapper.emitted('dismissOutcome')).toHaveLength(1);
   });
+
+  it.each(['none', 'streaming'])(
+    'shows the outcome even when the band is %s, so it is never consumed unseen',
+    state => {
+      const wrapper = mountComponent({
+        state,
+        outcome: { kind: 'refused', text: 'This draft is finished.' },
+      });
+
+      expect(wrapper.find('.draft-dock__outcome').text()).toContain(
+        'This draft is finished.'
+      );
+    }
+  );
 
   it('mutes a failed outcome instead of speaking it in the agent colour', () => {
     const wrapper = mountComponent({

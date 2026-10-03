@@ -132,7 +132,18 @@ const view = ref(loadingView());
 // The instruction whose outcome the dock is waiting for: its request id, the
 // conversation it was typed in, when, and the text (handed back on a failure).
 // Null when nothing is in flight.
+//
+// `expired: true` once the backstop has fired. The dock has stopped waiting —
+// the failed line is up, the field is back, the poll is at its resting pace —
+// but the request id is kept and still asked about, because the backstop is a
+// client guess, not a second source of truth (spec §3.2): a late outcome still
+// renders on the next poll and replaces the failed line.
 const inFlight = ref(null);
+// Actively waiting: in flight and not yet past the backstop. This, not
+// `inFlight`, is what puts the dock in its working state and the poll on 2 s.
+const waiting = computed(() =>
+  Boolean(inFlight.value && !inFlight.value.expired)
+);
 // What the last instruction came to, when that is a sentence rather than a new
 // draft: `{ kind: 'answered' | 'refused' | 'failed', text }`, or null.
 const outcome = ref(null);
@@ -217,11 +228,20 @@ const newRequestId = () => {
 const settle = (status, readFor) => {
   const flight = inFlight.value;
   if (!flight || flight.conversationId !== readFor) return;
-  const expired = Date.now() - flight.startedAt > INSTRUCTION_BACKSTOP_MS;
   if (!status || status.state === 'working') {
-    if (!expired) return;
+    // Already given up on once: keep asking, quietly, at the resting pace.
+    if (flight.expired) return;
+    if (Date.now() - flight.startedAt <= INSTRUCTION_BACKSTOP_MS) return;
     outcome.value = { kind: 'failed', text: t('GOTCHU.DRAFT.OUTCOME_FAILED') };
-  } else if (status.state === 'redrafted') {
+    if (instruction.value === '') instruction.value = flight.text;
+    // Stop waiting but keep the request id: see `inFlight`.
+    inFlight.value = { ...flight, expired: true };
+    return;
+  }
+  if (status.state === 'redrafted') {
+    // The new draft on screen is the outcome; a failed line the backstop put up
+    // is no longer true.
+    outcome.value = null;
     versionLabel.value = t('GOTCHU.DRAFT.FROM_INSTRUCTION', {
       version: status.version,
     });
@@ -242,8 +262,8 @@ const settle = (status, readFor) => {
   if (outcome.value?.kind === 'failed' && instruction.value === '') {
     instruction.value = flight.text;
   }
-  // Dropping `inFlight` is also what puts the poll back on the resting cadence:
-  // the watcher on it restarts the timer.
+  // A terminal answer, early or late. Dropping `inFlight` is also what puts the
+  // poll back on the resting cadence: the watcher on it restarts the timer.
   inFlight.value = null;
 };
 
@@ -343,7 +363,7 @@ const startPolling = () => {
   stopPolling();
   timer = window.setInterval(
     tick,
-    inFlight.value ? FAST_POLL_INTERVAL_MS : POLL_INTERVAL_MS
+    waiting.value ? FAST_POLL_INTERVAL_MS : POLL_INTERVAL_MS
   );
 };
 
@@ -359,7 +379,7 @@ watch(inFlight, flight => {
   if (timer) startPolling();
   stopWorkingTicker();
   workingSeconds.value = 0;
-  if (!flight) return;
+  if (!flight || flight.expired) return;
   workingTicker = window.setInterval(() => {
     workingSeconds.value = Math.floor((Date.now() - flight.startedAt) / 1000);
   }, 1000);
@@ -472,7 +492,7 @@ const onInsert = () => {
 const canInstruct = computed(
   () =>
     instructAvailable.value &&
-    !inFlight.value &&
+    !waiting.value &&
     view.value.state === 'ready' &&
     view.value.cycleId !== null
 );
@@ -632,10 +652,10 @@ const traceSteps = computed(() =>
 // doing underneath: the worker may not have picked the job up yet, and a ready
 // draft shown as ready reads as the press having done nothing.
 const dockState = computed(() =>
-  inFlight.value ? 'streaming' : view.value.state
+  waiting.value ? 'streaming' : view.value.state
 );
 const dockStreamingText = computed(() =>
-  inFlight.value
+  waiting.value
     ? t('GOTCHU.DRAFT.WORKING', { seconds: workingSeconds.value })
     : t('GOTCHU.DRAFT.REDRAFTING')
 );
