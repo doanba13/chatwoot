@@ -41,6 +41,12 @@ describe('#URL Helpers', () => {
       );
     });
 
+    it('should return url to a queue', () => {
+      expect(
+        conversationListPageURL({ accountId: 1, queue: 'needs_you' })
+      ).toBe('/app/accounts/1/queue/needs_you');
+    });
+
     it('should return url to participating conversations', () => {
       expect(
         conversationListPageURL({

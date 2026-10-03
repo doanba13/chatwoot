@@ -41,6 +41,7 @@ export const conversationListPageURL = ({
   label,
   teamId,
   customViewId,
+  queue,
 }) => {
   let url = `accounts/${accountId}/dashboard`;
   if (label) {
@@ -49,6 +50,8 @@ export const conversationListPageURL = ({
     url = `accounts/${accountId}/team/${teamId}`;
   } else if (inboxId) {
     url = `accounts/${accountId}/inbox/${inboxId}`;
+  } else if (queue) {
+    url = `accounts/${accountId}/queue/${queue}`;
   } else if (customViewId) {
     url = `accounts/${accountId}/custom_view/${customViewId}`;
   } else if (conversationType) {

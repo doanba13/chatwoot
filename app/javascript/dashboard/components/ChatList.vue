@@ -652,7 +652,7 @@ function openLastItemAfterDeleteInFolder() {
 
 function redirectToConversationList() {
   const {
-    params: { accountId, inbox_id: inboxId, label, teamId },
+    params: { accountId, inbox_id: inboxId, label, teamId, queue },
     name,
   } = route;
 
@@ -669,6 +669,7 @@ function redirectToConversationList() {
       accountId,
       conversationType: conversationType,
       customViewId: props.foldersId,
+      queue,
       inboxId,
       label,
       teamId,

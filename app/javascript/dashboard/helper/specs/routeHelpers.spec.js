@@ -195,6 +195,18 @@ describe('isAConversationRoute', () => {
   it('returns false if base conversation route name is not provided', () => {
     expect(isAConversationRoute('')).toBe(false);
   });
+
+  it('treats the queue routes as conversation routes', () => {
+    expect(isAConversationRoute('conversation_through_queue')).toBe(true);
+    expect(isAConversationRoute('queue_conversations', true)).toBe(true);
+    expect(isAConversationRoute('queue_conversations', false)).toBe(false);
+  });
+
+  it('maps a conversation opened through a queue back to that queue', () => {
+    expect(getConversationDashboardRoute('conversation_through_queue')).toBe(
+      'queue_conversations'
+    );
+  });
 });
 
 describe('getConversationDashboardRoute', () => {
