@@ -1057,10 +1057,6 @@ describe('DraftDockContainer instruction outcome', () => {
       'not_a_redraft',
       "That isn't a change to the reply. Say what to change in it.",
     ],
-    [
-      'lost_race',
-      'Someone else acted on this draft at the same moment. Try again.',
-    ],
     ['something_new', "Gotchu didn't change the draft."],
     [null, "Gotchu didn't change the draft."],
   ])('says a refusal for %s in its own words', async (reasonCode, sentence) => {
@@ -1149,6 +1145,74 @@ describe('DraftDockContainer instruction outcome', () => {
     const after = AiDraftAPI.getDraft.mock.calls.length;
     await vi.advanceTimersByTimeAsync(15_000);
     expect(readsSince(after)).toEqual([[3580, { requestId: undefined }]]);
+  });
+
+  it('never attributes a late answer for an expired instruction to the next one', async () => {
+    // Instruction A passes the backstop and is still asked about at the resting
+    // pace. A resting read for A is in flight when the supporter submits B. That
+    // read must neither swallow B's own immediate read nor, when it lands, tell
+    // the supporter what B did.
+    const { wrapper, requestId: first } = await inFlightFor('kürzer bitte');
+    await vi.advanceTimersByTimeAsync(182_000);
+
+    let landFirst;
+    AiDraftAPI.getDraft.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          landFirst = resolve;
+        })
+    );
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3580, {
+      requestId: first,
+    });
+
+    await input(wrapper).setValue('wärmer schreiben');
+    await arrow(wrapper).trigger('click');
+    await flushPromises();
+    const second = AiDraftAPI.instruct.mock.calls.at(-1)[1].requestId;
+    expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3580, {
+      requestId: second,
+    });
+
+    landFirst(
+      answered(
+        { state: 'answered', answer: 'Antwort auf A.' },
+        { version: 1, body }
+      )
+    );
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain('Antwort auf A.');
+    expect(dock(wrapper).text()).toContain('working on your instruction');
+    const before = AiDraftAPI.getDraft.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(readsSince(before)).toEqual([[3580, { requestId: second }]]);
+  });
+
+  it.each([
+    ['a later redraft lands', reviewing(), 3],
+    ['the customer writes again', reviewing({ id: 3001 }), 1],
+  ])('drops the version label once %s', async (_, cycle, version) => {
+    const { wrapper } = await inFlightFor();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered(
+        { state: 'redrafted', version: 2 },
+        { version: 2, body: 'Kurz.' }
+      )
+    );
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(dock(wrapper).text()).toContain('v2 · from your instruction');
+
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answerWithInstruct(cycle, { version, body: 'Etwas anderes.' })
+    );
+    const before = AiDraftAPI.getDraft.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(15_000);
+    // The body swaps under a keyed transition the test DOM never finishes, so
+    // the read is asserted by the call; the label sits in the header.
+    expect(readsSince(before)).toHaveLength(1);
+    expect(dock(wrapper).text()).not.toContain('from your instruction');
   });
 
   it('lets a new instruction go after the backstop, under a new token', async () => {
@@ -1244,6 +1308,31 @@ describe('DraftDockContainer instruction outcome', () => {
       [4471, { requestId: undefined }],
     ]);
   });
+
+  it.each([
+    [1, '1 day old', 'Applied 1 desk note', 'Found 1 similar reply'],
+    [2, '2 days old', 'Applied 2 desk notes', 'Found 2 similar replies'],
+  ])(
+    'words a count of %s in the right number',
+    async (n, days, memos, found) => {
+      AiDraftAPI.getDraft.mockResolvedValue({
+        data: {
+          cycle: reviewing(),
+          draft: { version: 1, body },
+          trace: [
+            { kind: 'order', orderName: '#PL-5563', ageDays: n },
+            { kind: 'memo', count: n },
+            { kind: 'precedent', count: n },
+          ],
+        },
+      });
+
+      const wrapper = await mountContainer();
+      const steps = wrapper.findComponent(AITrace).props('steps');
+
+      expect(steps.map(s => s.result || s.did)).toEqual([days, memos, found]);
+    }
+  );
 
   it('words the gateway trace into steps above the draft', async () => {
     AiDraftAPI.getDraft.mockResolvedValue({

@@ -89,12 +89,12 @@
     "TRACE": {
       "CHECKED": "{name} checked {count} thing | {name} checked {count} things",
       "ORDER": "Looked up {name}",
-      "DAYS_OLD": "{n} days old",
+      "DAYS_OLD": "{n} day old | {n} days old",
       "TRACKING": "Checked the tracking",
       "POLICY": "Read the shop policy",
       "PROCEDURE": "Followed \"{title}\"",
-      "MEMOS": "Applied {n} desk notes",
-      "PRECEDENTS": "Found {n} similar replies"
+      "MEMOS": "Applied {n} desk note | Applied {n} desk notes",
+      "PRECEDENTS": "Found {n} similar reply | Found {n} similar replies"
     },
     "DRAFT": {
       "TITLE": "Draft from Gotchu",
@@ -125,8 +125,7 @@
         "GENERIC": "Gotchu didn't change the draft.",
         "TERMINAL": "This draft is finished — nothing more to change.",
         "REDRAFT_CAP": "Redraft limit reached for this draft.",
-        "NOT_A_REDRAFT": "That isn't a change to the reply. Say what to change in it.",
-        "LOST_RACE": "Someone else acted on this draft at the same moment. Try again."
+        "NOT_A_REDRAFT": "That isn't a change to the reply. Say what to change in it."
       }
     },
     "HANDLED": {

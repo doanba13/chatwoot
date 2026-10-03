@@ -147,8 +147,12 @@ const waiting = computed(() =>
 // What the last instruction came to, when that is a sentence rather than a new
 // draft: `{ kind: 'answered' | 'refused' | 'failed', text }`, or null.
 const outcome = ref(null);
-// "v2 · from your instruction" beside the title once a redraft lands, or null.
-const versionLabel = ref(null);
+// The draft a redraft landed as, `{ cycleId, version }`, or null. Kept as the
+// draft's identity rather than as a sentence, because the label is only true of
+// that draft: a customer writing again (a new cycle) or a later redraft puts a
+// draft on screen the instruction never touched, and "v2 · from your
+// instruction" above it would tell the supporter their change is in it.
+const redraftedTo = ref(null);
 // Whole seconds since the instruction in flight was accepted, for the working
 // line. Ticked by its own interval, which runs only while something is in flight.
 const workingSeconds = ref(0);
@@ -224,10 +228,17 @@ const newRequestId = () => {
  * one has nothing to say about it. Still working leaves everything as it is
  * until the backstop; any other report ends the wait. A redraft says nothing
  * beyond its version label: the new draft on screen IS the outcome.
+ *
+ * Only for the instruction the read ASKED about, too. A read started for an
+ * earlier instruction — one past its backstop, still asked about at the resting
+ * pace — can finish after the supporter submitted a new one, and its answer is
+ * about the old instruction: applied here it would tell them what their new
+ * instruction did, from a different one, and stop waiting for the real answer.
  */
-const settle = (status, readFor) => {
+const settle = (status, readFor, requestId) => {
   const flight = inFlight.value;
   if (!flight || flight.conversationId !== readFor) return;
+  if (flight.requestId !== requestId) return;
   if (!status || status.state === 'working') {
     // Already given up on once: keep asking, quietly, at the resting pace.
     if (flight.expired) return;
@@ -242,9 +253,10 @@ const settle = (status, readFor) => {
     // The new draft on screen is the outcome; a failed line the backstop put up
     // is no longer true.
     outcome.value = null;
-    versionLabel.value = t('GOTCHU.DRAFT.FROM_INSTRUCTION', {
+    redraftedTo.value = {
+      cycleId: view.value.cycleId,
       version: status.version,
-    });
+    };
   } else if (status.state === 'answered') {
     outcome.value = { kind: 'answered', text: status.answer };
   } else if (status.state === 'refused') {
@@ -267,7 +279,8 @@ const settle = (status, readFor) => {
   inFlight.value = null;
 };
 
-// Which conversation a read is in flight for, or null. A gateway slower than the
+// Which conversation a read is in flight for, and which instruction it asks
+// about, or null. A gateway slower than the
 // interval would otherwise stack ticks up behind each other, which is the shape
 // of load that turns a slow dependency into a dead one.
 //
@@ -276,6 +289,11 @@ const settle = (status, readFor) => {
 // new read altogether, and since the old read's answer is then discarded as
 // stale, the dock sat on its loading state until the next tick. The one moment
 // the guard fired was the one moment it must not.
+//
+// The request id is part of the key for the same reason. A resting read still
+// asking about an expired instruction must not swallow the immediate read a NEW
+// submission makes: that read is the one asking about the instruction the dock
+// is now waiting on.
 let readingFor = null;
 let timer = null;
 
@@ -286,8 +304,6 @@ const read = async () => {
   // this surface can do — worse than showing nothing, because it is confidently
   // wrong, nothing about it looks stale, and Insert is one press away.
   const readFor = props.conversationId;
-  if (readingFor === readFor) return;
-  readingFor = readFor;
 
   // The request id travels only with reads for the conversation it was typed in.
   // A read for any other conversation asking about it would be asking the
@@ -296,6 +312,10 @@ const read = async () => {
     inFlight.value?.conversationId === readFor
       ? inFlight.value.requestId
       : undefined;
+
+  const readKey = `${readFor}:${requestId ?? ''}`;
+  if (readingFor === readKey) return;
+  readingFor = readKey;
 
   try {
     const { data } = await AiDraftAPI.getDraft(readFor, { requestId });
@@ -326,7 +346,7 @@ const read = async () => {
     ) {
       forgetInsertedDraft(readFor);
     }
-    settle(data?.instruction, readFor);
+    settle(data?.instruction, readFor, requestId);
   } catch (error) {
     if (readFor !== props.conversationId) return;
     instructAvailable.value = false;
@@ -336,12 +356,12 @@ const read = async () => {
     view.value = errorView(error?.response?.status);
     // No status to report, but the backstop still runs: a gateway that stays
     // down must not leave the dock saying "working" for the rest of the shift.
-    settle(null, readFor);
+    settle(null, readFor, requestId);
   } finally {
     // Only if this is still the read in flight. A stale read finishing after the
     // agent moved on must not clear the new conversation's slot and let a tick
     // fire a second concurrent read for it.
-    if (readingFor === readFor) readingFor = null;
+    if (readingFor === readKey) readingFor = null;
   }
 };
 
@@ -414,7 +434,7 @@ const restart = () => {
   // so the cadence drops back to the resting one as well.
   inFlight.value = null;
   outcome.value = null;
-  versionLabel.value = null;
+  redraftedTo.value = null;
   read();
   startPolling();
 };
@@ -542,7 +562,7 @@ const onInstruct = async () => {
       text,
     };
     outcome.value = null;
-    versionLabel.value = null;
+    redraftedTo.value = null;
     pendingRequestId = null;
     pendingText = null;
     instruction.value = '';
@@ -605,7 +625,7 @@ const wordStep = step => {
         result: [
           step.financialStatus,
           step.ageDays != null
-            ? t('GOTCHU.TRACE.DAYS_OLD', { n: step.ageDays })
+            ? t('GOTCHU.TRACE.DAYS_OLD', { n: step.ageDays }, step.ageDays)
             : null,
         ]
           .filter(Boolean)
@@ -630,19 +650,29 @@ const wordStep = step => {
     case 'memo':
       return {
         kind: 'memo',
-        did: t('GOTCHU.TRACE.MEMOS', { n: step.count }),
+        did: t('GOTCHU.TRACE.MEMOS', { n: step.count }, step.count),
         result: '',
       };
     case 'precedent':
       return {
         kind: 'precedent',
-        did: t('GOTCHU.TRACE.PRECEDENTS', { n: step.count }),
+        did: t('GOTCHU.TRACE.PRECEDENTS', { n: step.count }, step.count),
         result: '',
       };
     default:
       return null;
   }
 };
+
+// Shown only while the draft on screen is the one the redraft landed as.
+const versionLabel = computed(() => {
+  const to = redraftedTo.value;
+  if (!to || to.version == null) return null;
+  if (to.cycleId !== view.value.cycleId || to.version !== draftVersion.value) {
+    return null;
+  }
+  return t('GOTCHU.DRAFT.FROM_INSTRUCTION', { version: to.version });
+});
 
 const traceSteps = computed(() =>
   (view.value.trace ?? []).map(wordStep).filter(Boolean)
