@@ -645,7 +645,7 @@ function openLastItemAfterDeleteInFolder() {
   if (folders.value.length > 0) {
     openLastSavedItemInFolder();
   } else {
-    router.push({ name: 'home' });
+    router.push({ name: 'all_conversations' });
     fetchConversations();
   }
 }

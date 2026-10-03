@@ -202,6 +202,11 @@ describe('isAConversationRoute', () => {
     expect(isAConversationRoute('queue_conversations', false)).toBe(false);
   });
 
+  it('treats all conversations, the list home used to be, as a conversation route', () => {
+    expect(isAConversationRoute('all_conversations', true)).toBe(true);
+    expect(isAConversationRoute('all_conversations', false)).toBe(false);
+  });
+
   it('maps a conversation opened through a queue back to that queue', () => {
     expect(getConversationDashboardRoute('conversation_through_queue')).toBe(
       'queue_conversations'
@@ -211,7 +216,9 @@ describe('isAConversationRoute', () => {
 
 describe('getConversationDashboardRoute', () => {
   it('returns dashboard route for conversation', () => {
-    expect(getConversationDashboardRoute('inbox_conversation')).toEqual('home');
+    expect(getConversationDashboardRoute('inbox_conversation')).toEqual(
+      'all_conversations'
+    );
     expect(
       getConversationDashboardRoute('conversation_through_mentions')
     ).toEqual('conversation_mentions');

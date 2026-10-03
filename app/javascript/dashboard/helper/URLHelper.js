@@ -43,7 +43,7 @@ export const conversationListPageURL = ({
   customViewId,
   queue,
 }) => {
-  let url = `accounts/${accountId}/dashboard`;
+  let url = `accounts/${accountId}/all`;
   if (label) {
     url = `accounts/${accountId}/label/${label}`;
   } else if (teamId) {

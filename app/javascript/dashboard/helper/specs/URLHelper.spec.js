@@ -13,9 +13,9 @@ import {
 
 describe('#URL Helpers', () => {
   describe('conversationListPageURL', () => {
-    it('should return url to dashboard', () => {
+    it('should return url to all conversations, not the landing queue', () => {
       expect(conversationListPageURL({ accountId: 1 })).toBe(
-        '/app/accounts/1/dashboard'
+        '/app/accounts/1/all'
       );
     });
     it('should return url to inbox', () => {

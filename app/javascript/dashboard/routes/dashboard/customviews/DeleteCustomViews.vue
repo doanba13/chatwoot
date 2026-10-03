@@ -55,7 +55,9 @@ export default {
       return `${this.$t('FILTER.CUSTOM_VIEWS.DELETE.MODAL.CONFIRM.NO')}`;
     },
     isFolderSection() {
-      return this.activeFilterType === 0 && this.$route.name !== 'home';
+      return (
+        this.activeFilterType === 0 && this.$route.name !== 'all_conversations'
+      );
     },
     isSegmentSection() {
       return (

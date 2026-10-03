@@ -89,6 +89,7 @@ export const isAConversationRoute = (
 ) => {
   const baseRoutes = [
     'home',
+    'all_conversations',
     'conversation_mentions',
     'conversation_unattended',
     'inbox_dashboard',
@@ -121,7 +122,7 @@ export const isAConversationRoute = (
 export const getConversationDashboardRoute = routeName => {
   switch (routeName) {
     case 'inbox_conversation':
-      return 'home';
+      return 'all_conversations';
     case 'conversation_through_mentions':
       return 'conversation_mentions';
     case 'conversation_through_unattended':

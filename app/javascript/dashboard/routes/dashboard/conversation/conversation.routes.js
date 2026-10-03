@@ -25,7 +25,10 @@ const redirectFolderListIfUnavailable = async (to, _from, next) => {
     next();
     return;
   }
-  next({ name: 'home', params: { accountId: to.params.accountId } });
+  next({
+    name: 'all_conversations',
+    params: { accountId: to.params.accountId },
+  });
 };
 
 const redirectFolderConversationIfUnavailable = async (to, _from, next) => {
@@ -44,16 +47,24 @@ const redirectFolderConversationIfUnavailable = async (to, _from, next) => {
 
 export default {
   routes: [
+    // The landing page is the Needs you queue (spec 2026-10-03 §4). `home`
+    // stays a named route because Chatwoot links to it from everywhere that
+    // means "take me to the dashboard"; the unfiltered list moved to /all.
     {
       path: frontendURL('accounts/:accountId/dashboard'),
       name: 'home',
-      meta: {
-        permissions: CONVERSATION_PERMISSIONS,
-      },
+      meta: { permissions: CONVERSATION_PERMISSIONS },
+      redirect: to => ({
+        name: 'queue_conversations',
+        params: { accountId: to.params.accountId, queue: 'needs_you' },
+      }),
+    },
+    {
+      path: frontendURL('accounts/:accountId/all'),
+      name: 'all_conversations',
+      meta: { permissions: CONVERSATION_PERMISSIONS },
       component: ConversationView,
-      props: () => {
-        return { inboxId: 0 };
-      },
+      props: () => ({ inboxId: 0 }),
     },
     {
       path: frontendURL('accounts/:accountId/conversations/:conversation_id'),
