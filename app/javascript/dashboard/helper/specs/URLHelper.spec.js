@@ -71,6 +71,11 @@ describe('#URL Helpers', () => {
         'accounts/1/team/1/conversations/1'
       );
     });
+    it('should return the queue conversation URL when a queue is active', () => {
+      expect(conversationUrl({ accountId: 1, queue: 'needs_you', id: 1 })).toBe(
+        'accounts/1/queue/needs_you/conversations/1'
+      );
+    });
   });
 
   describe('frontendURL', () => {

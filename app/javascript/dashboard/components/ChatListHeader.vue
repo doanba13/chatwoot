@@ -12,6 +12,8 @@ const props = defineProps({
   pageTitle: { type: String, required: true },
   hasAppliedFilters: { type: Boolean, required: true },
   hasActiveFolders: { type: Boolean, required: true },
+  // A built-in queue: shown like a folder, but it has nothing to edit or delete.
+  isQueue: { type: Boolean, default: false },
   activeStatus: { type: String, required: true },
   isOnExpandedLayout: { type: Boolean, required: true },
   conversationStats: { type: Object, required: true },
@@ -111,7 +113,7 @@ const toggleConversationLayout = () => {
           @click="emit('resetFilters')"
         />
       </template>
-      <template v-if="hasActiveFolders">
+      <template v-if="hasActiveFolders && !isQueue">
         <div class="relative">
           <NextButton
             id="toggleConversationFilterButton"
@@ -138,7 +140,7 @@ const toggleConversationLayout = () => {
           @click="emit('deleteFolders')"
         />
       </template>
-      <div v-else class="relative">
+      <div v-else-if="!isQueue" class="relative">
         <NextButton
           id="toggleConversationFilterButton"
           v-tooltip.right="$t('FILTER.TOOLTIP_LABEL')"

@@ -49,6 +49,7 @@ import {
   getUserPermissions,
   filterItemsByPermission,
 } from 'dashboard/helper/permissionsHelper.js';
+import { queueFolder } from 'dashboard/components-next/gotchu/queues';
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
@@ -59,6 +60,7 @@ const props = defineProps({
   label: { type: String, default: '' },
   conversationType: { type: String, default: '' },
   foldersId: { type: [String, Number], default: 0 },
+  queue: { type: String, default: '' },
   showConversationList: { default: true, type: Boolean },
   isOnExpandedLayout: { default: false, type: Boolean },
 });
@@ -141,6 +143,7 @@ const hasAppliedFilters = computed(() => {
 });
 
 const activeFolder = computed(() => {
+  if (props.queue) return queueFolder(props.queue, t);
   if (props.foldersId) {
     const activeView = folders.value.filter(
       view => view.id === Number(props.foldersId)
@@ -159,7 +162,7 @@ const activeFolderName = computed(() => {
 });
 
 const hasActiveFolders = computed(() => {
-  return Boolean(activeFolder.value && props.foldersId !== 0);
+  return Boolean(activeFolder.value);
 });
 
 const hasAppliedFiltersOrActiveFolders = computed(() => {
@@ -553,6 +556,8 @@ function initalizeAppliedFiltersToModal() {
 }
 
 function onToggleAdvanceFiltersModal() {
+  // A queue is built in code: there is no saved folder to edit.
+  if (props.queue) return;
   if (showAdvancedFilters.value === true) {
     closeAdvanceFiltersModal();
     return;
@@ -586,7 +591,7 @@ function resetAndFetchData() {
     const payload = activeFolder.value.query;
     fetchSavedFilteredConversations(payload);
   }
-  if (props.foldersId) {
+  if (props.foldersId || props.queue) {
     return;
   }
   fetchConversations();
@@ -899,6 +904,7 @@ watch(conversationFilters, (newVal, oldVal) => {
       :page-title="pageTitle"
       :has-applied-filters="hasAppliedFilters"
       :has-active-folders="hasActiveFolders"
+      :is-queue="Boolean(queue)"
       :active-status="activeStatus"
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
@@ -962,6 +968,7 @@ watch(conversationFilters, (newVal, oldVal) => {
       :label="label"
       :team-id="teamId"
       :folders-id="foldersId"
+      :queue="queue"
       :conversation-type="conversationType"
       :show-assignee="showAssigneeInConversationCard"
       :is-on-expanded-layout="isOnExpandedLayout"

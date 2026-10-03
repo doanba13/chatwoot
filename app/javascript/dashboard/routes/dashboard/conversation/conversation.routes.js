@@ -165,6 +165,29 @@ export default {
       }),
     },
     {
+      path: frontendURL('accounts/:accountId/queue/:queue'),
+      name: 'queue_conversations',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: ConversationView,
+      props: route => ({ queue: route.params.queue }),
+    },
+    {
+      path: frontendURL(
+        'accounts/:accountId/queue/:queue/conversations/:conversation_id'
+      ),
+      name: 'conversation_through_queue',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: ConversationView,
+      props: route => ({
+        conversationId: route.params.conversation_id,
+        queue: route.params.queue,
+      }),
+    },
+    {
       path: frontendURL('accounts/:accountId/mentions/conversations'),
       name: 'conversation_mentions',
       meta: {

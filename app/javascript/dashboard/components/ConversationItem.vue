@@ -14,6 +14,7 @@ const props = defineProps({
   label: { type: String, default: '' },
   conversationType: { type: String, default: '' },
   foldersId: { type: [String, Number], default: 0 },
+  queue: { type: String, default: '' },
   showAssignee: { type: Boolean, default: false },
   showExpanded: { type: Boolean, default: false },
 });
@@ -89,6 +90,7 @@ const conversationPath = computed(() =>
       teamId: props.teamId,
       conversationType: props.conversationType,
       foldersId: props.foldersId,
+      queue: props.queue,
     })
   )
 );
