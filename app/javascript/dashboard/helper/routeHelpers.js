@@ -1,3 +1,4 @@
+import { isHiddenRoute } from 'dashboard/components-next/gotchu/hiddenFeatures';
 import {
   hasPermissions,
   getUserPermissions,
@@ -43,6 +44,11 @@ const validateActiveAccountRoutes = (to, user) => {
 
   // If the user is trying to access suspended route, redirect them to dashboard
   if (to.name === 'account_suspended') {
+    return accountDashboardURL;
+  }
+
+  // A paid feature Gotchu hides: a typed URL goes back to the dashboard
+  if (isHiddenRoute(to)) {
     return accountDashboardURL;
   }
 
