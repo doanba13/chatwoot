@@ -3,8 +3,10 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import Button from 'dashboard/components-next/button/Button.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import AgentDot from 'dashboard/components-next/gotchu/AgentDot.vue';
+import AITrace from 'dashboard/components-next/gotchu/AITrace.vue';
 import ConfidenceChip from 'dashboard/components-next/gotchu/ConfidenceChip.vue';
 
 // The band above the reply box: streaming, then ready, then gone. Exactly two
@@ -64,6 +66,24 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // What the agent looked at to write this draft, already worded as AITrace's
+  // `{ kind, did, result }` steps. Empty renders no trace at all.
+  trace: {
+    type: Array,
+    default: () => [],
+  },
+  // What the last instruction came to when that is a sentence rather than a new
+  // draft: `{ kind: 'answered' | 'refused' | 'failed', text }`. Null says nothing.
+  outcome: {
+    type: Object,
+    default: null,
+  },
+  // Where the draft on screen came from, beside the title ("v2 · from your
+  // instruction"). Null renders nothing.
+  versionLabel: {
+    type: String,
+    default: null,
+  },
 });
 
 const emit = defineEmits([
@@ -73,6 +93,7 @@ const emit = defineEmits([
   'stop',
   'adjust',
   'instruct',
+  'dismissOutcome',
 ]);
 
 // Free text to the agent, and only ever that. Typing "send it" here emits
@@ -151,6 +172,12 @@ const reviewLabel = computed(() => {
       >
         <AgentDot :streaming="isStreaming" />
         {{ isStreaming ? streamingText : $t('GOTCHU.DRAFT.TITLE') }}
+        <span
+          v-if="!isStreaming && versionLabel"
+          class="text-xs font-normal text-[var(--g-text-muted)]"
+        >
+          {{ versionLabel }}
+        </span>
       </span>
       <!-- One group, so the review window sits beside the chip rather than
         taking a third slot in a `justify-between` row and pushing the chip off
@@ -224,6 +251,29 @@ const reviewLabel = computed(() => {
       nobody has read. A header that does not move is worth an animation; a
       reachable send button is not. -->
     <template v-if="!isStreaming">
+      <!-- What the last instruction came to, when it was not a new draft. In the
+        agent's voice, because it is the agent's answer; a failure is muted
+        rather than red, the same reasoning as the read notices. -->
+      <div
+        v-if="outcome"
+        class="draft-dock__outcome flex items-start gap-2 text-sm"
+        :class="
+          outcome.kind === 'failed'
+            ? 'text-[var(--g-text-muted)]'
+            : 'text-[var(--g-agent)]'
+        "
+      >
+        <span class="flex-1 min-w-0 text-pretty">{{ outcome.text }}</span>
+        <button
+          type="button"
+          class="flex items-center p-0 bg-transparent border-0 cursor-pointer text-[var(--g-text-muted)] hover:text-[var(--g-text)]"
+          :aria-label="$t('GOTCHU.DRAFT.DISMISS')"
+          @click="$emit('dismissOutcome')"
+        >
+          <Icon icon="i-lucide-x" class="size-3.5" />
+        </button>
+      </div>
+      <AITrace v-if="trace.length" :steps="trace" />
       <!-- Capped, because an uncapped draft takes the screen the customer's
         message needs. Measured against real production drafts on staging in a
         1000px viewport: a 774-character draft rendered the dock at 329px and an
@@ -256,7 +306,11 @@ const reviewLabel = computed(() => {
         tabindex="0"
         :aria-label="$t('GOTCHU.DRAFT.TITLE')"
       >
-        {{ text }}
+        <!-- Keyed by the text, so a redraft landing under the reader fades in
+          as a new draft rather than swapping characters in place. -->
+        <Transition name="draft-swap" mode="out-in">
+          <span :key="text" class="block">{{ text }}</span>
+        </Transition>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex gap-2">
@@ -358,6 +412,20 @@ const reviewLabel = computed(() => {
 .draft-dock__body:focus-visible {
   outline: 2px solid var(--g-agent);
   outline-offset: 2px;
+}
+
+/* The same tokens AITrace reveals its steps with, so the two read as one motion. */
+.draft-swap-enter-active,
+.draft-swap-leave-active {
+  transition:
+    opacity var(--g-dur-reveal) var(--g-ease-out),
+    transform var(--g-dur-reveal) var(--g-ease-out);
+}
+
+.draft-swap-enter-from,
+.draft-swap-leave-to {
+  opacity: 0;
+  transform: translateY(2px);
 }
 
 /* Adapted from Chatwoot's MIT-licensed CopilotLoader — see the template. The

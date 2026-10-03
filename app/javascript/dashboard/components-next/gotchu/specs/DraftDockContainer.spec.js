@@ -9,6 +9,7 @@ import { DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER } from 'dashboard/composables/
 import AiDraftAPI from 'dashboard/api/gotchu/aiDraft';
 import DraftDockContainer from '../DraftDockContainer.vue';
 import DraftInstruct from '../DraftInstruct.vue';
+import AITrace from '../AITrace.vue';
 import {
   forgetInsertedDraft,
   insertedDraftFor,
@@ -40,6 +41,18 @@ const reviewing = (overrides = {}) => ({
   storeKey: 'cadeauniq',
   expiresAt: null,
   ...overrides,
+});
+
+// A read that also reports on the instruction in flight, carrying the draft it
+// has on screen (v2 unless told otherwise).
+const answered = (instruction, draft = { version: 2, body }, extra = {}) => ({
+  data: {
+    cycle: reviewing(),
+    draft,
+    capabilities: { instruct: true },
+    instruction,
+    ...extra,
+  },
 });
 
 const httpError = status => {
@@ -114,7 +127,9 @@ describe('DraftDockContainer', () => {
 
     const wrapper = await mountContainer({ conversationId: 3580 });
 
-    expect(AiDraftAPI.getDraft).toHaveBeenCalledWith(3580);
+    expect(AiDraftAPI.getDraft).toHaveBeenCalledWith(3580, {
+      requestId: undefined,
+    });
     expect(wrapper.text()).toContain(body);
   });
 
@@ -338,12 +353,16 @@ describe('DraftDockContainer failure modes', () => {
 describe('DraftDockContainer on a conversation change', () => {
   it('reads again for the new conversation', async () => {
     const wrapper = await mountContainer({ conversationId: 3580 });
-    expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3580);
+    expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3580, {
+      requestId: undefined,
+    });
 
     await wrapper.setProps({ conversationId: 3577 });
     await flushPromises();
 
-    expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3577);
+    expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3577, {
+      requestId: undefined,
+    });
   });
 
   it('clears the previous conversation draft before the new read lands', async () => {
@@ -805,25 +824,18 @@ describe('DraftDockContainer instruct', () => {
     resolve({ data: { status: 'accepted' } });
     await flushPromises();
 
-    expect(input(wrapper).attributes('disabled')).toBeUndefined();
-  });
-
-  it('says the instruction was accepted, and nothing about what it did', async () => {
-    // Acceptance is the last thing this browser observes: the agent answers as
-    // a private note in the conversation, and whether it understood the instruction never comes back
-    // here. A "done" would be a claim about something nobody watched.
-    const wrapper = await readyToInstruct();
-
-    await instruct(wrapper, 'kürzer bitte');
-
-    expect(wrapper.text()).toContain('Instruction accepted');
-    expect(wrapper.text()).toContain('private note in this conversation');
-    expect(wrapper.text()).not.toContain('Lark');
-    expect(wrapper.text()).not.toContain('redrafting');
+    // Accepted, and now the instruction itself is in flight: the field stays
+    // out of reach until the read says how it turned out (see the outcome block
+    // below).
+    expect(field(wrapper).exists()).toBe(false);
   });
 
   it('clears the field once the instruction is accepted', async () => {
     const wrapper = await readyToInstruct();
+    // The outcome lands on the very next read, so the field comes back.
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered({ state: 'answered', answer: 'Erledigt.' })
+    );
 
     await instruct(wrapper, 'kürzer bitte');
 
@@ -916,6 +928,9 @@ describe('DraftDockContainer instruct', () => {
 
   it('mints a new token for the next instruction after one is accepted', async () => {
     const wrapper = await readyToInstruct();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered({ state: 'answered', answer: 'Erledigt.' })
+    );
 
     await instruct(wrapper, 'kürzer bitte');
     const first = lastRequestId();
@@ -924,17 +939,19 @@ describe('DraftDockContainer instruct', () => {
     expect(lastRequestId()).not.toBe(first);
   });
 
-  it('does not read again on the strength of an acceptance', async () => {
-    // The cycle only turns `redrafting` once the worker picks the job up, which
-    // is after this response — so a read fired now returns the state already on
-    // screen, and "nothing changed" right after an acceptance reads as the press
-    // having done nothing. The 15s poll catches the flip instead.
+  it('reads at once on an acceptance, asking about that instruction', async () => {
+    // Safe now that the dock says "working" whatever the cycle is doing: a read
+    // that returns the state already on screen no longer reads as nothing having
+    // happened.
     const wrapper = await readyToInstruct();
     const readsBefore = AiDraftAPI.getDraft.mock.calls.length;
 
     await instruct(wrapper, 'kürzer bitte');
 
-    expect(AiDraftAPI.getDraft.mock.calls.length).toBe(readsBefore);
+    expect(AiDraftAPI.getDraft.mock.calls.length).toBe(readsBefore + 1);
+    expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3580, {
+      requestId: lastRequestId(),
+    });
   });
 
   it('drops an acceptance that lands after the agent moved on', async () => {
@@ -956,7 +973,7 @@ describe('DraftDockContainer instruct', () => {
     // The new conversation's field is empty and says nothing: the answer was
     // about the previous customer's draft.
     expect(input(wrapper).element.value).toBe('');
-    expect(wrapper.text()).not.toContain('Instruction accepted');
+    expect(wrapper.text()).not.toContain('working on your instruction');
   });
 
   it('forgets a half-typed instruction when the agent switches conversation', async () => {
@@ -967,6 +984,230 @@ describe('DraftDockContainer instruct', () => {
     await flushPromises();
 
     expect(input(wrapper).element.value).toBe('');
+  });
+});
+
+describe('DraftDockContainer instruction outcome', () => {
+  const field = wrapper => wrapper.findComponent(DraftInstruct);
+  const input = wrapper => field(wrapper).find('input');
+  const arrow = wrapper => field(wrapper).find('button');
+
+  // The poll is the only way an outcome arrives, so every test here runs on a
+  // fake clock from before the mount.
+  const inFlightFor = async (text = 'kürzer bitte') => {
+    vi.useFakeTimers();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answerWithInstruct(reviewing(), { version: 1, body })
+    );
+    const wrapper = await mountContainer({ conversationId: 3580 });
+    // Still working on every read until a test says otherwise.
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered({ state: 'working' }, { version: 1, body })
+    );
+    await input(wrapper).setValue(text);
+    await arrow(wrapper).trigger('click');
+    await flushPromises();
+    const requestId = AiDraftAPI.instruct.mock.calls.at(-1)[1].requestId;
+    return { wrapper, requestId };
+  };
+
+  const readsSince = n => AiDraftAPI.getDraft.mock.calls.slice(n);
+
+  it('shows Gotchu working and polls every 2 s with the request id', async () => {
+    const { wrapper, requestId } = await inFlightFor();
+
+    expect(dock(wrapper).text()).toContain(
+      'Gotchu is working on your instruction… 0s'
+    );
+    // The draft body is not on screen while the dock is working.
+    expect(dock(wrapper).text()).not.toContain(body);
+
+    const before = AiDraftAPI.getDraft.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(readsSince(before)).toEqual([[3580, { requestId }]]);
+    expect(dock(wrapper).text()).toContain(
+      'Gotchu is working on your instruction… 2s'
+    );
+  });
+
+  it('shows an answer in the dock and drops back to the 15 s poll', async () => {
+    const { wrapper } = await inFlightFor();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered(
+        { state: 'answered', answer: 'Kein Entwurf.' },
+        { version: 1, body }
+      )
+    );
+
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(dock(wrapper).text()).toContain('Kein Entwurf.');
+    expect(dock(wrapper).text()).toContain(body);
+
+    const before = AiDraftAPI.getDraft.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(14_000);
+    expect(readsSince(before)).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1_000);
+    // One resting read, and it no longer asks about the instruction.
+    expect(readsSince(before)).toEqual([[3580, { requestId: undefined }]]);
+  });
+
+  it.each([
+    [
+      'not_a_redraft',
+      "That isn't a change to the reply. Say what to change in it.",
+    ],
+    [
+      'lost_race',
+      'Someone else acted on this draft at the same moment. Try again.',
+    ],
+    ['something_new', "Gotchu didn't change the draft."],
+    [null, "Gotchu didn't change the draft."],
+  ])('says a refusal for %s in its own words', async (reasonCode, sentence) => {
+    const { wrapper } = await inFlightFor();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered({ state: 'refused', reasonCode }, { version: 1, body })
+    );
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(dock(wrapper).text()).toContain(sentence);
+  });
+
+  it('labels a redraft by its version and shows the new body', async () => {
+    const { wrapper } = await inFlightFor();
+    const redrafted = 'Kurz: Ihre Sendung kommt diese Woche.';
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered(
+        { state: 'redrafted', version: 2 },
+        { version: 2, body: redrafted }
+      )
+    );
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(dock(wrapper).text()).toContain('v2 · from your instruction');
+    expect(dock(wrapper).text()).toContain(redrafted);
+    expect(dock(wrapper).text()).not.toContain('working on your instruction');
+  });
+
+  it('gives up after 180 s of working and hands the typed text back', async () => {
+    const { wrapper } = await inFlightFor('Bitte die Sendungsnummer nennen.');
+
+    await vi.advanceTimersByTimeAsync(178_000);
+    expect(dock(wrapper).text()).toContain('working on your instruction');
+
+    await vi.advanceTimersByTimeAsync(4_000);
+
+    expect(dock(wrapper).text()).toContain(
+      "Gotchu couldn't finish that. Try again."
+    );
+    expect(input(wrapper).element.value).toBe(
+      'Bitte die Sendungsnummer nennen.'
+    );
+  });
+
+  it('reports a failed instruction and hands the typed text back', async () => {
+    const { wrapper } = await inFlightFor('wärmer schreiben');
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered({ state: 'failed' }, { version: 1, body })
+    );
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(dock(wrapper).text()).toContain(
+      "Gotchu couldn't finish that. Try again."
+    );
+    expect(input(wrapper).element.value).toBe('wärmer schreiben');
+  });
+
+  it('offers no instruction field while one is in flight', async () => {
+    // A second instruction would be about a draft that is about to change.
+    const { wrapper } = await inFlightFor();
+
+    expect(field(wrapper).exists()).toBe(false);
+  });
+
+  it('dismisses the outcome line', async () => {
+    const { wrapper } = await inFlightFor();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answered(
+        { state: 'answered', answer: 'Kein Entwurf.' },
+        { version: 1, body }
+      )
+    );
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    await wrapper.find('button[aria-label="Dismiss"]').trigger('click');
+
+    expect(dock(wrapper).text()).not.toContain('Kein Entwurf.');
+  });
+
+  it('forgets the instruction in flight when the agent switches conversation', async () => {
+    // Review Focus 5: the outcome belongs to the conversation it was typed in,
+    // and its request id must never ride on another conversation's reads.
+    const { wrapper } = await inFlightFor();
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answerWithInstruct(reviewing({ id: 3001 }), { version: 1, body })
+    );
+    const before = AiDraftAPI.getDraft.mock.calls.length;
+
+    await wrapper.setProps({ conversationId: 4471 });
+    await flushPromises();
+
+    expect(dock(wrapper).text()).not.toContain('working on your instruction');
+    expect(dock(wrapper).text()).toContain(body);
+
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    const reads = readsSince(before);
+    // The restart read and one resting tick — not a 2 s cadence.
+    expect(reads).toEqual([
+      [4471, { requestId: undefined }],
+      [4471, { requestId: undefined }],
+    ]);
+  });
+
+  it('words the gateway trace into steps above the draft', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue({
+      data: {
+        cycle: reviewing(),
+        draft: { version: 1, body },
+        trace: [
+          {
+            kind: 'order',
+            orderName: '#PL-5563',
+            financialStatus: 'PAID',
+            ageDays: 12,
+          },
+          {
+            kind: 'fulfillment',
+            state: 'in_transit',
+            trackingNumber: 'YT1234567890123456',
+            lastScanAt: null,
+          },
+          { kind: 'precedent', count: 3 },
+          { kind: 'something_new' },
+        ],
+      },
+    });
+
+    const wrapper = await mountContainer();
+    const steps = wrapper.findComponent(AITrace).props('steps');
+
+    expect(steps).toEqual([
+      {
+        kind: 'order',
+        did: 'Looked up #PL-5563',
+        result: 'PAID · 12 days old',
+      },
+      {
+        kind: 'fulfillment',
+        did: 'Checked the tracking',
+        result: 'in_transit · YT1234567890123456',
+      },
+      { kind: 'precedent', did: 'Found 3 similar replies', result: '' },
+    ]);
   });
 });
 

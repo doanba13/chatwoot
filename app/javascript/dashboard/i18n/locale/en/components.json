@@ -87,7 +87,14 @@
       "CHECK": "check this"
     },
     "TRACE": {
-      "CHECKED": "{name} checked {count} thing | {name} checked {count} things"
+      "CHECKED": "{name} checked {count} thing | {name} checked {count} things",
+      "ORDER": "Looked up {name}",
+      "DAYS_OLD": "{n} days old",
+      "TRACKING": "Checked the tracking",
+      "POLICY": "Read the shop policy",
+      "PROCEDURE": "Followed \"{title}\"",
+      "MEMOS": "Applied {n} desk notes",
+      "PRECEDENTS": "Found {n} similar replies"
     },
     "DRAFT": {
       "TITLE": "Draft from Gotchu",
@@ -98,7 +105,6 @@
       "STOP": "stop and edit",
       "INSTRUCT_PLACEHOLDER": "Tell Gotchu what to change…",
       "INSTRUCT_SUBMIT": "Send instruction to Gotchu",
-      "INSTRUCT_ACCEPTED": "Instruction accepted. Gotchu answers as a private note in this conversation; a new draft shows up here if it writes one.",
       "INSTRUCT_REFUSED": "Gotchu did not take that instruction — the draft may have moved on. Reload the conversation.",
       "INSTRUCT_UNAVAILABLE": "Could not confirm the instruction reached Gotchu. Check the private notes in this conversation before sending it again.",
       "INSTRUCT_UNCONFIGURED": "Instructions are not configured on this Chatwoot, so nothing was sent.",
@@ -110,7 +116,18 @@
       "REDRAFTING": "Writing a new draft…",
       "NOTICE_UNAVAILABLE": "Gotchu is not answering, so whether a draft exists here is unknown.",
       "NOTICE_UNCONFIGURED": "Gotchu is not configured on this Chatwoot, so no draft can be read.",
-      "NOTICE_FAILED": "The draft for this conversation could not be read."
+      "NOTICE_FAILED": "The draft for this conversation could not be read.",
+      "WORKING": "Gotchu is working on your instruction… {seconds}s",
+      "FROM_INSTRUCTION": "v{version} · from your instruction",
+      "OUTCOME_FAILED": "Gotchu couldn't finish that. Try again.",
+      "DISMISS": "Dismiss",
+      "REFUSED": {
+        "GENERIC": "Gotchu didn't change the draft.",
+        "TERMINAL": "This draft is finished — nothing more to change.",
+        "REDRAFT_CAP": "Redraft limit reached for this draft.",
+        "NOT_A_REDRAFT": "That isn't a change to the reply. Say what to change in it.",
+        "LOST_RACE": "Someone else acted on this draft at the same moment. Try again."
+      }
     },
     "HANDLED": {
       "BY": "Handled by {name}",

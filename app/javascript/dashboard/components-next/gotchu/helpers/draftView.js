@@ -115,7 +115,7 @@ export const errorView = status => {
  * state renders empty with its own reason — including `awaiting_review` with no
  * body yet, which is a cycle that exists and has not produced text.
  */
-export const draftViewFrom = payload => {
+const viewFrom = payload => {
   if (!payload || typeof payload !== 'object') {
     return emptyView(EMPTY_REASONS.FAILED);
   }
@@ -151,3 +151,13 @@ export const draftViewFrom = payload => {
     cycleId
   );
 };
+
+/**
+ * What the agent looked at to write the draft, as the gateway's structured
+ * steps — worded by the container, not here. Carried on every view, an empty
+ * list included, so nothing downstream has to ask whether the field exists.
+ */
+export const draftViewFrom = payload => ({
+  ...viewFrom(payload),
+  trace: Array.isArray(payload?.trace) ? payload.trace : [],
+});

@@ -4,6 +4,7 @@ import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { withFullI18n } from 'test-i18n';
 import Input from 'dashboard/components-next/input/Input.vue';
+import AITrace from '../AITrace.vue';
 import DraftDock from '../DraftDock.vue';
 
 // The real catalogue: the button labels are what tell the two send paths apart,
@@ -454,5 +455,63 @@ describe('DraftDock streaming loader', () => {
     // Attribution, not a nicety: the shape is Chatwoot's own CopilotLoader.
     expect(source).toContain('CopilotLoader');
     expect(source).toContain('MIT');
+  });
+});
+
+describe('DraftDock trace and outcome', () => {
+  const steps = [
+    { kind: 'order', did: 'Looked up #PL-5563', result: 'PAID · 12 days old' },
+    { kind: 'policy', did: 'Read the shop policy', result: '' },
+  ];
+
+  it('renders the trace with the given steps, above the draft body', () => {
+    const wrapper = mountComponent({ trace: steps });
+    const trace = wrapper.findComponent(AITrace);
+
+    expect(trace.exists()).toBe(true);
+    expect(trace.props('steps')).toEqual(steps);
+    // Above: the trace comes before the body in document order.
+    const html = wrapper.html();
+    expect(html.indexOf('Looked up #PL-5563')).toBeLessThan(
+      html.indexOf('draft-dock__body')
+    );
+  });
+
+  it('renders no trace at all for an empty one', () => {
+    const wrapper = mountComponent({ trace: [] });
+
+    expect(wrapper.findComponent(AITrace).exists()).toBe(false);
+  });
+
+  it('shows an outcome line, and its dismiss emits dismissOutcome', async () => {
+    const wrapper = mountComponent({
+      outcome: { kind: 'answered', text: 'Kein Entwurf.' },
+    });
+
+    expect(wrapper.find('.draft-dock__outcome').text()).toContain(
+      'Kein Entwurf.'
+    );
+    await wrapper.find('button[aria-label="Dismiss"]').trigger('click');
+
+    expect(wrapper.emitted('dismissOutcome')).toHaveLength(1);
+  });
+
+  it('mutes a failed outcome instead of speaking it in the agent colour', () => {
+    const wrapper = mountComponent({
+      outcome: { kind: 'failed', text: 'Gotchu couldn’t finish that.' },
+    });
+
+    expect(wrapper.find('.draft-dock__outcome').classes()).toContain(
+      'text-[var(--g-text-muted)]'
+    );
+  });
+
+  it('shows the version label beside the title', () => {
+    const wrapper = mountComponent({
+      versionLabel: 'v2 · from your instruction',
+    });
+
+    expect(wrapper.text()).toContain('Draft from Gotchu');
+    expect(wrapper.text()).toContain('v2 · from your instruction');
   });
 });

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
@@ -109,7 +110,38 @@ const INSTRUCT_ERROR_KEYS = Object.freeze({
  */
 const POLL_INTERVAL_MS = 15 * 1000;
 
+/**
+ * The cadence while an instruction is in flight, and the point at which the dock
+ * stops waiting for it.
+ *
+ * Faster than the resting poll because a supporter who just pressed the arrow IS
+ * watching, and an answer that lands 14 seconds after the worker wrote it reads
+ * as the instruction having hung. Only for as long as something is in flight.
+ *
+ * The backstop exists because "working" can be a lie told by silence: a job that
+ * died in the worker never reports anything. Past it the dock says it could not
+ * finish and hands the typed text back, rather than spinning for a shift.
+ */
+const FAST_POLL_INTERVAL_MS = 2 * 1000;
+const INSTRUCTION_BACKSTOP_MS = 180 * 1000;
+
+const { t, te } = useI18n();
+
 const view = ref(loadingView());
+
+// The instruction whose outcome the dock is waiting for: its request id, the
+// conversation it was typed in, when, and the text (handed back on a failure).
+// Null when nothing is in flight.
+const inFlight = ref(null);
+// What the last instruction came to, when that is a sentence rather than a new
+// draft: `{ kind: 'answered' | 'refused' | 'failed', text }`, or null.
+const outcome = ref(null);
+// "v2 · from your instruction" beside the title once a redraft lands, or null.
+const versionLabel = ref(null);
+// Whole seconds since the instruction in flight was accepted, for the working
+// line. Ticked by its own interval, which runs only while something is in flight.
+const workingSeconds = ref(0);
+let workingTicker = null;
 
 /**
  * The version number behind whatever `view.text` currently shows, or null.
@@ -174,6 +206,47 @@ const newRequestId = () => {
   return `${chunk()}-${chunk()}-${chunk()}-${chunk()}`;
 };
 
+/**
+ * Turn the read's report on the instruction in flight into what the dock says.
+ *
+ * Only for the conversation the instruction was typed in; a read for any other
+ * one has nothing to say about it. Still working leaves everything as it is
+ * until the backstop; any other report ends the wait. A redraft says nothing
+ * beyond its version label: the new draft on screen IS the outcome.
+ */
+const settle = (status, readFor) => {
+  const flight = inFlight.value;
+  if (!flight || flight.conversationId !== readFor) return;
+  const expired = Date.now() - flight.startedAt > INSTRUCTION_BACKSTOP_MS;
+  if (!status || status.state === 'working') {
+    if (!expired) return;
+    outcome.value = { kind: 'failed', text: t('GOTCHU.DRAFT.OUTCOME_FAILED') };
+  } else if (status.state === 'redrafted') {
+    versionLabel.value = t('GOTCHU.DRAFT.FROM_INSTRUCTION', {
+      version: status.version,
+    });
+  } else if (status.state === 'answered') {
+    outcome.value = { kind: 'answered', text: status.answer };
+  } else if (status.state === 'refused') {
+    // Any code this build has no sentence for says the generic one: the state
+    // machine's reasons are not a closed list from here.
+    const key = `GOTCHU.DRAFT.REFUSED.${(status.reasonCode ?? '').toUpperCase()}`;
+    outcome.value = {
+      kind: 'refused',
+      text: te(key) ? t(key) : t('GOTCHU.DRAFT.REFUSED.GENERIC'),
+    };
+  } else {
+    outcome.value = { kind: 'failed', text: t('GOTCHU.DRAFT.OUTCOME_FAILED') };
+  }
+  // Spec §3.2: a failure gives the typed text back, so nobody retypes it.
+  if (outcome.value?.kind === 'failed' && instruction.value === '') {
+    instruction.value = flight.text;
+  }
+  // Dropping `inFlight` is also what puts the poll back on the resting cadence:
+  // the watcher on it restarts the timer.
+  inFlight.value = null;
+};
+
 // Which conversation a read is in flight for, or null. A gateway slower than the
 // interval would otherwise stack ticks up behind each other, which is the shape
 // of load that turns a slow dependency into a dead one.
@@ -196,8 +269,16 @@ const read = async () => {
   if (readingFor === readFor) return;
   readingFor = readFor;
 
+  // The request id travels only with reads for the conversation it was typed in.
+  // A read for any other conversation asking about it would be asking the
+  // gateway about an instruction on a different cycle.
+  const requestId =
+    inFlight.value?.conversationId === readFor
+      ? inFlight.value.requestId
+      : undefined;
+
   try {
-    const { data } = await AiDraftAPI.getDraft(readFor);
+    const { data } = await AiDraftAPI.getDraft(readFor, { requestId });
     if (readFor !== props.conversationId) return;
     view.value = draftViewFrom(data);
     draftVersion.value =
@@ -225,6 +306,7 @@ const read = async () => {
     ) {
       forgetInsertedDraft(readFor);
     }
+    settle(data?.instruction, readFor);
   } catch (error) {
     if (readFor !== props.conversationId) return;
     instructAvailable.value = false;
@@ -232,6 +314,9 @@ const read = async () => {
     // do something about the first and nobody has to do anything about the
     // second. errorView keeps those apart; the notice below says which.
     view.value = errorView(error?.response?.status);
+    // No status to report, but the backstop still runs: a gateway that stays
+    // down must not leave the dock saying "working" for the rest of the shift.
+    settle(null, readFor);
   } finally {
     // Only if this is still the read in flight. A stale read finishing after the
     // agent moved on must not clear the new conversation's slot and let a tick
@@ -256,8 +341,29 @@ const tick = () => {
 
 const startPolling = () => {
   stopPolling();
-  timer = window.setInterval(tick, POLL_INTERVAL_MS);
+  timer = window.setInterval(
+    tick,
+    inFlight.value ? FAST_POLL_INTERVAL_MS : POLL_INTERVAL_MS
+  );
 };
+
+const stopWorkingTicker = () => {
+  if (!workingTicker) return;
+  window.clearInterval(workingTicker);
+  workingTicker = null;
+};
+
+// Starting or ending a wait changes the poll's cadence, and only while it is
+// polling at all — an unmounted dock must not start a timer again.
+watch(inFlight, flight => {
+  if (timer) startPolling();
+  stopWorkingTicker();
+  workingSeconds.value = 0;
+  if (!flight) return;
+  workingTicker = window.setInterval(() => {
+    workingSeconds.value = Math.floor((Date.now() - flight.startedAt) / 1000);
+  }, 1000);
+});
 
 const onVisibilityChange = () => {
   if (!document.hidden) read();
@@ -282,6 +388,13 @@ const restart = () => {
   submitting.value = false;
   pendingRequestId = null;
   pendingText = null;
+  // An instruction in flight was typed against the previous customer's draft.
+  // Its outcome belongs there, and asking about it from here would put its
+  // request id on this conversation's reads. Cleared BEFORE the poll restarts,
+  // so the cadence drops back to the resting one as well.
+  inFlight.value = null;
+  outcome.value = null;
+  versionLabel.value = null;
   read();
   startPolling();
 };
@@ -302,6 +415,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopPolling();
+  stopWorkingTicker();
   document.removeEventListener('visibilitychange', onVisibilityChange);
 });
 
@@ -352,35 +466,26 @@ const onInsert = () => {
  *
  * A draft that is ready, a cycle id to name it by, and a deployment that can
  * forward the gesture. Not while one is being written: the field is about the
- * draft on screen, and there is none.
+ * draft on screen, and there is none. Nor while an instruction is in flight:
+ * the next one would be about a draft that is about to change under it.
  */
 const canInstruct = computed(
   () =>
     instructAvailable.value &&
+    !inFlight.value &&
     view.value.state === 'ready' &&
     view.value.cycleId !== null
 );
 
-const noticeToneOf = key =>
-  key === 'GOTCHU.DRAFT.INSTRUCT_ACCEPTED' ? 'success' : 'error';
-
 /**
- * Forward what the supporter typed, and say only what can be known.
+ * Forward what the supporter typed, then wait for what it came to.
  *
- * What comes back is ACCEPTANCE, not an outcome: the reply worker answers as a
- * private note in the conversation, and this browser never hears whether the agent understood the
- * instruction, redrafted, or asked a question back. The one thing that shows up
- * here is a new version on a later poll. So the success line says accepted and
- * says where the answer goes; claiming a redraft would be claiming something
- * nothing in this process observed.
- *
- * NOT followed by an immediate re-read, deliberately. The cycle only turns
- * `redrafting` once the worker picks the job off the queue, which is after this
- * response, so a read fired now returns the state the dock is already showing —
- * and "nothing changed" right after an acceptance reads as the press having done
- * nothing, which is worse than saying nothing. The 15s poll catches the flip
- * inside the window an agent could notice it in, and that is the same argument
- * POLL_INTERVAL_MS is chosen on.
+ * What the POST answers is acceptance, not an outcome. The outcome comes from
+ * the draft read, which reports on the instruction by its request id — a new
+ * version, an answer, a refusal or a failure — so an accepted instruction puts
+ * the dock into its working state and polls fast until the read says how it
+ * turned out (see `settle`). An immediate read is safe now: whatever state the
+ * cycle is in, the dock is saying "working" rather than "nothing changed".
  */
 const onInstruct = async () => {
   const text = instruction.value.trim();
@@ -408,14 +513,22 @@ const onInstruct = async () => {
     });
     if (submitFor !== props.conversationId) return;
     // Accepted, so the token has done its job and the next instruction is a new
-    // one. The field is cleared here and nowhere else.
+    // one — but this one is now the instruction in flight, so the token moves
+    // there before it is dropped. The field is cleared here and nowhere else.
+    inFlight.value = {
+      requestId: pendingRequestId,
+      conversationId: submitFor,
+      startedAt: Date.now(),
+      text,
+    };
+    outcome.value = null;
+    versionLabel.value = null;
     pendingRequestId = null;
     pendingText = null;
     instruction.value = '';
-    instructNotice.value = {
-      key: 'GOTCHU.DRAFT.INSTRUCT_ACCEPTED',
-      tone: 'success',
-    };
+    instructNotice.value = null;
+    startPolling();
+    read();
   } catch (error) {
     if (submitFor !== props.conversationId) return;
     // The typed text stays exactly where it is, and so does the token: pressing
@@ -423,7 +536,7 @@ const onInstruct = async () => {
     const key =
       INSTRUCT_ERROR_KEYS[error?.response?.data?.reason] ??
       INSTRUCT_ERROR_KEYS.unavailable;
-    instructNotice.value = { key, tone: noticeToneOf(key) };
+    instructNotice.value = { key, tone: 'error' };
   } finally {
     if (submitFor === props.conversationId) submitting.value = false;
   }
@@ -459,6 +572,73 @@ const NOTICE_KEYS = Object.freeze({
 });
 
 const noticeKey = computed(() => NOTICE_KEYS[view.value.emptyReason] ?? null);
+
+// The gateway's structured steps, worded for AITrace. Here and only here, so the
+// sentence for a step is decided in one place. A kind this build does not know
+// is dropped rather than guessed at.
+const wordStep = step => {
+  switch (step?.kind) {
+    case 'order':
+      return {
+        kind: 'order',
+        did: t('GOTCHU.TRACE.ORDER', { name: step.orderName }),
+        result: [
+          step.financialStatus,
+          step.ageDays != null
+            ? t('GOTCHU.TRACE.DAYS_OLD', { n: step.ageDays })
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      };
+    case 'fulfillment':
+      return {
+        kind: 'fulfillment',
+        did: t('GOTCHU.TRACE.TRACKING'),
+        result: [step.state, step.trackingNumber, step.lastScanAt]
+          .filter(Boolean)
+          .join(' · '),
+      };
+    case 'policy':
+      return { kind: 'policy', did: t('GOTCHU.TRACE.POLICY'), result: '' };
+    case 'procedure':
+      return {
+        kind: 'procedure',
+        did: t('GOTCHU.TRACE.PROCEDURE', { title: step.title }),
+        result: '',
+      };
+    case 'memo':
+      return {
+        kind: 'memo',
+        did: t('GOTCHU.TRACE.MEMOS', { n: step.count }),
+        result: '',
+      };
+    case 'precedent':
+      return {
+        kind: 'precedent',
+        did: t('GOTCHU.TRACE.PRECEDENTS', { n: step.count }),
+        result: '',
+      };
+    default:
+      return null;
+  }
+};
+
+const traceSteps = computed(() =>
+  (view.value.trace ?? []).map(wordStep).filter(Boolean)
+);
+
+// While an instruction is in flight the dock says so, whatever the cycle is
+// doing underneath: the worker may not have picked the job up yet, and a ready
+// draft shown as ready reads as the press having done nothing.
+const dockState = computed(() =>
+  inFlight.value ? 'streaming' : view.value.state
+);
+const dockStreamingText = computed(() =>
+  inFlight.value
+    ? t('GOTCHU.DRAFT.WORKING', { seconds: workingSeconds.value })
+    : t('GOTCHU.DRAFT.REDRAFTING')
+);
 </script>
 
 <template>
@@ -476,12 +656,16 @@ const noticeKey = computed(() => NOTICE_KEYS[view.value.emptyReason] ?? null);
     renders while the write surface is unavailable. The others are not "wired to
     nothing" — they are not on screen. -->
   <DraftDock
-    :state="view.state"
+    :state="dockState"
     :text="view.text"
     :expires-at="view.expiresAt"
-    :streaming-text="$t('GOTCHU.DRAFT.REDRAFTING')"
+    :streaming-text="dockStreamingText"
     :write-enabled="WRITE_SURFACE_AVAILABLE"
+    :trace="traceSteps"
+    :outcome="outcome"
+    :version-label="versionLabel"
     @insert="onInsert"
+    @dismiss-outcome="outcome = null"
   />
   <!-- The one write on this surface, and a sibling of the dock rather than a row
     inside it: what happens to the typed text depends on how a request this file

@@ -25,8 +25,14 @@ class AiDraftAPI extends ApiClient {
   // Not `get`/`show`: the base class already owns both names with different
   // signatures, and a read whose argument means something else under a familiar
   // name is the kind of thing that survives review.
-  getDraft(conversationId) {
-    return axios.get(`${this.url}/${conversationId}/ai_draft`);
+  //
+  // `requestId` is the token of an instruction this browser submitted and is
+  // waiting on: with it, the read also reports how that instruction turned out
+  // (`instruction` in the body). Without it, `instruction` comes back null.
+  getDraft(conversationId, { requestId } = {}) {
+    return axios.get(`${this.url}/${conversationId}/ai_draft`, {
+      params: requestId ? { request_id: requestId } : {},
+    });
   }
 
   /**
