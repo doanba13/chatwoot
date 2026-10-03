@@ -367,8 +367,8 @@ const noticeToneOf = key =>
 /**
  * Forward what the supporter typed, and say only what can be known.
  *
- * What comes back is ACCEPTANCE, not an outcome: the reply worker answers in the
- * Lark thread, and this browser never hears whether the agent understood the
+ * What comes back is ACCEPTANCE, not an outcome: the reply worker answers as a
+ * private note in the conversation, and this browser never hears whether the agent understood the
  * instruction, redrafted, or asked a question back. The one thing that shows up
  * here is a new version on a later poll. So the success line says accepted and
  * says where the answer goes; claiming a redraft would be claiming something

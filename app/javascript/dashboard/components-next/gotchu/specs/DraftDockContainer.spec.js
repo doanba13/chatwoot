@@ -809,15 +809,16 @@ describe('DraftDockContainer instruct', () => {
   });
 
   it('says the instruction was accepted, and nothing about what it did', async () => {
-    // Acceptance is the last thing this browser observes: the agent answers in
-    // the Lark thread, and whether it understood the instruction never comes back
+    // Acceptance is the last thing this browser observes: the agent answers as
+    // a private note in the conversation, and whether it understood the instruction never comes back
     // here. A "done" would be a claim about something nobody watched.
     const wrapper = await readyToInstruct();
 
     await instruct(wrapper, 'kürzer bitte');
 
     expect(wrapper.text()).toContain('Instruction accepted');
-    expect(wrapper.text()).toContain('Lark thread');
+    expect(wrapper.text()).toContain('private note in this conversation');
+    expect(wrapper.text()).not.toContain('Lark');
     expect(wrapper.text()).not.toContain('redrafting');
   });
 
@@ -845,7 +846,7 @@ describe('DraftDockContainer instruct', () => {
     [
       'unavailable',
       502,
-      'Could not confirm the instruction reached Gotchu. Check the Lark thread before sending it again.',
+      'Could not confirm the instruction reached Gotchu. Check the private notes in this conversation before sending it again.',
     ],
     [
       'refused',
