@@ -143,7 +143,7 @@ const hasAppliedFilters = computed(() => {
 });
 
 const activeFolder = computed(() => {
-  if (props.queue) return queueFolder(props.queue, t);
+  if (props.queue) return queueFolder(props.queue, t, currentUser.value?.id);
   if (props.foldersId) {
     const activeView = folders.value.filter(
       view => view.id === Number(props.foldersId)

@@ -20,8 +20,41 @@ const state = (value, queryOperator) => ({
   query_operator: queryOperator,
 });
 
+const stateAnd = value => state(value, 'and');
+const mine = (userId, queryOperator) => ({
+  attribute_key: 'assignee_id',
+  filter_operator: 'equal_to',
+  values: [userId],
+  query_operator: queryOperator,
+});
+const unassigned = queryOperator => ({
+  attribute_key: 'assignee_id',
+  filter_operator: 'is_not_present',
+  values: [],
+  query_operator: queryOperator,
+});
+
 describe('queueFolder', () => {
-  it('builds Needs you as open conversations the agent drafted or handed over', () => {
+  it('builds Needs you as open, drafted or handed over, and mine or unassigned', () => {
+    // AND binds tighter than OR on both the backend and the in-memory filter,
+    // so each (state, assignee) pair is its own AND group.
+    expect(queueFolder('needs_you', key => key, 42).query.payload).toEqual([
+      open,
+      stateAnd('drafted'),
+      mine(42, 'or'),
+      open,
+      stateAnd('drafted'),
+      unassigned('or'),
+      open,
+      stateAnd('handed_over'),
+      mine(42, 'or'),
+      open,
+      stateAnd('handed_over'),
+      unassigned(null),
+    ]);
+  });
+
+  it('builds Needs you account-wide when no user is known', () => {
     expect(queueFolder('needs_you', key => key).query.payload).toEqual([
       open,
       state('drafted', 'or'),
@@ -29,6 +62,16 @@ describe('queueFolder', () => {
       state('handed_over', null),
     ]);
   });
+
+  it.each([['drafted'], ['auto_holding'], ['handed_over']])(
+    'keeps %s account-wide even when a user is known',
+    queue => {
+      expect(queueFolder(queue, key => key, 42).query.payload).toEqual([
+        open,
+        state(queue, null),
+      ]);
+    }
+  );
 
   it.each([['drafted'], ['auto_holding'], ['handed_over']])(
     'builds %s from that state alone, on open conversations',
@@ -64,12 +107,49 @@ describe('queueFolder', () => {
   });
 
   describe('against the in-memory filter the folder path applies', () => {
-    const conversation = (status, gotchuState) => ({
+    const conversation = (status, gotchuState, assignee = null) => ({
       id: 1,
       status,
       custom_attributes: gotchuState ? { gotchu_state: gotchuState } : {},
+      meta: assignee
+        ? { assignee, assignee_type: assignee.type ?? 'User' }
+        : { assignee: null },
     });
-    const needsYou = queueFolder('needs_you', key => key).query.payload;
+    const needsYou = queueFolder('needs_you', key => key, 42).query.payload;
+
+    it.each([
+      ['drafted', 'unassigned', null],
+      ['drafted', 'mine', { id: 42 }],
+      ['handed_over', 'unassigned', null],
+      ['handed_over', 'mine', { id: 42 }],
+    ])('keeps an open %s conversation that is %s', (value, _, assignee) => {
+      expect(
+        matchesFilters(conversation('open', value, assignee), needsYou)
+      ).toBe(true);
+    });
+
+    it.each([['drafted'], ['handed_over']])(
+      'drops an open %s conversation assigned to a colleague',
+      value => {
+        expect(
+          matchesFilters(conversation('open', value, { id: 7 }), needsYou)
+        ).toBe(false);
+      }
+    );
+
+    it('drops an open handed_over conversation assigned to a bot', () => {
+      const bot = { id: 42, type: 'AgentBot' };
+      expect(
+        matchesFilters(conversation('open', 'handed_over', bot), needsYou)
+      ).toBe(false);
+    });
+
+    it("keeps a colleague's drafted case in the account-wide Drafted queue", () => {
+      const drafted = queueFolder('drafted', key => key, 42).query.payload;
+      expect(
+        matchesFilters(conversation('open', 'drafted', { id: 7 }), drafted)
+      ).toBe(true);
+    });
 
     it.each([['drafted'], ['handed_over']])(
       'keeps an open %s conversation in Needs you',
