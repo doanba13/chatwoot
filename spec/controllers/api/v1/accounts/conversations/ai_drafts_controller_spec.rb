@@ -92,6 +92,26 @@ RSpec.describe 'Conversation AI Drafts API', type: :request do
         expect(response.parsed_body).to eq(payload.merge('capabilities' => { 'instruct' => false }))
       end
 
+      it 'forwards a well-formed request_id as requestId' do
+        configure_gateway
+        stub = stub_gateway
+
+        get draft_url, params: { request_id: 'req-abcdef12' }, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(stub.with { |req| JSON.parse(req.body)['requestId'] == 'req-abcdef12' }).to have_been_requested
+      end
+
+      it 'drops a malformed request_id instead of forwarding it' do
+        configure_gateway
+        stub = stub_gateway
+
+        get draft_url, params: { request_id: 'bad id' }, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(stub.with { |req| !JSON.parse(req.body).key?('requestId') }).to have_been_requested
+      end
+
       it 'offers no instruction field while the gesture credential is unset' do
         # The dashboard drives the field off this and nothing else, so an
         # unconfigured deployment renders no field at all rather than one that

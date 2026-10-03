@@ -35,9 +35,14 @@ class Gotchu::DraftService
   # the secret it derived. `@conversation` is already scoped to this same
   # account by the controller's own `Current.account.conversations.find_by!`,
   # so the two can never disagree.
-  def initialize(conversation:, account_id:)
+  REQUEST_ID_FORMAT = /\A[A-Za-z0-9_-]{8,128}\z/
+
+  def initialize(conversation:, account_id:, request_id: nil)
     @conversation = conversation
     @account_id = account_id
+    # Forwarded only when it already has the gateway's shape. A malformed one
+    # is dropped here rather than sent, so the read never depends on it.
+    @request_id = request_id if request_id.is_a?(String) && request_id.match?(REQUEST_ID_FORMAT)
   end
 
   # Returns the gateway's payload: { 'cycle' => {...} | nil, 'draft' => {...} | nil }
@@ -63,7 +68,7 @@ class Gotchu::DraftService
       # read and explicitly not for a write; this class only ever reads, and the
       # secret never leaves this process.
       query: { secret: secret },
-      body: { conversationId: gateway_conversation_id }.to_json,
+      body: { conversationId: gateway_conversation_id, requestId: @request_id }.compact.to_json,
       headers: {
         'Content-Type' => 'application/json',
         # A cross-check only -- the gateway derives the account from the

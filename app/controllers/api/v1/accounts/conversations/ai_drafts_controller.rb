@@ -9,7 +9,9 @@ class Api::V1::Accounts::Conversations::AiDraftsController < Api::V1::Accounts::
   # from Api::V1::Accounts::Conversations::BaseController, so a caller reaches the
   # gateway only for a conversation Chatwoot would already show them.
   def show
-    render json: Gotchu::DraftService.new(conversation: @conversation, account_id: Current.account.id).perform.merge('capabilities' => capabilities)
+    render json: Gotchu::DraftService.new(
+      conversation: @conversation, account_id: Current.account.id, request_id: params[:request_id]
+    ).perform.merge('capabilities' => capabilities)
   rescue Gotchu::DraftService::ConfigurationError => e
     Rails.logger.error("AI draft gateway is not configured: #{e.message}")
     render json: { error: 'AI draft service is not configured' }, status: :service_unavailable
