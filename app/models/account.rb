@@ -114,6 +114,7 @@ class Account < ApplicationRecord
 
   before_validation :validate_limit_keys
   after_create_commit :notify_creation
+  after_create_commit :ensure_gotchu_queue_attributes
   after_update_commit :clear_unread_conversation_counts_cache, if: :saved_change_to_feature_conversation_unread_counts?
   after_update :resume_delayed_automations, if: -> { saved_change_to_feature_delayed_automations? && feature_delayed_automations? }
   after_destroy :remove_account_sequences
@@ -189,6 +190,10 @@ class Account < ApplicationRecord
   end
 
   private
+
+  def ensure_gotchu_queue_attributes
+    Gotchu::QueueAttributes.ensure!(self)
+  end
 
   def notify_creation
     Rails.configuration.dispatcher.dispatch(ACCOUNT_CREATED, Time.zone.now, account: self)
