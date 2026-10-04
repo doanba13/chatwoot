@@ -308,6 +308,9 @@
     }
   },
   "SIDEBAR": {
+    "AGENT_OVERVIEW": "Overview",
+    "RULES": "Rules",
+    "MEMOS": "Memos",
     "NO_ITEMS": "Aucun élément",
     "CURRENTLY_VIEWING_ACCOUNT": "En cours de visualisation:",
     "SWITCH": "Commuter",

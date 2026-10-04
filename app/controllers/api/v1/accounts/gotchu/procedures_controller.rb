@@ -4,11 +4,13 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # not nested under conversations the way AiDraftsController/
   # AiDraftInstructionsController are.
   #
-  # Administrators only, via the MIT-core check (`Current.account_user.
-  # administrator?`) — not Chatwoot's custom roles, which live under
-  # enterprise/ and carry a licence decision that is deliberately not being
-  # taken here.
-  before_action :check_admin_authorization?
+  # Reads are open to every signed-in agent: the Agent pages show every
+  # supporter what the agent follows. Writes stay administrators only, via the
+  # MIT-core check (`Current.account_user.administrator?`) — not Chatwoot's
+  # custom roles, which live under enterprise/ and carry a licence decision
+  # that is deliberately not being taken here.
+  READ_ACTIONS = %i[index show bindings revisions replay_latest].freeze
+  before_action :check_admin_authorization?, except: READ_ACTIONS
 
   # 'off' is deliberately absent: off is the absence of a binding row, never
   # a tier value (global constraint) -- so `update_binding` maps a blank

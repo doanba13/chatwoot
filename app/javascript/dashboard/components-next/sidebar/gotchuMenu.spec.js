@@ -10,7 +10,7 @@ const REPORT_CHILDREN = [
   },
 ];
 
-const build = ({ folders = [] } = {}) =>
+const build = (over = {}) =>
   gotchuMenu({
     t: key => key,
     accountScopedRoute: (name, params = {}) => ({ name, params }),
@@ -18,7 +18,8 @@ const build = ({ folders = [] } = {}) =>
     settingsGroup: { name: 'Settings', children: [] },
     helpCenterGroup: { name: 'Portals', children: [] },
     contactsTo: { name: 'contacts_dashboard_index' },
-    folders,
+    folders: [],
+    ...over,
   });
 
 describe('gotchuMenu', () => {
@@ -76,7 +77,25 @@ describe('gotchuMenu', () => {
   it('lists procedures under Agent, not under Settings', () => {
     const agent = build().find(item => item.name === 'Agent');
     expect(agent.children.map(child => child.to.name)).toEqual([
-      'procedures_list',
+      'agent_overview',
+      'agent_procedures',
+      'agent_rules',
+      'agent_memos',
+    ]);
+  });
+
+  it('lists Overview, Procedures, Rules and Memos under Agent, and no Replay', () => {
+    const agent = build().find(group => group.name === 'Agent');
+    expect(agent.children.map(c => c.name)).toEqual([
+      'Overview',
+      'Procedures',
+      'Rules',
+      'Memos',
+    ]);
+    expect(agent.children[1].activeOn).toEqual([
+      'agent_procedures',
+      'agent_procedure_new',
+      'agent_procedure',
     ]);
   });
 

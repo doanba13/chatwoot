@@ -1,67 +1,38 @@
 import { frontendURL } from 'dashboard/helper/URLHelper';
 
-import SettingsWrapper from '../SettingsWrapper.vue';
-import SettingsContent from '../Wrapper.vue';
-import Index from './Index.vue';
-import CreateProcedure from './CreateProcedure.vue';
-import EditProcedure from './EditProcedure.vue';
-
-// Administrators only, everywhere on this surface -- `Gotchu::
-// ProceduresController` enforces it server-side, and the screen should not
-// offer what the API will refuse (task 11 brief). No `featureFlag`: this is
-// gated by the gateway's own `capabilities.procedures`, read at request
-// time by Index.vue, not by a per-account rollout flag.
+// The procedure screens moved under Agent (agent-screens plan, Task A4).
+// These keep the old settings URLs and route names alive as redirects, so
+// existing links and bookmarks still land on the new pages.
 const ADMIN_ONLY = { permissions: ['administrator'] };
+const to = name => route => ({ name, params: route.params });
 
 export default {
   routes: [
     {
       path: frontendURL('accounts/:accountId/settings/procedures'),
-      component: SettingsWrapper,
-      children: [
-        {
-          path: '',
-          name: 'procedures_wrapper',
-          meta: ADMIN_ONLY,
-          redirect: to => {
-            return { name: 'procedures_list', params: to.params };
-          },
-        },
-        {
-          path: 'list',
-          name: 'procedures_list',
-          meta: ADMIN_ONLY,
-          component: Index,
-        },
-      ],
+      name: 'procedures_wrapper',
+      meta: ADMIN_ONLY,
+      redirect: to('agent_procedures'),
     },
-    // A separate block, the way macros.routes.js splits its own list from its
-    // editor: `SettingsContent` (`Wrapper.vue`) renders the back-button header
-    // bar that a create/edit page wants and the list page does not.
     {
-      path: frontendURL('accounts/:accountId/settings/procedures'),
-      component: SettingsContent,
-      props: () => {
-        return {
-          headerTitle: 'PROCEDURES_MGMT.HEADER',
-          icon: 'i-lucide-list-checks',
-          showBackButton: true,
-        };
-      },
-      children: [
-        {
-          path: 'new',
-          name: 'procedures_new',
-          meta: ADMIN_ONLY,
-          component: CreateProcedure,
-        },
-        {
-          path: ':procedureId/edit',
-          name: 'procedures_edit',
-          meta: ADMIN_ONLY,
-          component: EditProcedure,
-        },
-      ],
+      path: frontendURL('accounts/:accountId/settings/procedures/list'),
+      name: 'procedures_list',
+      meta: ADMIN_ONLY,
+      redirect: to('agent_procedures'),
+    },
+    {
+      path: frontendURL('accounts/:accountId/settings/procedures/new'),
+      name: 'procedures_new',
+      meta: ADMIN_ONLY,
+      redirect: to('agent_procedure_new'),
+    },
+    {
+      path: frontendURL(
+        'accounts/:accountId/settings/procedures/:procedureId/edit'
+      ),
+      name: 'procedures_edit',
+      meta: ADMIN_ONLY,
+      redirect: to('agent_procedure'),
     },
   ],
 };

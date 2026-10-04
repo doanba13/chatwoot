@@ -105,13 +105,14 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
       expect(a_request(:get, procedures_endpoint)).not_to have_been_made
     end
 
-    it 'refuses an agent who is not an administrator' do
+    it 'lets an agent who is not an administrator read the list' do
       configure_gateway
+      list = stub_list
 
       get procedures_url, headers: agent.create_new_auth_token, as: :json
 
-      expect(response).to have_http_status(:unauthorized)
-      expect(a_request(:get, procedures_endpoint)).not_to have_been_made
+      expect(response).to have_http_status(:ok)
+      expect(list).to have_been_made
     end
 
     context 'when it is an administrator' do
@@ -429,13 +430,16 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
       "#{procedure_url(id)}/bindings"
     end
 
-    it 'refuses an agent who is not an administrator' do
+    it 'lets an agent who is not an administrator read the bindings' do
       configure_gateway
+      read = stub_request(:get, bindings_endpoint)
+             .with(query: { secret: gateway_secret }, headers: { 'x-gesture-secret' => gesture_secret })
+             .to_return(status: 200, body: { bindings: [] }.to_json, headers: { 'Content-Type' => 'application/json' })
 
       get bindings_url(9), headers: agent.create_new_auth_token, as: :json
 
-      expect(response).to have_http_status(:unauthorized)
-      expect(a_request(:get, bindings_endpoint)).not_to have_been_made
+      expect(response).to have_http_status(:ok)
+      expect(read).to have_been_made
     end
 
     context 'when it is an administrator' do
@@ -865,6 +869,24 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.parsed_body['capabilities']).to eq({ 'procedures' => true })
       end
+    end
+  end
+
+  # Decision 1 of the agent-screens plan: every signed-in agent reads the
+  # Agent pages; writes to procedures stay administrator-only.
+  describe 'who may read and who may write' do
+    before { configure_gateway }
+
+    it 'lets an agent read the list' do
+      stub_list
+      get procedures_url, headers: agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it 'refuses an agent a write without calling the gateway' do
+      post procedures_url, params: valid_params, headers: agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      expect(a_request(:any, /gateway.test/)).not_to have_been_made
     end
   end
 end

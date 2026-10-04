@@ -23,11 +23,36 @@ export function gotchuMenu({
       icon: 'i-lucide-sparkles',
       children: [
         {
+          name: 'Overview',
+          label: t('SIDEBAR.AGENT_OVERVIEW'),
+          icon: 'i-lucide-target',
+          to: accountScopedRoute('agent_overview'),
+          activeOn: ['agent_overview'],
+        },
+        {
           name: 'Procedures',
           label: t('SIDEBAR.PROCEDURES'),
           icon: 'i-lucide-list-checks',
-          to: accountScopedRoute('procedures_list'),
-          activeOn: ['procedures_list', 'procedures_new', 'procedures_edit'],
+          to: accountScopedRoute('agent_procedures'),
+          activeOn: [
+            'agent_procedures',
+            'agent_procedure_new',
+            'agent_procedure',
+          ],
+        },
+        {
+          name: 'Rules',
+          label: t('SIDEBAR.RULES'),
+          icon: 'i-lucide-sliders-horizontal',
+          to: accountScopedRoute('agent_rules'),
+          activeOn: ['agent_rules', 'agent_rule_new', 'agent_rule'],
+        },
+        {
+          name: 'Memos',
+          label: t('SIDEBAR.MEMOS'),
+          icon: 'i-lucide-bookmark',
+          to: accountScopedRoute('agent_memos'),
+          activeOn: ['agent_memos', 'agent_memo_new', 'agent_memo'],
         },
       ],
     },
