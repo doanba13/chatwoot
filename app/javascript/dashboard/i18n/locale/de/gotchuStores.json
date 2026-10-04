@@ -33,7 +33,9 @@
       "TITLE": "Shop-Adressen",
       "DESCRIPTION": "Adressen, die in ein geteiltes Postfach weiterleiten. Gotchu liest die Weiterleitungsadresse der ersten Nachricht einer Unterhaltung und ordnet sie diesem Shop zu.",
       "PLACEHOLDER": "kontakt{'@'}deinshop.de",
-      "LIMIT": "Bis zu 20 Adressen pro Shop."
+      "LIMIT": "Bis zu 20 Adressen pro Shop.",
+      "TO_STORE": "files under {store}",
+      "FALLBACK": "Mail from an address not listed here is filed by the order number in the thread, when there is one."
     },
     "SHARED_WARNING": {
       "TITLE": "Ist dieses Postfach geteilt?",
@@ -59,6 +61,8 @@
       "UNCONFIRMED": "Die Speicherung konnte nicht bestätigt werden. Lade die Seite neu, um zu sehen, ob sie übernommen wurde.",
       "UNLISTED_INBOX_DROPPED": "Posteingang {ids} ist nicht mehr sichtbar und wurde nicht zur Entfernung bestätigt. Lade die Seite neu und entscheide erneut.",
       "TOO_MANY_SAVES": "Zu viele Speicherungen in kurzer Zeit. Warte eine Minute und speichere dann erneut."
-    }
+    },
+    "EMAIL_VIA_SHARED": "Email, via {name} · shared",
+    "CONNECT_INBOX": "+ Connect an inbox"
   }
 }

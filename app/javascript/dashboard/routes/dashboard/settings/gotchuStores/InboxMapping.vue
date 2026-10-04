@@ -19,11 +19,6 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import {
-  BaseTable,
-  BaseTableRow,
-  BaseTableCell,
-} from 'dashboard/components-next/table';
 
 // The mapping form itself: one row per inbox, a store picker with a shared
 // option, shop addresses per store, and this section's OWN Save button --
@@ -82,11 +77,27 @@ const storeOptions = computed(() => [
 const storeName = key =>
   props.stores.find(store => store.key === key)?.name || key;
 
-const inboxHeaders = computed(() => [
-  { label: t('GOTCHU_STORES.INBOXES.TABLE_HEADER.INBOX'), identifier: true },
-  t('GOTCHU_STORES.INBOXES.TABLE_HEADER.CHANNEL'),
-  t('GOTCHU_STORES.INBOXES.TABLE_HEADER.STORE'),
-]);
+// Board 4's grouping, over the same `assignment` state the per-inbox picker
+// always edited: each store card lists the inboxes assigned to it, and the
+// shared card the ones assigned to no single store. Moving an inbox, or
+// connecting one from a store card, goes through `pick`, so the shared-
+// mailbox warning and its rollback are unchanged.
+const inboxesOf = storeKey =>
+  props.inboxes.filter(inbox => assignment.value[inbox.id] === storeKey);
+const sharedInboxes = computed(() =>
+  props.inboxes.filter(
+    inbox => (assignment.value[inbox.id] ?? SHARED) === SHARED
+  )
+);
+const sharedEmailInboxes = computed(() =>
+  sharedInboxes.value.filter(inbox => inbox.channel === 'email')
+);
+const connectOptions = computed(() =>
+  sharedInboxes.value
+    .filter(inbox => inbox.channel)
+    .map(inbox => ({ value: inbox.id, label: `${inbox.name} #${inbox.id}` }))
+);
+const storeDot = index => `var(--g-store-${(index % 5) + 1})`;
 
 const channelLabel = channel =>
   channel
@@ -124,6 +135,13 @@ const cancelPending = () => {
   renderTick.value += 1;
 };
 
+// Bumped after a connect, so the picker returns to its placeholder.
+const connectTick = ref(0);
+const connect = (storeKey, inboxId) => {
+  const inbox = props.inboxes.find(i => i.id === Number(inboxId));
+  if (inbox) pick(inbox, storeKey);
+  connectTick.value += 1;
+};
 const setShopEmails = (storeKey, emails) => {
   shopEmails.value = { ...shopEmails.value, [storeKey]: emails };
 };
@@ -225,61 +243,27 @@ const save = async () => {
       </ul>
     </section>
 
-    <section>
-      <h3 class="mb-3 text-base font-medium text-n-slate-12">
-        {{ t('GOTCHU_STORES.INBOXES.TITLE') }}
-      </h3>
-      <BaseTable
-        :headers="inboxHeaders"
-        :items="inboxes"
-        :no-data-message="t('GOTCHU_STORES.INBOXES.EMPTY')"
-      >
-        <template #row="{ items }">
-          <BaseTableRow v-for="inbox in items" :key="inbox.id" :item="inbox">
-            <template #default>
-              <BaseTableCell>
-                <span class="text-body-main text-n-slate-12">
-                  {{ inbox.name }}
-                </span>
-              </BaseTableCell>
-              <BaseTableCell>
-                <span
-                  class="inline-flex items-center h-6 px-2 rounded-md text-label-small bg-n-slate-3 text-n-slate-11"
-                >
-                  {{ channelLabel(inbox.channel) }}
-                </span>
-              </BaseTableCell>
-              <BaseTableCell>
-                <div class="flex flex-col gap-1">
-                  <Select
-                    :key="`${inbox.id}-${renderTick}`"
-                    :model-value="assignment[inbox.id]"
-                    :options="storeOptions"
-                    :disabled="!inbox.channel"
-                    @update:model-value="value => pick(inbox, value)"
-                  />
-                  <span v-if="!inbox.channel" class="text-sm text-n-slate-10">
-                    {{ t('GOTCHU_STORES.INBOXES.UNSUPPORTED') }}
-                  </span>
-                </div>
-              </BaseTableCell>
-            </template>
-          </BaseTableRow>
-        </template>
-      </BaseTable>
-    </section>
-
-    <section>
+    <!-- The shared mailbox: which shop address files a forwarded mail under
+      which store. Every store's addresses, as before. -->
+    <section
+      class="p-5 border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
+      data-testid="stores-shared-mail"
+    >
       <h3 class="mb-1 text-base font-medium text-n-slate-12">
-        {{ t('GOTCHU_STORES.SHOP_EMAILS.TITLE') }}
+        {{
+          sharedEmailInboxes.length
+            ? sharedEmailInboxes.map(inbox => inbox.name).join(', ')
+            : t('GOTCHU_STORES.SHOP_EMAILS.TITLE')
+        }}
       </h3>
       <p class="mb-4 text-sm text-n-slate-11">
         {{ t('GOTCHU_STORES.SHOP_EMAILS.DESCRIPTION') }}
       </p>
-      <div v-for="store in stores" :key="store.key" class="mb-5">
-        <label class="block mb-1 text-sm font-medium text-n-slate-12">
-          {{ store.name }}
-        </label>
+      <div
+        v-for="store in stores"
+        :key="store.key"
+        class="grid gap-2 py-3 border-t md:grid-cols-[minmax(0,1fr)_200px] md:items-start border-[var(--g-border)]"
+      >
         <div class="px-3 py-2 border rounded-xl border-n-weak">
           <TagInput
             :model-value="shopEmails[store.key] || []"
@@ -290,10 +274,135 @@ const save = async () => {
             @update:model-value="emails => setShopEmails(store.key, emails)"
           />
         </div>
-        <p class="mt-1 text-sm text-n-slate-10">
-          {{ t('GOTCHU_STORES.SHOP_EMAILS.LIMIT') }}
-        </p>
+        <span class="text-sm font-medium text-n-slate-12 md:pt-2">
+          {{ t('GOTCHU_STORES.SHOP_EMAILS.TO_STORE', { store: store.name }) }}
+        </span>
       </div>
+      <p class="mt-2 mb-0 text-sm text-n-slate-10">
+        {{ t('GOTCHU_STORES.SHOP_EMAILS.LIMIT') }}
+        {{ t('GOTCHU_STORES.SHOP_EMAILS.FALLBACK') }}
+      </p>
+    </section>
+
+    <!-- One card per store: its inboxes, the shared mail it reaches through,
+      and a picker to connect another inbox. -->
+    <section
+      v-for="(store, index) in stores"
+      :key="store.key"
+      class="p-5 border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
+      :data-testid="`store-card-${store.key}`"
+    >
+      <h3
+        class="flex items-center gap-2 mb-3 text-base font-medium text-n-slate-12"
+      >
+        <span
+          class="inline-block rounded-full size-2"
+          :style="{ background: storeDot(index) }"
+        />
+        {{ store.name }}
+        <span
+          class="text-xs font-normal [font-family:var(--g-font-mono)] text-n-slate-10"
+        >
+          {{ store.key }}
+        </span>
+      </h3>
+      <ul class="flex flex-col gap-2 p-0 m-0 list-none">
+        <li
+          v-for="inbox in inboxesOf(store.key)"
+          :key="inbox.id"
+          class="flex flex-wrap items-center justify-between gap-3"
+        >
+          <span class="flex items-center gap-2 text-sm text-n-slate-12">
+            {{ inbox.name }}
+            <span
+              class="inline-flex items-center h-6 px-2 rounded-md text-label-small bg-n-slate-3 text-n-slate-11"
+            >
+              {{ channelLabel(inbox.channel) }}
+            </span>
+            <span
+              class="text-xs [font-family:var(--g-font-mono)] text-n-slate-10"
+            >
+              #{{ inbox.id }}
+            </span>
+          </span>
+          <Select
+            :key="`${inbox.id}-${renderTick}`"
+            :model-value="assignment[inbox.id]"
+            :options="storeOptions"
+            :disabled="!inbox.channel"
+            @update:model-value="value => pick(inbox, value)"
+          />
+        </li>
+        <li
+          v-for="inbox in sharedEmailInboxes"
+          :key="`shared-${inbox.id}`"
+          class="flex items-center gap-2 text-sm text-n-slate-11"
+        >
+          {{ t('GOTCHU_STORES.EMAIL_VIA_SHARED', { name: inbox.name }) }}
+          <span
+            class="text-xs [font-family:var(--g-font-mono)] text-n-slate-10"
+          >
+            #{{ inbox.id }}
+          </span>
+        </li>
+      </ul>
+      <div v-if="connectOptions.length" class="mt-3">
+        <Select
+          :key="`connect-${store.key}-${connectTick}`"
+          model-value=""
+          :options="connectOptions"
+          :placeholder="t('GOTCHU_STORES.CONNECT_INBOX')"
+          :aria-label="t('GOTCHU_STORES.CONNECT_INBOX')"
+          @update:model-value="value => connect(store.key, value)"
+        />
+      </div>
+    </section>
+
+    <!-- Every inbox in no single store, with the same picker, so each one is
+      still reachable here. -->
+    <section
+      class="p-5 border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
+      data-testid="stores-unassigned"
+    >
+      <h3 class="mb-3 text-base font-medium text-n-slate-12">
+        {{ t('GOTCHU_STORES.SHARED') }}
+      </h3>
+      <p v-if="!inboxes.length" class="mb-0 text-sm text-n-slate-11">
+        {{ t('GOTCHU_STORES.INBOXES.EMPTY') }}
+      </p>
+      <ul class="flex flex-col gap-2 p-0 m-0 list-none">
+        <li
+          v-for="inbox in sharedInboxes"
+          :key="inbox.id"
+          class="flex flex-wrap items-center justify-between gap-3"
+        >
+          <span class="flex items-center gap-2 text-sm text-n-slate-12">
+            {{ inbox.name }}
+            <span
+              class="inline-flex items-center h-6 px-2 rounded-md text-label-small bg-n-slate-3 text-n-slate-11"
+            >
+              {{ channelLabel(inbox.channel) }}
+            </span>
+            <span
+              class="text-xs [font-family:var(--g-font-mono)] text-n-slate-10"
+            >
+              #{{ inbox.id }}
+            </span>
+          </span>
+          <div class="flex flex-col items-end gap-1">
+            <Select
+              :key="`${inbox.id}-${renderTick}`"
+              :model-value="assignment[inbox.id]"
+              :options="storeOptions"
+              :disabled="!inbox.channel"
+              @update:model-value="value => pick(inbox, value)"
+            />
+            <span v-if="!inbox.channel" class="text-sm text-n-slate-10">
+              {{ t('GOTCHU_STORES.INBOXES.UNSUPPORTED') }}
+            </span>
+          </div>
+        </li>
+      </ul>
     </section>
 
     <section class="flex justify-end">
