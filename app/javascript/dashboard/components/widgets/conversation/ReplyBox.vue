@@ -1427,6 +1427,7 @@ export default {
       :channel-type="channelType"
       :instruct-mode="composerTab === 'instruct'"
       :reply-mounted="composerTab === 'reply'"
+      :conversation-tier="currentChat.custom_attributes?.gotchu_tier || null"
       @draft-state="onDraftState"
       @wants-reply="setComposerTab('reply')"
     />

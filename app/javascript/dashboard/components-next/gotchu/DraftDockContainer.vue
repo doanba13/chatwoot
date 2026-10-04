@@ -66,6 +66,13 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  // The conversation's `gotchu_tier` attribute: what holds NOW. The trace's
+  // tier step records what was known when the draft was written, and a Stop
+  // or a refused release since then clears this attribute.
+  conversationTier: {
+    type: String,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['draftState', 'wantsReply']);
@@ -673,9 +680,20 @@ const traceSteps = computed(() =>
   (view.value.trace ?? []).map(step => wordStep(step, t, te)).filter(Boolean)
 );
 
+const TIERS = ['off', 'hand_over', 'draft', 'auto'];
+// The tier the header names. The conversation's attribute only ever LOWERS
+// the trace's word: an `auto` the conversation no longer carries (a Stop or a
+// refused release cleared it) reads as its current tier, else a draft. A
+// visitor can write the attribute, so it can never make a draft read as auto.
+const headerTier = traced => {
+  if (traced !== 'auto' || props.conversationTier === 'auto') return traced;
+  return ['hand_over', 'draft'].includes(props.conversationTier)
+    ? props.conversationTier
+    : 'draft';
+};
+
 // "Draft v1 · from Where is my order · tier: draft". It names the tier and
-// nothing more: the trace's tier step records what was known when the draft
-// was written, and never says the draft is sending (spec §8.4).
+// nothing more: it never says the draft is sending (spec §8.4).
 const dockHeading = computed(() => {
   const version = draftVersion.value;
   if (version == null) return null;
@@ -686,7 +704,8 @@ const dockHeading = computed(() => {
   if (!procedure || noMatch) {
     return t('GOTCHU.DRAFT.HEADER_NO_PROCEDURE', { version });
   }
-  if (!tier) {
+  const shown = tier ? headerTier(tier.tier) : null;
+  if (!tier || (tier.channel != null && !TIERS.includes(shown))) {
     return t('GOTCHU.DRAFT.HEADER_NO_TIER', {
       version,
       procedure: procedure.title,
@@ -696,7 +715,7 @@ const dockHeading = computed(() => {
     tier.channel == null
       ? t('GOTCHU.TRACE.CHANNEL_UNKNOWN')
       : // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys
-        t(`GOTCHU.TRACE.TIERS.${tier.tier.toUpperCase()}`);
+        t(`GOTCHU.TRACE.TIERS.${shown.toUpperCase()}`);
   return t('GOTCHU.DRAFT.HEADER', {
     version,
     procedure: procedure.title,

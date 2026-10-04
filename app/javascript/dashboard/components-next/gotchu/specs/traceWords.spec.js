@@ -192,6 +192,24 @@ describe('wordStep', () => {
       ).result
     ).toBe('a rule holds sending, so it waits for a person');
   });
+  it('words a hand-over tier, never as unknown', () => {
+    expect(
+      wordStep(
+        {
+          kind: 'tier',
+          tier: 'hand_over',
+          channel: 'web',
+          refusal: 'handover_tier',
+        },
+        t,
+        te
+      )
+    ).toEqual({
+      kind: 'tier',
+      did: 'Tier hand over on web',
+      result: 'the procedure hands this over to a person',
+    });
+  });
   it('says when no procedure matched, so there was no tier', () => {
     expect(
       wordStep(

@@ -1380,18 +1380,49 @@ describe('DraftDockContainer instruction outcome', () => {
     }
   );
 
+  // The trace records the tier when the draft was written; the conversation's
+  // `gotchu_tier` says what holds now. A Stop or a refused release clears it,
+  // so an `auto` the conversation no longer carries reads as a draft. The
+  // attribute only ever lowers the trace's word: a visitor can write it.
   it.each([
     [
       { kind: 'tier', tier: 'auto', channel: 'email', refusal: null },
       'Draft v1 · from Where is my order · tier: auto',
+      { conversationTier: 'auto' },
+    ],
+    [
+      { kind: 'tier', tier: 'auto', channel: 'email', refusal: null },
+      'Draft v1 · from Where is my order · tier: draft',
+      {},
+    ],
+    [
+      { kind: 'tier', tier: 'draft', channel: 'email', refusal: null },
+      'Draft v1 · from Where is my order · tier: draft',
+      { conversationTier: 'auto' },
+    ],
+    [
+      {
+        kind: 'tier',
+        tier: 'hand_over',
+        channel: 'web',
+        refusal: 'handover_tier',
+      },
+      'Draft v1 · from Where is my order · tier: hand over',
+      { conversationTier: 'hand_over' },
+    ],
+    [
+      { kind: 'tier', tier: 'auto', channel: 'email', refusal: null },
+      'Draft v1 · from Where is my order · tier: hand over',
+      { conversationTier: 'hand_over' },
     ],
     [
       { kind: 'tier', tier: null, channel: null, refusal: null },
       'Draft v1 · from Where is my order · tier: channel unknown',
+      {},
     ],
   ])(
     'names the procedure and the tier in the header, and never says it is sending: %j',
-    async (tierStep, heading) => {
+    async (tierStep, heading, props) => {
       AiDraftAPI.getDraft.mockResolvedValue({
         data: {
           cycle: reviewing(),
@@ -1403,7 +1434,7 @@ describe('DraftDockContainer instruction outcome', () => {
         },
       });
 
-      const wrapper = await mountContainer();
+      const wrapper = await mountContainer(props);
 
       expect(wrapper.text()).toContain(heading);
       expect(wrapper.text()).not.toMatch(
