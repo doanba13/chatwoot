@@ -258,13 +258,16 @@
       "COL_HANDED": "Transférées",
       "NO_MATCH": "{n} conversation n’a correspondu à aucune procédure cette semaine. | {n} conversations n’ont correspondu à aucune procédure cette semaine.",
       "NEEDS_DECISION": "Décision requise",
-      "HOLDING_TITLE": "Envoi automatique dans {s} s",
+      "HOLDING_TITLE": "Envoi automatique dans {time}",
+      "HOLDING_MINUTES": "{n} min",
+      "HOLDING_SECONDS": "{n} s",
       "HOLDING_NOW": "Envoi en cours",
       "HOLDING_STOPPED": "Conservé en brouillon",
       "REVIEW": "Examiner",
       "STOP": "Arrêter et garder en brouillon",
       "STOPPED": "Arrêté. Il reste en brouillon.",
       "NOT_HOLDING": "Envoi déjà en cours — trop tard pour l’arrêter.",
+      "NOT_HOLDING_STOPPED": "Quelqu’un a déjà arrêté cet envoi. Il reste en brouillon.",
       "REMEMBER_TITLE": "Mémoriser ceci ?",
       "NOTHING": "Rien ne nécessite de décision pour le moment."
     }

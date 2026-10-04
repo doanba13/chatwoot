@@ -10,7 +10,7 @@ import MemoProposalsAPI from 'dashboard/api/gotchu/memoProposals';
 import { gatewayErrorKey } from 'dashboard/components-next/gotchu/agent/gatewayErrors';
 import { useGotchuStores } from 'dashboard/components-next/gotchu/agent/useGotchuStores';
 import { CHANNELS } from '../procedures/procedureView';
-import { secondsLeft, share, statusSentence } from './overviewView';
+import { holdLeft, secondsLeft, share, statusSentence } from './overviewView';
 
 import AgentPage from 'dashboard/components-next/gotchu/agent/AgentPage.vue';
 import AgentUnconfigured from 'dashboard/components-next/gotchu/agent/AgentUnconfigured.vue';
@@ -42,8 +42,10 @@ const now = ref(new Date());
 
 // What each Stop came to, by cycle id, so a refetch that still lists the
 // cycle does not wipe the answer. `stopped` only on a 200; a 409 is
-// `not_holding` (spec §9.6: the release or another person's Stop won, and
-// this page cannot say which).
+// `not_holding` (spec §9.6: the release or another person's Stop won), and
+// its `cause` says which. Only `stopped` changes the words; no cause, or one
+// this build does not know, reads as sending, the answer that cannot invite
+// a reply by hand on top of one going out.
 const outcome = reactive({});
 const stopping = reactive({});
 // The hold each Stop was pressed on, kept so its card and answer stay on
@@ -94,7 +96,12 @@ const stop = async hold => {
     outcome[cycleId] = { key: `${O}STOPPED` };
   } catch (error) {
     if (error?.response?.status === 409) {
-      outcome[cycleId] = { key: `${O}NOT_HOLDING` };
+      outcome[cycleId] = {
+        key:
+          error.response.data?.cause === 'stopped'
+            ? `${O}NOT_HOLDING_STOPPED`
+            : `${O}NOT_HOLDING`,
+      };
       await loadOverview();
     } else {
       outcome[cycleId] = { key: gatewayErrorKey(error), retry: true };
@@ -105,13 +112,19 @@ const stop = async hold => {
 };
 
 // The card's header follows what the Stop came to: a 409 means the send is
-// already going out (spec §14 row 2), so it never keeps counting down.
+// already going out (spec §14 row 2), or that someone already kept it as a
+// draft, so it never keeps counting down.
 const holdTitle = hold => {
   const answer = outcome[hold.cycleId]?.key;
-  if (answer === `${O}STOPPED`) return t(`${O}HOLDING_STOPPED`);
+  if (answer === `${O}STOPPED` || answer === `${O}NOT_HOLDING_STOPPED`) {
+    return t(`${O}HOLDING_STOPPED`);
+  }
   if (answer === `${O}NOT_HOLDING`) return t(`${O}HOLDING_NOW`);
   const s = secondsLeft(hold.firesAt, now.value);
-  return s > 0 ? t(`${O}HOLDING_TITLE`, { s }) : t(`${O}HOLDING_NOW`);
+  if (s <= 0) return t(`${O}HOLDING_NOW`);
+  const left = holdLeft(s);
+  // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys
+  return t(`${O}HOLDING_TITLE`, { time: t(left.key, left.params) });
 };
 
 const onProposalDecided = id => {

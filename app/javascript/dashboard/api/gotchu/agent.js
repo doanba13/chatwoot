@@ -12,7 +12,9 @@ import ApiClient from '../ApiClient';
  *
  * A Stop names its conversation (the display id): the controller refuses a
  * user who cannot open it. A 409 on the Stop is `not_holding`: the release or
- * another person's Stop won, and the page must not say "stopped".
+ * another person's Stop won, and the page must not say "stopped". Its `cause`
+ * is `sending` or `stopped` when the gateway could tell which, and absent
+ * otherwise.
  */
 class AgentAPI extends ApiClient {
   constructor() {

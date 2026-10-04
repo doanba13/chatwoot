@@ -258,13 +258,16 @@
       "COL_HANDED": "Handed over",
       "NO_MATCH": "{n} conversation matched no procedure this week. | {n} conversations matched no procedure this week.",
       "NEEDS_DECISION": "Needs a decision",
-      "HOLDING_TITLE": "Sending on its own in {s} s",
+      "HOLDING_TITLE": "Sending on its own in {time}",
+      "HOLDING_MINUTES": "{n} min",
+      "HOLDING_SECONDS": "{n} s",
       "HOLDING_NOW": "Sending now",
       "HOLDING_STOPPED": "Kept as a draft",
       "REVIEW": "Review",
       "STOP": "Stop and keep as draft",
       "STOPPED": "Stopped. It stays a draft.",
       "NOT_HOLDING": "Already sending — too late to stop.",
+      "NOT_HOLDING_STOPPED": "Someone already stopped this send. It stays a draft.",
       "REMEMBER_TITLE": "Remember this?",
       "NOTHING": "Nothing needs a decision right now."
     }

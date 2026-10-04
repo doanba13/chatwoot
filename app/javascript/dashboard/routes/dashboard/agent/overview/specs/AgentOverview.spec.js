@@ -105,26 +105,25 @@ describe('AgentOverview', () => {
     expect(wrapper.text()).not.toContain('Sending on its own in');
   });
 
-  it('says it is no longer waiting, never stopped, on a 409', async () => {
-    const overview = holds => ({
-      data: {
-        capabilities: { overview: true },
-        procedures: [],
-        holding: holds,
-        noMatch: { count: 0, conversationIds: [] },
-        proposalsPending: 0,
-        rulesActive: 0,
-      },
-    });
-    // After a real 409 the cycle is no longer holding, so the re-read the
-    // page makes no longer lists it: the answer must survive that.
+  const overviewOf = holds => ({
+    data: {
+      capabilities: { overview: true },
+      procedures: [],
+      holding: holds,
+      noMatch: { count: 0, conversationIds: [] },
+      proposalsPending: 0,
+      rulesActive: 0,
+    },
+  });
+
+  // After a real 409 the cycle is no longer holding, so the re-read the page
+  // makes no longer lists it: the answer must survive that.
+  const pressStopAnswered409 = async data => {
     AgentAPI.overview
-      .mockResolvedValueOnce(overview([holding]))
-      .mockResolvedValue(overview([]));
+      .mockResolvedValueOnce(overviewOf([holding]))
+      .mockResolvedValue(overviewOf([]));
     AgentAPI.stopAuto.mockRejectedValue(
-      Object.assign(new Error('x'), {
-        response: { status: 409, data: { reason: 'not_holding' } },
-      })
+      Object.assign(new Error('x'), { response: { status: 409, data } })
     );
     const wrapper = mount(AgentOverview, {
       global: { stubs: { 'router-link': true } },
@@ -132,10 +131,74 @@ describe('AgentOverview', () => {
     await flushPromises();
     await wrapper.find('[data-testid="holding-stop-31"]').trigger('click');
     await flushPromises();
-    // Spec §14 row 2: it says it is already sending, and the card's header
-    // no longer counts down to a send that has happened.
-    expect(wrapper.text()).toContain('Already sending — too late to stop.');
-    expect(wrapper.text()).not.toContain('Stopped');
-    expect(wrapper.text()).not.toContain('Sending on its own in');
+    return wrapper;
+  };
+
+  // Spec §14 row 2: it says it is already sending, and the card's header no
+  // longer counts down to a send that has happened. No cause, or one this
+  // build does not know, says the same: the other answer invites a reply by
+  // hand on top of one that may be going out.
+  it.each([
+    ['cause sending', { reason: 'not_holding', cause: 'sending' }],
+    ['no cause', { reason: 'not_holding' }],
+    ['an unknown cause', { reason: 'not_holding', cause: 'elsewhere' }],
+  ])(
+    'says it is already sending, never stopped, on a 409 with %s',
+    async (_name, data) => {
+      const wrapper = await pressStopAnswered409(data);
+      expect(wrapper.text()).toContain('Sending now');
+      expect(wrapper.text()).toContain('Already sending — too late to stop.');
+      expect(wrapper.text()).not.toContain('Stopped');
+      expect(wrapper.text()).not.toContain('Sending on its own in');
+    }
+  );
+
+  // Staging: a second supporter pressed Stop on a card someone had already
+  // stopped, and was told it was sending while the draft stayed a draft.
+  it('says someone already stopped it, never sending, on a 409 with cause stopped', async () => {
+    const wrapper = await pressStopAnswered409({
+      reason: 'not_holding',
+      cause: 'stopped',
+    });
+    expect(wrapper.text()).toContain('Kept as a draft');
+    expect(wrapper.text()).toContain(
+      'Someone already stopped this send. It stays a draft.'
+    );
+    expect(wrapper.text()).not.toMatch(/sending/i);
+    expect(wrapper.find('[data-testid="holding-stop-31"]').exists()).toBe(
+      false
+    );
   });
+
+  it.each([
+    [3395, 'Sending on its own in 56 min'],
+    [60, 'Sending on its own in 1 min'],
+    [45, 'Sending on its own in 45 s'],
+  ])(
+    'counts down %s seconds in words a person reads',
+    async (seconds, title) => {
+      vi.useFakeTimers({ now: new Date('2026-10-05T10:00:00Z') });
+      try {
+        AgentAPI.overview.mockResolvedValue(
+          overviewOf([
+            {
+              ...holding,
+              firesAt: new Date(
+                Date.parse('2026-10-05T10:00:00Z') + seconds * 1000
+              ).toISOString(),
+            },
+          ])
+        );
+        const wrapper = mount(AgentOverview, {
+          global: { stubs: { 'router-link': true } },
+        });
+        await flushPromises();
+        expect(wrapper.text()).toContain(title);
+        expect(wrapper.text()).not.toMatch(/\d{3,} s\b/);
+        wrapper.unmount();
+      } finally {
+        vi.useRealTimers();
+      }
+    }
+  );
 });

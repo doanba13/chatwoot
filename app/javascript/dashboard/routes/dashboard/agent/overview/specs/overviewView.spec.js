@@ -1,4 +1,4 @@
-import { statusSentence, share, secondsLeft } from '../overviewView';
+import { statusSentence, share, secondsLeft, holdLeft } from '../overviewView';
 
 const proc = (tiers, status = 'active') => ({ status, tiers });
 
@@ -36,6 +36,18 @@ describe('overviewView', () => {
       procedures: [proc({ email: 'auto' }, 'testing')],
     };
     expect(statusSentence(o).key).toBe('GOTCHU_AGENT.OVERVIEW.STATUS_NO_AUTO');
+  });
+
+  // Whole minutes from a minute up, rounded down so the card never promises
+  // more time than is left; seconds under a minute.
+  it.each([
+    [3395, 'GOTCHU_AGENT.OVERVIEW.HOLDING_MINUTES', 56],
+    [119, 'GOTCHU_AGENT.OVERVIEW.HOLDING_MINUTES', 1],
+    [60, 'GOTCHU_AGENT.OVERVIEW.HOLDING_MINUTES', 1],
+    [59, 'GOTCHU_AGENT.OVERVIEW.HOLDING_SECONDS', 59],
+    [1, 'GOTCHU_AGENT.OVERVIEW.HOLDING_SECONDS', 1],
+  ])('words a hold of %s s as %s %s', (seconds, key, n) => {
+    expect(holdLeft(seconds)).toEqual({ key, params: { n } });
   });
 
   it('counts down to the release and never below zero', () => {

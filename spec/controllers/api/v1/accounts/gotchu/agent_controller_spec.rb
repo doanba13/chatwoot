@@ -76,6 +76,34 @@ RSpec.describe 'Gotchu Agent API', type: :request do
       post stop_url, params: { conversation_id: conversation.display_id }, headers: admin.create_new_auth_token, as: :json
       expect(response).to have_http_status(:conflict)
       expect(response.parsed_body['reason']).to eq('not_holding')
+      expect(response.parsed_body).not_to have_key('cause')
+    end
+
+    # The gateway reads the cycle back after its compare-and-set lost: sending
+    # and already-stopped are opposite facts for the supporter, so the cause
+    # travels -- but only as one of the two values this build words.
+    %w[sending stopped].each do |cause|
+      it "relays the gateway's #{cause} cause on a not_holding" do
+        stub_write(stop_endpoint, status: 409, body: { error: 'not_holding', cause: cause })
+        post stop_url, params: { conversation_id: conversation.display_id }, headers: admin.create_new_auth_token, as: :json
+        expect(response).to have_http_status(:conflict)
+        expect(response.parsed_body).to eq('error' => 'This send is no longer waiting', 'reason' => 'not_holding', 'cause' => cause)
+      end
+    end
+
+    it 'keeps the gateway\'s own words and any unknown cause out of the response' do
+      stub_write(stop_endpoint, status: 409, body: { error: 'cycle 31 lost to release job 9', cause: 'sent at 10:02 by worker 3' })
+      post stop_url, params: { conversation_id: conversation.display_id }, headers: admin.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body).to eq('error' => 'This send is no longer waiting', 'reason' => 'not_holding')
+    end
+
+    it 'still says not_holding when the 409 body is not JSON' do
+      stub_request(:post, stop_endpoint).with(query: { secret: gateway_secret })
+                                        .to_return(status: 409, body: 'conflict', headers: { 'Content-Type' => 'text/plain' })
+      post stop_url, params: { conversation_id: conversation.display_id }, headers: admin.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:conflict)
+      expect(response.parsed_body).to eq('error' => 'This send is no longer waiting', 'reason' => 'not_holding')
     end
   end
 

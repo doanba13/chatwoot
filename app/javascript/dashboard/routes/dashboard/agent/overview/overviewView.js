@@ -8,6 +8,14 @@ export const share = value =>
 export const secondsLeft = (firesAt, now) =>
   Math.max(0, Math.round((new Date(firesAt).getTime() - now.getTime()) / 1000));
 
+// The time left on a hold in the unit a person reads: whole minutes from a
+// minute up, rounded down so the card never promises more time than is left,
+// and seconds under a minute.
+export const holdLeft = seconds =>
+  seconds >= 60
+    ? { key: `${O}HOLDING_MINUTES`, params: { n: Math.floor(seconds / 60) } }
+    : { key: `${O}HOLDING_SECONDS`, params: { n: seconds } };
+
 // Only an active procedure can send on its own, so a testing procedure's
 // stored Auto is not counted here; the table still shows it beside its
 // Testing status.

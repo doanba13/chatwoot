@@ -258,13 +258,16 @@
       "COL_HANDED": "Übergeben",
       "NO_MATCH": "{n} Konversation passte diese Woche zu keinem Ablauf. | {n} Konversationen passten diese Woche zu keinem Ablauf.",
       "NEEDS_DECISION": "Entscheidung nötig",
-      "HOLDING_TITLE": "Sendet selbst in {s} s",
+      "HOLDING_TITLE": "Sendet selbst in {time}",
+      "HOLDING_MINUTES": "{n} Min.",
+      "HOLDING_SECONDS": "{n} s",
       "HOLDING_NOW": "Wird jetzt gesendet",
       "HOLDING_STOPPED": "Als Entwurf behalten",
       "REVIEW": "Prüfen",
       "STOP": "Stoppen und als Entwurf behalten",
       "STOPPED": "Gestoppt. Es bleibt ein Entwurf.",
       "NOT_HOLDING": "Wird bereits gesendet – zu spät zum Stoppen.",
+      "NOT_HOLDING_STOPPED": "Jemand hat diesen Versand bereits gestoppt. Es bleibt ein Entwurf.",
       "REMEMBER_TITLE": "Das merken?",
       "NOTHING": "Gerade muss nichts entschieden werden."
     }

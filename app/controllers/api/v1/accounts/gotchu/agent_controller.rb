@@ -76,9 +76,13 @@ class Api::V1::Accounts::Gotchu::AgentController < Api::V1::Accounts::BaseContro
     render json: { error: 'No such conversation draft', reason: 'not_found' }, status: :not_found
   end
 
-  # Spec §9.6: the release or another person's Stop won. Never "stopped".
+  # Spec §9.6: the release or another person's Stop won. Never "stopped" by
+  # this press. `cause` comes from the exception's class, one of two fixed
+  # values (Gotchu::AgentService::NOT_HOLDING_CAUSES), and is absent for a
+  # 409 that named neither; the gateway's own body never reaches here.
   def render_not_holding(exception)
     Rails.logger.info("Gotchu auto send was no longer holding for account #{params[:account_id]}: #{exception.message}")
-    render json: { error: 'This send is no longer waiting', reason: 'not_holding' }, status: :conflict
+    cause = Gotchu::AgentService::NOT_HOLDING_CAUSES.key(exception.class)
+    render json: { error: 'This send is no longer waiting', reason: 'not_holding', cause: cause }.compact, status: :conflict
   end
 end
