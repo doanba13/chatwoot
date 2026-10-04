@@ -37,6 +37,30 @@ describe('ProcedureTiers', () => {
     expect(wrapper.text()).toContain('add the label gotchu-manual');
   });
 
+  // Board 3: the email row says how long the hold is, from the gateway's
+  // holdSeconds, never just "after the hold".
+  it('says how many seconds after drafting an auto send goes', async () => {
+    ProceduresAPI.bindings.mockResolvedValue({ data: { bindings: [] } });
+    const wrapper = mount(ProcedureTiers, {
+      props: { procedure, readOnly: false },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('Sends 60 s after drafting');
+    expect(wrapper.text()).not.toContain('after the hold');
+  });
+
+  it('falls back to the hold in words when the gateway gives no seconds', async () => {
+    ProceduresAPI.bindings.mockResolvedValue({ data: { bindings: [] } });
+    const wrapper = mount(ProcedureTiers, {
+      props: {
+        procedure: { ...procedure, holdSeconds: null },
+        readOnly: false,
+      },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('Sends on its own after the hold');
+  });
+
   it('renders every button disabled for a reader who may not write', async () => {
     ProceduresAPI.bindings.mockResolvedValue({ data: { bindings: [] } });
     const wrapper = mount(ProcedureTiers, {

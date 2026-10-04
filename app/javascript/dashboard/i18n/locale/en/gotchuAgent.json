@@ -28,6 +28,7 @@
       "AUTO_OFF_UNVERIFIABLE": "Auto is off here: this channel can’t prove whose order it is.",
       "AUTO_OFF_STORE": "Sending on its own is not switched on for this store.",
       "AUTO_HINT": "Sends on its own after the hold unless someone acts on the draft here or adds the gotchu-manual label. A private note or an assignment does not stop it.",
+      "AUTO_HINT_SECONDS": "Sends {seconds} s after drafting unless someone acts on the draft here or adds the gotchu-manual label. A private note or an assignment does not stop it.",
       "KILL_LABEL": "To stop it on one conversation, add the label {label}.",
       "TIERS_LOADING": "Loading channels",
       "AUTHORISES_VERSION": "Authorises v{version}",

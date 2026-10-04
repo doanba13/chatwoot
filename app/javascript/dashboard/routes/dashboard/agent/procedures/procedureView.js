@@ -28,7 +28,12 @@ export const tierOptions = (procedure, channel) => {
   ];
 };
 
-export const holdHint = procedure => ({
-  key: `${P}AUTO_HINT`,
-  params: { seconds: procedure.holdSeconds },
-});
+// Board 3: "Sends 60 s after drafting…", from the gateway's holdSeconds;
+// the hold in words only when the gateway gives no number.
+export const holdHint = procedure =>
+  Number.isInteger(procedure.holdSeconds)
+    ? {
+        key: `${P}AUTO_HINT_SECONDS`,
+        params: { seconds: procedure.holdSeconds },
+      }
+    : { key: `${P}AUTO_HINT`, params: {} };
