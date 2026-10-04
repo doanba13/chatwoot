@@ -228,7 +228,11 @@
       "COMPOSER_SCOPE_INBOX": "This inbox only",
       "COMPOSER_SAVED": "Remembered.",
       "COMPOSER_SCOPE_REQUIRED": "This conversation has no store yet. Choose All stores to remember it everywhere.",
-      "COMPOSER_NOT_FOUND": "This conversation could not be found here. Reload it and try again."
+      "COMPOSER_NOT_FOUND": "This conversation could not be found here. Reload it and try again.",
+      "ALREADY_DECIDED": "Someone already decided on that one.",
+      "PROPOSALS_TITLE": "Remember this?",
+      "NO_PROPOSALS": "Nothing waiting.",
+      "EMPTY": "No memos yet."
     }
   }
 }
