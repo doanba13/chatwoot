@@ -14,6 +14,12 @@
       "NOT_FOUND": "This no longer exists. Reload the list.",
       "CHANGED": "This changed since you opened it. Reload to see the latest.",
       "FORBIDDEN": "Only an administrator can change this."
+    },
+    "SCOPE": {
+      "ALL_STORES": "All stores",
+      "OFF_ON": "off on {inboxes}",
+      "TARGET_MISSING": "Target missing",
+      "SHARED_SUFFIX": "shared"
     }
   }
 }

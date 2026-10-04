@@ -320,6 +320,10 @@ Rails.application.routes.draw do
             # one whole-mapping replace, account-level like procedures.
             get 'store_routes', to: 'store_routes#index'
             put 'store_routes', to: 'store_routes#update'
+            # The narrow store list every agent reads (agent-screens plan,
+            # decision 7): keys, names and inbox ids, never shop addresses.
+            # store_routes above stays administrator-only.
+            get 'stores', to: 'stores#index'
 
             # Item 6.4: Gotchu's own Shopify app. The install hands back
             # Shopify's consent URL; Shopify's return lands on the gateway's
