@@ -4,7 +4,11 @@
       "DRAFTED": "Draft ready",
       "AUTO_HOLDING": "Sending on its own",
       "HANDED_OVER": "Handed over",
-      "SENT": "Sent"
+      "SENT": "Sent",
+      "NO_PROCEDURE": "no procedure",
+      "TAB_ALL": "All",
+      "TAB_DRAFTS": "Drafts",
+      "TAB_HANDED_OVER": "Handed over"
     },
     "REFERRAL": {
       "AD_LABEL": "Ad",

@@ -14,6 +14,10 @@ import SLACardLabel from './components/SLACardLabel.vue';
 import VoiceCallStatus from './VoiceCallStatus.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import { queueChip } from 'dashboard/components-next/gotchu/queueChip';
+import {
+  ensureLoaded as ensureStoresLoaded,
+  storeIndex,
+} from 'dashboard/components-next/gotchu/agent/sharedStores';
 import { mailSubjectFor } from 'dashboard/components-next/Conversation/ConversationCard/helpers/mailSubject';
 
 const props = defineProps({
@@ -80,6 +84,30 @@ const showLabelsSection = computed(() => {
 // the list the desk scans all day, and the reason the subject is worth showing.
 const mailSubject = computed(() => mailSubjectFor(props.chat));
 const gotchuChip = computed(() => queueChip(props.chat.custom_attributes, t));
+
+// What follows the chip's label. A hand-over names why: the rule that forced
+// it, else the procedure, else "no procedure". Display only.
+const gotchuChipDetail = computed(() => {
+  const chip = gotchuChip.value;
+  if (!chip) return null;
+  if (props.chat.custom_attributes?.gotchu_state === 'handed_over') {
+    return (
+      chip.reason ??
+      chip.procedure ??
+      t('CONVERSATION.GOTCHU_QUEUE.NO_PROCEDURE')
+    );
+  }
+  return chip.procedure;
+});
+
+// The store's dot before the contact name. One shared store list for every
+// card, keyed by account; an unknown store draws no dot rather than a default
+// colour.
+ensureStoresLoaded(props.chat.account_id);
+const storeDot = computed(() => {
+  const key = props.chat.custom_attributes?.store_key;
+  return typeof key === 'string' ? storeIndex(key) : null;
+});
 
 // The timestamp and the unread badge are absolutely positioned over the right
 // edge of this column, so every full-width line under the name has to leave the
@@ -210,7 +238,12 @@ watch(
       <h4
         class="conversation--user text-sm my-0 mx-2 capitalize pt-0.5 font-semibold text-ellipsis overflow-hidden whitespace-nowrap flex-1 min-w-0 ltr:pr-16 rtl:pl-16 text-n-slate-12"
       >
-        {{ currentContact.name }}
+        <span
+          v-if="storeDot"
+          class="inline-block size-2 rounded-full ltr:mr-1.5 rtl:ml-1.5 align-middle"
+          :style="{ background: `var(--g-store-${storeDot})` }"
+          data-testid="card-store-dot"
+        />{{ currentContact.name }}
       </h4>
       <!-- Subject between the contact and the preview. In a measured sample of
       live threads it is the only place the order number appears in a fair
@@ -239,8 +272,8 @@ watch(
           "
         >
           {{ gotchuChip.label
-          }}<template v-if="gotchuChip.procedure">
-            · {{ gotchuChip.procedure }}</template
+          }}<template v-if="gotchuChipDetail">
+            · {{ gotchuChipDetail }}</template
           >
         </span>
       </p>

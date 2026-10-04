@@ -365,6 +365,12 @@
       "UNMUTE": "Mikrofon einschalten",
       "VIEW_CHAT_HISTORY": "Chatverlauf anzeigen",
       "GO_TO_CONVERSATION": "Zur Unterhaltung wechseln"
+    },
+    "GOTCHU_QUEUE": {
+      "NO_PROCEDURE": "no procedure",
+      "TAB_ALL": "All",
+      "TAB_DRAFTS": "Drafts",
+      "TAB_HANDED_OVER": "Handed over"
     }
   },
   "EMAIL_TRANSCRIPT": {

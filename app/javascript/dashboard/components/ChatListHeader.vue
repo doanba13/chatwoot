@@ -7,6 +7,7 @@ import wootConstants from 'dashboard/constants/globals';
 import ConversationBasicFilter from './widgets/conversation/ConversationBasicFilter.vue';
 import SwitchLayout from 'dashboard/routes/dashboard/conversation/search/SwitchLayout.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import QueueHeaderTabs from 'dashboard/components-next/gotchu/QueueHeaderTabs.vue';
 
 const props = defineProps({
   pageTitle: { type: String, required: true },
@@ -18,6 +19,11 @@ const props = defineProps({
   isOnExpandedLayout: { type: Boolean, required: true },
   conversationStats: { type: Object, required: true },
   isListLoading: { type: Boolean, required: true },
+  // On a queue route: the queue's key, the signed-in user (Needs you is
+  // theirs or unassigned) and the tab narrowing it.
+  queueKey: { type: String, default: '' },
+  userId: { type: Number, default: null },
+  queueTab: { type: String, default: 'all' },
 });
 
 const emit = defineEmits([
@@ -26,6 +32,7 @@ const emit = defineEmits([
   'resetFilters',
   'basicFilterChange',
   'filtersModal',
+  'update:queueTab',
 ]);
 
 const { uiSettings, updateUISettings } = useUISettings();
@@ -66,7 +73,12 @@ const toggleConversationLayout = () => {
   >
     <div class="flex items-center justify-center min-w-0">
       <h1
-        class="truncate text-n-slate-12 [font:var(--g-text-section)]"
+        class="truncate text-n-slate-12"
+        :class="
+          isQueue
+            ? '[font:700_32px/36px_var(--g-font-display)] tracking-[var(--g-tracking-display)]'
+            : '[font:var(--g-text-section)]'
+        "
         :title="pageTitle"
       >
         {{ pageTitle }}
@@ -167,4 +179,11 @@ const toggleConversationLayout = () => {
       />
     </div>
   </div>
+  <QueueHeaderTabs
+    v-if="isQueue && queueKey"
+    :model-value="queueTab"
+    :queue-key="queueKey"
+    :user-id="userId"
+    @update:model-value="emit('update:queueTab', $event)"
+  />
 </template>

@@ -1,4 +1,4 @@
-import { QUEUES, queueFolder } from './queues';
+import { QUEUES, queueFolder, filtersFor, queueTabs } from './queues';
 import { matchesFilters } from 'dashboard/store/modules/conversations/helpers/filterHelpers';
 
 // The payload shape is the one a saved folder stores (filterQueryGenerator):
@@ -169,5 +169,34 @@ describe('queueFolder', () => {
     ])('drops %s conversation from Needs you', (_, status, value) => {
       expect(matchesFilters(conversation(status, value), needsYou)).toBe(false);
     });
+  });
+});
+
+describe('queue tabs', () => {
+  it('narrows Needs you to drafts or to hand-overs', () => {
+    expect(filtersFor('needs_you', 'all')).toEqual(['drafted', 'handed_over']);
+    expect(filtersFor('needs_you', 'drafts')).toEqual(['drafted']);
+    expect(filtersFor('needs_you', 'handed_over')).toEqual(['handed_over']);
+  });
+
+  it('offers only the tabs that leave something to show', () => {
+    expect(queueTabs('needs_you').map(tab => tab.key)).toEqual([
+      'all',
+      'drafts',
+      'handed_over',
+    ]);
+    expect(queueTabs('drafted').map(tab => tab.key)).toEqual(['all', 'drafts']);
+    expect(queueTabs('auto_holding').map(tab => tab.key)).toEqual(['all']);
+  });
+
+  it('builds a tab folder that never widens past its queue', () => {
+    const folder = queueFolder('needs_you', key => key, 7, 'handed_over');
+    const states = folder.query.payload
+      .filter(row => row.attribute_key === 'gotchu_state')
+      .map(row => row.values[0]);
+    expect([...new Set(states)]).toEqual(['handed_over']);
+    expect(
+      queueFolder('drafted', key => key, 7, 'handed_over')
+    ).toBeUndefined();
   });
 });

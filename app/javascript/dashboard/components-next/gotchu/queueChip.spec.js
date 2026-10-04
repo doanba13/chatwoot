@@ -12,6 +12,7 @@ describe('queueChip', () => {
     expect(queueChip({ gotchu_state: state }, t)).toEqual({
       label,
       procedure: null,
+      reason: null,
       agent,
     });
   });
@@ -43,5 +44,43 @@ describe('queueChip', () => {
         t
       ).procedure
     ).toHaveLength(100);
+  });
+
+  it('carries the rule that handed the case over, checked like the procedure', () => {
+    expect(
+      queueChip(
+        {
+          gotchu_state: 'handed_over',
+          gotchu_reason: 'Late parcels',
+          gotchu_procedure: 'Where is my order',
+        },
+        t
+      )
+    ).toMatchObject({ reason: 'Late parcels', procedure: 'Where is my order' });
+  });
+
+  it.each([[42], [''], [{ a: 1 }]])(
+    'drops a reason that is not a non-empty string: %j',
+    bad => {
+      expect(
+        queueChip({ gotchu_state: 'handed_over', gotchu_reason: bad }, t).reason
+      ).toBeNull();
+    }
+  );
+
+  it('cuts a long reason to 100 characters, as it does a procedure', () => {
+    expect(
+      queueChip(
+        { gotchu_state: 'handed_over', gotchu_reason: 'x'.repeat(300) },
+        t
+      ).reason
+    ).toHaveLength(100);
+  });
+
+  it('has no reason on any state but a hand-over', () => {
+    expect(
+      queueChip({ gotchu_state: 'drafted', gotchu_reason: 'Late parcels' }, t)
+        .reason
+    ).toBeNull();
   });
 });

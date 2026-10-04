@@ -76,14 +76,49 @@ const payloadFor = (states, userId) => {
   );
 };
 
-export function queueFolder(key, t, userId) {
+// The tabs under a queue's header (board 1): All · Drafts · Handed over.
+// Each narrows the queue by `gotchu_state`, never widens it.
+export const QUEUE_TABS = [
+  { key: 'all', label: 'CONVERSATION.GOTCHU_QUEUE.TAB_ALL', states: null },
+  {
+    key: 'drafts',
+    label: 'CONVERSATION.GOTCHU_QUEUE.TAB_DRAFTS',
+    states: ['drafted'],
+  },
+  {
+    key: 'handed_over',
+    label: 'CONVERSATION.GOTCHU_QUEUE.TAB_HANDED_OVER',
+    states: ['handed_over'],
+  },
+];
+
+// The states a queue shows under a tab: the queue's own, narrowed by the
+// tab's. Empty when the tab has nothing in this queue.
+export function filtersFor(queueKey, tab = 'all') {
+  const queue = QUEUES.find(q => q.key === queueKey);
+  const narrow = QUEUE_TABS.find(x => x.key === tab);
+  if (!queue || !narrow) return [];
+  if (!narrow.states) return [...queue.states];
+  return queue.states.filter(state => narrow.states.includes(state));
+}
+
+// Only the tabs that leave something to show; a queue with one state has
+// nothing to narrow, so it gets All alone and the bar is not drawn.
+export const queueTabs = queueKey =>
+  QUEUE_TABS.filter(tab => filtersFor(queueKey, tab.key).length > 0);
+
+// An empty state list would build an empty filter, which matches every
+// conversation, so a tab with nothing in this queue answers no folder at all.
+export function queueFolder(key, t, userId, tab = 'all') {
   const queue = QUEUES.find(q => q.key === key);
   if (!queue) return undefined;
+  const states = filtersFor(key, tab);
+  if (!states.length) return undefined;
   return {
     id: `queue:${queue.key}`,
     name: t(queue.label),
     query: {
-      payload: payloadFor(queue.states, queue.mineOrUnassigned ? userId : null),
+      payload: payloadFor(states, queue.mineOrUnassigned ? userId : null),
     },
   };
 }

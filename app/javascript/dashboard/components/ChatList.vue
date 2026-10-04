@@ -142,8 +142,20 @@ const hasAppliedFilters = computed(() => {
   return appliedFilters.value.length !== 0;
 });
 
+// The tab under a queue's header (All · Drafts · Handed over); a new queue
+// opens on All.
+const queueTab = ref('all');
+watch(
+  () => props.queue,
+  () => {
+    queueTab.value = 'all';
+  }
+);
+
 const activeFolder = computed(() => {
-  if (props.queue) return queueFolder(props.queue, t, currentUser.value?.id);
+  if (props.queue) {
+    return queueFolder(props.queue, t, currentUser.value?.id, queueTab.value);
+  }
   if (props.foldersId) {
     const activeView = folders.value.filter(
       view => view.id === Number(props.foldersId)
@@ -906,10 +918,14 @@ watch(conversationFilters, (newVal, oldVal) => {
       :has-applied-filters="hasAppliedFilters"
       :has-active-folders="hasActiveFolders"
       :is-queue="Boolean(queue)"
+      :queue-key="queue"
+      :user-id="currentUser?.id"
+      :queue-tab="queueTab"
       :active-status="activeStatus"
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading && !conversationList.length"
+      @update:queue-tab="queueTab = $event"
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"

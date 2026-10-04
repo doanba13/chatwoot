@@ -365,6 +365,12 @@
       "UNMUTE": "Réactiver le micro",
       "VIEW_CHAT_HISTORY": "Voir l'historique des conversations",
       "GO_TO_CONVERSATION": "Aller au fil de la conversation"
+    },
+    "GOTCHU_QUEUE": {
+      "NO_PROCEDURE": "no procedure",
+      "TAB_ALL": "All",
+      "TAB_DRAFTS": "Drafts",
+      "TAB_HANDED_OVER": "Handed over"
     }
   },
   "EMAIL_TRANSCRIPT": {

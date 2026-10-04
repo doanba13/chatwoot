@@ -10,12 +10,19 @@ const LABELS = {
   sent: { label: 'CONVERSATION.GOTCHU_QUEUE.SENT', agent: false },
 };
 
+const shortText = raw =>
+  typeof raw === 'string' && raw.length > 0 ? raw.slice(0, 100) : null;
+
+// `reason` is `gotchu_reason`: the title of the rule that forced a hand-over,
+// empty when the procedure tier or the model chose it (spec §11). Every writer
+// clears it when `gotchu_state` moves on, and the chip drops it on any other
+// state anyway, because a visitor can write it too.
 export function queueChip(attrs, t) {
   const state = attrs?.gotchu_state;
   if (typeof state !== 'string' || !Object.hasOwn(LABELS, state)) return null;
   const entry = LABELS[state];
-  const raw = attrs.gotchu_procedure;
-  const procedure =
-    typeof raw === 'string' && raw.length > 0 ? raw.slice(0, 100) : null;
-  return { label: t(entry.label), procedure, agent: entry.agent };
+  const procedure = shortText(attrs.gotchu_procedure);
+  const reason =
+    state === 'handed_over' ? shortText(attrs.gotchu_reason) : null;
+  return { label: t(entry.label), procedure, reason, agent: entry.agent };
 }
