@@ -7,6 +7,9 @@ import ApiClient from '../ApiClient';
  * (`Gotchu::ProceduresController` / `Gotchu::ProcedureService`, task 10):
  *
  *   GET    /api/v1/accounts/:account_id/gotchu/procedures[?store=<key>]
+ *   GET    /api/v1/accounts/:account_id/gotchu/procedures/:id
+ *   GET    /api/v1/accounts/:account_id/gotchu/procedures/:id/revisions
+ *   GET    /api/v1/accounts/:account_id/gotchu/procedures/:id/replay_latest
  *   POST   /api/v1/accounts/:account_id/gotchu/procedures
  *   PATCH  /api/v1/accounts/:account_id/gotchu/procedures/:id
  *   POST   /api/v1/accounts/:account_id/gotchu/procedures/:id/status
@@ -14,15 +17,10 @@ import ApiClient from '../ApiClient';
  *   PUT    /api/v1/accounts/:account_id/gotchu/procedures/:id/bindings/:channel
  *   POST   /api/v1/accounts/:account_id/gotchu/procedures/replay
  *
- * Administrators only -- the controller enforces it with its own
- * `before_action`, and the settings routes gate on `permissions:
- * ['administrator']` for the same reason `assemble.ts`'s comment gives
- * elsewhere in this project: the screen should not offer what the API will
- * refuse.
- *
- * There is no `show` route (task 10's `resources :procedures, only:
- * [:index, :create, :update]`), so a single procedure is read by listing and
- * finding by id -- see EditProcedure.vue.
+ * Reads are open to every signed-in agent; writes are administrators only --
+ * the controller enforces it with its own `before_action`, and the editor
+ * renders read-only for anyone else: the screen should not offer what the
+ * API will refuse.
  *
  * The actor never travels from here. Every write is attributed server-side
  * from the session (`Current.user`), the same rule `aiDraft.js`'s `instruct`
@@ -51,6 +49,24 @@ class ProceduresAPI extends ApiClient {
     return axios.get(this.url, { params: store ? { store } : {} });
   }
 
+  /**
+   * One procedure: its current revision, bindings, `channels[ch]
+   * .autoPossible`, `autoSendEnabled`, `holdSeconds` and `mayOffer`.
+   */
+  show(id) {
+    return axios.get(`${this.url}/${id}`);
+  }
+
+  /** `{ revisions: [{ version, title, createdAt, createdBy }] }`. */
+  revisions(id) {
+    return axios.get(`${this.url}/${id}/revisions`);
+  }
+
+  /** `{ result }`, where result is null when no replay has run yet. */
+  replayLatest(id) {
+    return axios.get(`${this.url}/${id}/replay_latest`);
+  }
+
   /** testing | active | archived. */
   changeStatus(id, status) {
     return axios.post(`${this.url}/${id}/status`, { status });
@@ -65,7 +81,7 @@ class ProceduresAPI extends ApiClient {
   }
 
   /**
-   * `tier` is 'draft' | 'auto' | null -- null turns the channel off.
+   * `tier` is 'hand_over' | 'draft' | 'auto' | null -- null turns the channel off.
    * `expectedVersion` is the procedure revision the edit screen had loaded
    * when this row was changed; ChannelTiers.vue always sends the one it
    * loaded, so a write against a procedure someone else has since revised

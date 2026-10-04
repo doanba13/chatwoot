@@ -20,6 +20,19 @@
       "OFF_ON": "off on {inboxes}",
       "TARGET_MISSING": "Target missing",
       "SHARED_SUFFIX": "shared"
+    },
+    "PROCEDURE": {
+      "AUTO_OFF_NOT_ACTIVE": "Only an active procedure can send on its own.",
+      "AUTO_OFF_UNVERIFIABLE": "Auto is off here: this channel can’t prove whose order it is.",
+      "AUTO_OFF_STORE": "Sending on its own is not switched on for this store.",
+      "AUTO_HINT": "Sends on its own after the hold unless someone acts on the draft here or adds the gotchu-manual label. A private note or an assignment does not stop it.",
+      "KILL_LABEL": "To stop it on one conversation, add the label gotchu-manual."
+    },
+    "TIER": {
+      "OFF": "Off",
+      "HAND_OVER": "Hand over",
+      "DRAFT": "Draft",
+      "AUTO": "Auto"
     }
   }
 }
