@@ -578,7 +578,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         expect(forwarded_body['tier']).to be_nil
       end
 
-      it 'rejects a tier outside draft|auto|null with 422, and never calls the gateway' do
+      it 'rejects a tier outside hand_over|draft|auto|null with 422, and never calls the gateway' do
         configure_gateway
 
         put binding_url(9, 'email'), params: { tier: 'bogus', expected_version: 3 },
@@ -887,6 +887,59 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
       post procedures_url, params: valid_params, headers: agent.create_new_auth_token, as: :json
       expect(response).to have_http_status(:unauthorized)
       expect(a_request(:any, /gateway.test/)).not_to have_been_made
+    end
+  end
+
+  describe 'GET show, revisions and replay_latest' do
+    before { configure_gateway }
+
+    it 'passes the procedure through, readable by an agent' do
+      stub_request(:get, "#{procedures_endpoint}/7").with(query: { secret: gateway_secret })
+                                                    .to_return(status: 200, body: { id: 7, title: 'Where is my order', holdSeconds: 60 }.to_json)
+      get procedure_url(7), headers: agent.create_new_auth_token, as: :json
+      expect(response.parsed_body).to include('id' => 7, 'holdSeconds' => 60)
+    end
+
+    it 'passes the revisions through, readable by an agent' do
+      revisions = { revisions: [{ version: 2, title: 'Where is my order', createdAt: '2026-10-01T00:00:00Z', createdBy: 'chatwoot:1' }] }
+      stub_request(:get, "#{procedures_endpoint}/7/revisions").with(query: { secret: gateway_secret })
+                                                              .to_return(status: 200, body: revisions.to_json)
+      get "#{procedure_url(7)}/revisions", headers: agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['revisions'].first).to include('version' => 2, 'createdBy' => 'chatwoot:1')
+    end
+
+    it 'answers result null when no replay has run' do
+      stub_request(:get, "#{procedures_endpoint}/7/replay/latest").with(query: { secret: gateway_secret })
+                                                                  .to_return(status: 404, body: { error: 'not_found' }.to_json)
+      get "#{procedure_url(7)}/replay_latest", headers: agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq('result' => nil)
+    end
+
+    it 'wraps the latest replay in result' do
+      stub_request(:get, "#{procedures_endpoint}/7/replay/latest").with(query: { secret: gateway_secret })
+                                                                  .to_return(status: 200, body: { considered: 212 }.to_json)
+      get "#{procedure_url(7)}/replay_latest", headers: agent.create_new_auth_token, as: :json
+      expect(response.parsed_body).to eq('result' => { 'considered' => 212 })
+    end
+
+    it 'answers the unconfigured shape, not a 502, when the gateway is dark' do
+      stub_list(status: 404, body: { error: 'not found' })
+      get procedures_url, headers: agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq('procedures' => [], 'capabilities' => { 'procedures' => false })
+    end
+  end
+
+  describe 'the hand_over tier' do
+    before { configure_gateway }
+
+    it 'forwards hand_over' do
+      stub_put("#{procedures_endpoint}/7/bindings/web", body: { binding: { channel: 'web', tier: 'hand_over' } })
+      put "#{procedure_url(7)}/bindings/web", params: { tier: 'hand_over', expected_version: 4 },
+                                              headers: admin.create_new_auth_token, as: :json
+      expect(sent.last).to include('tier' => 'hand_over', 'expectedVersion' => 4)
     end
   end
 end

@@ -63,7 +63,9 @@ class Gotchu::ProcedureService
       verb: :get,
       path: '/api/procedures',
       query: store.present? ? { store: store } : {},
-      refusals: { ValidationError => [400] }
+      # 404 on a list is the dark gateway (GESTURE_SURFACE unset 404s every
+      # Gotchu route); the controller answers the unconfigured shape for it.
+      refusals: { ValidationError => [400], NotFoundError => [404] }
     )
   end
 
@@ -109,7 +111,26 @@ class Gotchu::ProcedureService
     @client.request(verb: :get, path: "/api/procedures/#{id}/bindings", refusals: { NotFoundError => [404] })
   end
 
-  # `tier` is 'draft' | 'auto' | nil. `nil` ("off") is sent as an explicit
+  # One procedure: its current revision, its bindings, what Auto may do on
+  # each channel, the store's send switch and hold, and what it may offer
+  # (spec §11). Passed through unchanged.
+  def show(id:)
+    @client.request(verb: :get, path: "/api/procedures/#{id}", refusals: { NotFoundError => [404] })
+  end
+
+  def revisions(id:)
+    @client.request(verb: :get, path: "/api/procedures/#{id}/revisions", refusals: { NotFoundError => [404] })
+  end
+
+  # A procedure that has never been replayed is not an error on this screen:
+  # the card simply says so. The gateway answers 404 for "no run yet".
+  def replay_latest(id:)
+    { 'result' => @client.request(verb: :get, path: "/api/procedures/#{id}/replay/latest", refusals: { NotFoundError => [404] }) }
+  rescue NotFoundError
+    { 'result' => nil }
+  end
+
+  # `tier` is 'hand_over' | 'draft' | 'auto' | nil. `nil` ("off") is sent as an explicit
   # `tier: null` in the body -- the gateway's own contract for removing this
   # channel's binding -- so unlike create/revise's bodies this one is never
   # run through `.compact`.

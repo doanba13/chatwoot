@@ -296,9 +296,12 @@ Rails.application.routes.draw do
           # merchant-authored config that applies across every conversation a
           # store gets, not a per-conversation gesture like ai_draft/ai_draft_instruction.
           namespace :gotchu do
-            resources :procedures, only: [:index, :create, :update] do
+            resources :procedures, only: [:index, :show, :create, :update] do
               member do
                 post :status
+                # The Agent procedure editor's reads (agent-screens plan B1).
+                get :revisions
+                get :replay_latest
                 # The per-channel tiers screen (task 13): one read, and one
                 # write scoped to a single channel by the route itself so a
                 # write can never land on a channel the gateway does not

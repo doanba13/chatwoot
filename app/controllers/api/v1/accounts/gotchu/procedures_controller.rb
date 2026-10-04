@@ -15,7 +15,7 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # 'off' is deliberately absent: off is the absence of a binding row, never
   # a tier value (global constraint) -- so `update_binding` maps a blank
   # `params[:tier]` to `nil`, not to a fourth string here.
-  ALLOWED_TIERS = %w[draft auto].freeze
+  ALLOWED_TIERS = %w[hand_over draft auto].freeze
 
   rescue_from Gotchu::ProcedureService::ConfigurationError, with: :render_unconfigured
   rescue_from Gotchu::ProcedureService::UnavailableError, with: :render_unavailable
@@ -37,13 +37,27 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # unconfigured gateway must let the settings screen render an honest "not
   # configured" state, the way AiDraftsController already reports
   # `capabilities.instruct` — never fail the whole screen the way a 503 would.
+  #
+  # A 404 on the list is the dark gateway (GESTURE_SURFACE unset 404s every
+  # Gotchu route, and a list has no id to be missing), so it answers the same
+  # unconfigured shape. The inline rescue runs before the class-level
+  # `rescue_from … render_not_found`, which keeps answering 404 on the per-id
+  # routes.
   def index
     if Gotchu::ProcedureService.available?(account_id: Current.account.id)
       render json: service.list(store: params[:store]).merge('capabilities' => capabilities)
     else
       render json: { 'procedures' => [], 'capabilities' => capabilities }
     end
+  rescue Gotchu::ProcedureService::NotFoundError
+    render json: { 'procedures' => [], 'capabilities' => { 'procedures' => false } }
   end
+
+  def show = render(json: service.show(id: params[:id].to_i))
+  def revisions = render(json: service.revisions(id: params[:id].to_i))
+
+  # `{ result: null }` when no replay has run yet, never a 404.
+  def replay_latest = render(json: service.replay_latest(id: params[:id].to_i))
 
   # Always created at status 'testing'; the gateway ignores anything else
   # sent under that key, and this controller offers no field for one.
@@ -79,7 +93,7 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
     render json: service.bindings(id: params[:id].to_i)
   end
 
-  # `params[:tier]` is 'draft' | 'auto' | blank (blank means "off", sent to
+  # `params[:tier]` is 'hand_over' | 'draft' | 'auto' | blank (blank means "off", sent to
   # the gateway as an explicit `tier: null`). Anything else is rejected here
   # rather than forwarded, so a typo never reaches the gateway as a request
   # it also has to validate.
@@ -99,7 +113,7 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   def update_binding
     tier = params[:tier].presence
     if tier && ALLOWED_TIERS.exclude?(tier)
-      render json: { error: 'tier must be one of: draft, auto, or absent/null for off', reason: 'invalid' },
+      render json: { error: 'tier must be one of: hand_over, draft, auto, or absent/null for off', reason: 'invalid' },
              status: :unprocessable_entity
       return
     end
