@@ -40,6 +40,12 @@ const STEP_ICONS = {
   policy: 'i-lucide-book-open',
   dispute: 'i-lucide-shield',
   customer: 'i-lucide-users',
+  procedure: 'i-lucide-list-checks',
+  memo: 'i-lucide-bookmark',
+  rule: 'i-lucide-sliders-horizontal',
+  read: 'i-lucide-languages',
+  thread: 'i-lucide-messages-square',
+  tier: 'i-lucide-gauge',
 };
 const FALLBACK_ICON = 'i-lucide-check';
 

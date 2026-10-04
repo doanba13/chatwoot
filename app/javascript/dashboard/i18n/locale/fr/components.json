@@ -74,5 +74,59 @@
     "ERROR": "Cela ne ressemble pas à un lien vidéo pris en charge",
     "ADD": "Intégrer",
     "CANCEL": "Annuler"
+  },
+  "GOTCHU": {
+    "TRACE": {
+      "PROCEDURE_V": "Procedure {title} v{version}",
+      "MATCH": "match {score}, next best {next}",
+      "MATCH_ONLY": "match {score}",
+      "FOUND_BY": {
+        "CONTACT_EMAIL": "found by the sender’s email",
+        "ORDER_NUMBER": "found by the order number they wrote",
+        "THREAD_ROOT": "found from the email thread",
+        "PERSISTED_ATTRIBUTES": "found on the conversation"
+      },
+      "CHECKED_AGO": "checked {ago}",
+      "MEMOS_NONE": "Memos none",
+      "RULES": "Rules {n} applied",
+      "RULE_HOLDS": "holds sending",
+      "RULE_HANDS_OVER": "hands over",
+      "RULE_MISSING": "could not check {facts}, so it holds sending",
+      "RULE_MISSING_TEXT_ONLY": "could not check {facts}, so its text was left out",
+      "RULE_INBOX_UNKNOWN": "inbox unknown",
+      "RULE_RENDER_CAP": "not shown: too many rules matched",
+      "RULE_UNREADABLE": "could not be read by this version",
+      "RULE_SKIPPED": "not shown",
+      "RULE_STILL_HOLDS": "; it still holds sending",
+      "RULE_ADDS_TEXT": "added to the reply",
+      "RULE_TESTING": "testing, would have applied, changed nothing",
+      "READ": "Read {lang}",
+      "LANG": {
+        "DE": "German",
+        "FR": "French",
+        "EN": "English",
+        "NONE": "an undetected language"
+      },
+      "THREAD": "Thread {n} earlier message in context | Thread {n} earlier messages in context",
+      "TIER": "Tier {tier} on {channel}",
+      "TIER_NONE": "No procedure matched",
+      "TIER_CHANNEL_UNKNOWN": "No tier: channel unknown",
+      "CHANNEL_UNKNOWN": "channel unknown",
+      "TIERS": {
+        "OFF": "off",
+        "HAND_OVER": "hand over",
+        "DRAFT": "draft",
+        "AUTO": "auto"
+      },
+      "TIER_WAIT": "waits for a person",
+      "TIER_AUTO": "may send on its own; that is decided when the hold ends, not here",
+      "TIER_RULE_HOLD": "a rule holds sending, so it waits for a person",
+      "TIER_HANDOVER": "the procedure hands this over to a person"
+    },
+    "DRAFT": {
+      "HEADER": "Draft v{version} · from {procedure} · tier: {tier}",
+      "HEADER_NO_PROCEDURE": "Draft v{version} · no procedure matched",
+      "HEADER_NO_TIER": "Draft v{version} · from {procedure}"
+    }
   }
 }

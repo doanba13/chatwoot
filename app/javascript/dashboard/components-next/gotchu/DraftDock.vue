@@ -84,6 +84,12 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  // "Draft v1 · from Where is my order · tier: draft", worded by the
+  // container from the trace. Null falls back to the plain title.
+  heading: {
+    type: String,
+    default: null,
+  },
 });
 
 const emit = defineEmits([
@@ -196,7 +202,7 @@ const reviewLabel = computed(() => {
         class="inline-flex items-center gap-2 text-sm font-medium text-[var(--g-agent)]"
       >
         <AgentDot :streaming="isStreaming" />
-        {{ isStreaming ? streamingText : $t('GOTCHU.DRAFT.TITLE') }}
+        {{ isStreaming ? streamingText : heading || $t('GOTCHU.DRAFT.TITLE') }}
         <span
           v-if="!isStreaming && versionLabel"
           class="text-xs font-normal text-[var(--g-text-muted)]"

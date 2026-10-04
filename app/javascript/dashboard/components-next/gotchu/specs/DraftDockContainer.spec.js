@@ -188,7 +188,7 @@ describe('DraftDockContainer cycle state mapping', () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain(body);
-    expect(wrapper.text()).toContain('Draft from Gotchu');
+    expect(wrapper.text()).toContain('Draft v2 · no procedure matched');
     // The review window goes straight through to the countdown the dock already
     // renders, and renders nothing when the cycle carries no expiry.
     expect(wrapper.text()).toContain('18 min to review');
@@ -1331,6 +1331,38 @@ describe('DraftDockContainer instruction outcome', () => {
       const steps = wrapper.findComponent(AITrace).props('steps');
 
       expect(steps.map(s => s.result || s.did)).toEqual([days, memos, found]);
+    }
+  );
+
+  it.each([
+    [
+      { kind: 'tier', tier: 'auto', channel: 'email', refusal: null },
+      'Draft v1 · from Where is my order · tier: auto',
+    ],
+    [
+      { kind: 'tier', tier: null, channel: null, refusal: null },
+      'Draft v1 · from Where is my order · tier: channel unknown',
+    ],
+  ])(
+    'names the procedure and the tier in the header, and never says it is sending: %j',
+    async (tierStep, heading) => {
+      AiDraftAPI.getDraft.mockResolvedValue({
+        data: {
+          cycle: reviewing(),
+          draft: { version: 1, body },
+          trace: [
+            { kind: 'procedure', title: 'Where is my order', version: 4 },
+            tierStep,
+          ],
+        },
+      });
+
+      const wrapper = await mountContainer();
+
+      expect(wrapper.text()).toContain(heading);
+      expect(wrapper.text()).not.toMatch(
+        /sending on its own|sends on its own/i
+      );
     }
   );
 

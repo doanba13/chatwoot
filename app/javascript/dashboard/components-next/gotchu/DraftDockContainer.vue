@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { wordStep } from './traceWords';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
@@ -613,57 +614,6 @@ const NOTICE_KEYS = Object.freeze({
 
 const noticeKey = computed(() => NOTICE_KEYS[view.value.emptyReason] ?? null);
 
-// The gateway's structured steps, worded for AITrace. Here and only here, so the
-// sentence for a step is decided in one place. A kind this build does not know
-// is dropped rather than guessed at.
-const wordStep = step => {
-  switch (step?.kind) {
-    case 'order':
-      return {
-        kind: 'order',
-        did: t('GOTCHU.TRACE.ORDER', { name: step.orderName }),
-        result: [
-          step.financialStatus,
-          step.ageDays != null
-            ? t('GOTCHU.TRACE.DAYS_OLD', { n: step.ageDays }, step.ageDays)
-            : null,
-        ]
-          .filter(Boolean)
-          .join(' · '),
-      };
-    case 'fulfillment':
-      return {
-        kind: 'fulfillment',
-        did: t('GOTCHU.TRACE.TRACKING'),
-        result: [step.state, step.trackingNumber, step.lastScanAt]
-          .filter(Boolean)
-          .join(' · '),
-      };
-    case 'policy':
-      return { kind: 'policy', did: t('GOTCHU.TRACE.POLICY'), result: '' };
-    case 'procedure':
-      return {
-        kind: 'procedure',
-        did: t('GOTCHU.TRACE.PROCEDURE', { title: step.title }),
-        result: '',
-      };
-    case 'memo':
-      return {
-        kind: 'memo',
-        did: t('GOTCHU.TRACE.MEMOS', { n: step.count }, step.count),
-        result: '',
-      };
-    case 'precedent':
-      return {
-        kind: 'precedent',
-        did: t('GOTCHU.TRACE.PRECEDENTS', { n: step.count }, step.count),
-        result: '',
-      };
-    default:
-      return null;
-  }
-};
-
 // Shown only while the draft on screen is the one the redraft landed as.
 const versionLabel = computed(() => {
   const to = redraftedTo.value;
@@ -674,9 +624,41 @@ const versionLabel = computed(() => {
   return t('GOTCHU.DRAFT.FROM_INSTRUCTION', { version: to.version });
 });
 
+// The sentence for each step lives in traceWords.js, in one place.
 const traceSteps = computed(() =>
-  (view.value.trace ?? []).map(wordStep).filter(Boolean)
+  (view.value.trace ?? []).map(step => wordStep(step, t, te)).filter(Boolean)
 );
+
+// "Draft v1 · from Where is my order · tier: draft". It names the tier and
+// nothing more: the trace's tier step records what was known when the draft
+// was written, and never says the draft is sending (spec §8.4).
+const dockHeading = computed(() => {
+  const version = draftVersion.value;
+  if (version == null) return null;
+  const trace = view.value.trace ?? [];
+  const procedure = trace.find(step => step?.kind === 'procedure');
+  const tier = trace.find(step => step?.kind === 'tier');
+  const noMatch = tier && tier.tier == null && tier.channel != null;
+  if (!procedure || noMatch) {
+    return t('GOTCHU.DRAFT.HEADER_NO_PROCEDURE', { version });
+  }
+  if (!tier) {
+    return t('GOTCHU.DRAFT.HEADER_NO_TIER', {
+      version,
+      procedure: procedure.title,
+    });
+  }
+  const tierWord =
+    tier.channel == null
+      ? t('GOTCHU.TRACE.CHANNEL_UNKNOWN')
+      : // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys
+        t(`GOTCHU.TRACE.TIERS.${tier.tier.toUpperCase()}`);
+  return t('GOTCHU.DRAFT.HEADER', {
+    version,
+    procedure: procedure.title,
+    tier: tierWord,
+  });
+});
 
 // While an instruction is in flight the dock says so, whatever the cycle is
 // doing underneath: the worker may not have picked the job up yet, and a ready
@@ -714,6 +696,7 @@ const dockStreamingText = computed(() =>
     :trace="traceSteps"
     :outcome="outcome"
     :version-label="versionLabel"
+    :heading="dockHeading"
     @insert="onInsert"
     @dismiss-outcome="outcome = null"
   />
