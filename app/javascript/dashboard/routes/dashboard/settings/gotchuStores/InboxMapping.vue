@@ -286,78 +286,84 @@ const save = async () => {
     </section>
 
     <!-- One card per store: its inboxes, the shared mail it reaches through,
-      and a picker to connect another inbox. -->
-    <section
-      v-for="(store, index) in stores"
-      :key="store.key"
-      class="p-5 border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
-      :data-testid="`store-card-${store.key}`"
+      and a picker to connect another inbox. Side by side, as board 4 draws
+      them, as many to a row as fit. -->
+    <div
+      class="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))]"
+      data-testid="store-cards"
     >
-      <h3
-        class="flex items-center gap-2 mb-3 text-base font-medium text-n-slate-12"
+      <section
+        v-for="(store, index) in stores"
+        :key="store.key"
+        class="p-5 border rounded-[var(--g-radius-card)] border-[var(--g-border)] bg-[var(--g-surface)]"
+        :data-testid="`store-card-${store.key}`"
       >
-        <span
-          class="inline-block rounded-full size-2"
-          :style="{ background: storeDot(index) }"
-        />
-        {{ store.name }}
-        <span
-          class="text-xs font-normal [font-family:var(--g-font-mono)] text-n-slate-10"
+        <h3
+          class="flex items-center gap-2 mb-3 text-base font-medium text-n-slate-12"
         >
-          {{ store.key }}
-        </span>
-      </h3>
-      <ul class="flex flex-col gap-2 p-0 m-0 list-none">
-        <li
-          v-for="inbox in inboxesOf(store.key)"
-          :key="inbox.id"
-          class="flex flex-wrap items-center justify-between gap-3"
-        >
-          <span class="flex items-center gap-2 text-sm text-n-slate-12">
-            {{ inbox.name }}
-            <span
-              class="inline-flex items-center h-6 px-2 rounded-md text-label-small bg-n-slate-3 text-n-slate-11"
-            >
-              {{ channelLabel(inbox.channel) }}
+          <span
+            class="inline-block rounded-full size-2"
+            :style="{ background: storeDot(index) }"
+          />
+          {{ store.name }}
+          <span
+            class="text-xs font-normal [font-family:var(--g-font-mono)] text-n-slate-10"
+          >
+            {{ store.key }}
+          </span>
+        </h3>
+        <ul class="flex flex-col gap-2 p-0 m-0 list-none">
+          <li
+            v-for="inbox in inboxesOf(store.key)"
+            :key="inbox.id"
+            class="flex flex-wrap items-center justify-between gap-3"
+          >
+            <span class="flex items-center gap-2 text-sm text-n-slate-12">
+              {{ inbox.name }}
+              <span
+                class="inline-flex items-center h-6 px-2 rounded-md text-label-small bg-n-slate-3 text-n-slate-11"
+              >
+                {{ channelLabel(inbox.channel) }}
+              </span>
+              <span
+                class="text-xs [font-family:var(--g-font-mono)] text-n-slate-10"
+              >
+                #{{ inbox.id }}
+              </span>
             </span>
+            <Select
+              :key="`${inbox.id}-${renderTick}`"
+              :model-value="assignment[inbox.id]"
+              :options="storeOptions"
+              :disabled="!inbox.channel"
+              @update:model-value="value => pick(inbox, value)"
+            />
+          </li>
+          <li
+            v-for="inbox in sharedEmailInboxes"
+            :key="`shared-${inbox.id}`"
+            class="flex items-center gap-2 text-sm text-n-slate-11"
+          >
+            {{ t('GOTCHU_STORES.EMAIL_VIA_SHARED', { name: inbox.name }) }}
             <span
               class="text-xs [font-family:var(--g-font-mono)] text-n-slate-10"
             >
               #{{ inbox.id }}
             </span>
-          </span>
+          </li>
+        </ul>
+        <div v-if="connectOptions.length" class="mt-3">
           <Select
-            :key="`${inbox.id}-${renderTick}`"
-            :model-value="assignment[inbox.id]"
-            :options="storeOptions"
-            :disabled="!inbox.channel"
-            @update:model-value="value => pick(inbox, value)"
+            :key="`connect-${store.key}-${connectTick}`"
+            model-value=""
+            :options="connectOptions"
+            :placeholder="t('GOTCHU_STORES.CONNECT_INBOX')"
+            :aria-label="t('GOTCHU_STORES.CONNECT_INBOX')"
+            @update:model-value="value => connect(store.key, value)"
           />
-        </li>
-        <li
-          v-for="inbox in sharedEmailInboxes"
-          :key="`shared-${inbox.id}`"
-          class="flex items-center gap-2 text-sm text-n-slate-11"
-        >
-          {{ t('GOTCHU_STORES.EMAIL_VIA_SHARED', { name: inbox.name }) }}
-          <span
-            class="text-xs [font-family:var(--g-font-mono)] text-n-slate-10"
-          >
-            #{{ inbox.id }}
-          </span>
-        </li>
-      </ul>
-      <div v-if="connectOptions.length" class="mt-3">
-        <Select
-          :key="`connect-${store.key}-${connectTick}`"
-          model-value=""
-          :options="connectOptions"
-          :placeholder="t('GOTCHU_STORES.CONNECT_INBOX')"
-          :aria-label="t('GOTCHU_STORES.CONNECT_INBOX')"
-          @update:model-value="value => connect(store.key, value)"
-        />
-      </div>
-    </section>
+        </div>
+      </section>
+    </div>
 
     <!-- Every inbox in no single store, with the same picker, so each one is
       still reachable here. -->

@@ -72,7 +72,17 @@ onBeforeMount(fetchRoutes);
       <BaseSettingsHeader
         :title="t('GOTCHU_STORES.HEADER')"
         :description="t('GOTCHU_STORES.DESCRIPTION')"
-      />
+      >
+        <!-- Board 4: the page heading is the Agent pages' display h1. -->
+        <template #title>
+          <h1
+            class="m-0 [font:var(--g-text-display)] tracking-[var(--g-tracking-display)] text-[var(--g-text)]"
+            data-testid="stores-heading"
+          >
+            {{ t('GOTCHU_STORES.HEADER') }}
+          </h1>
+        </template>
+      </BaseSettingsHeader>
     </template>
     <template #body>
       <ShopifyStores @connected="onConnected" />
