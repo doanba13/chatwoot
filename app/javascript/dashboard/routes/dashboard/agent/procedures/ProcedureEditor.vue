@@ -370,6 +370,7 @@ watch(() => [route.name, route.params.procedureId], load);
             :label="t('PROCEDURES_MGMT.FORM.TITLE.LABEL')"
             :message="showError('title') ? t(showError('title')) : ''"
             :message-type="showError('title') ? 'error' : 'info'"
+            :disabled="readOnly"
             data-testid="procedure-title"
           />
           <template v-if="isNew">
@@ -382,12 +383,14 @@ watch(() => [route.name, route.params.procedureId], load);
                   : t('GOTCHU_AGENT.PROCEDURE.SLUG_HINT')
               "
               :message-type="showError('slug') ? 'error' : 'info'"
+              :disabled="readOnly"
               data-testid="procedure-slug"
             />
             <label class="flex flex-col gap-1 text-sm text-[var(--g-text)]">
               {{ t('PROCEDURES_MGMT.FORM.STORE.LABEL') }}
               <select
                 v-model="form.storeKey"
+                :disabled="readOnly"
                 class="px-3 py-2 text-sm border rounded-[var(--g-radius-control)] border-[var(--g-border)] bg-[var(--g-surface)] text-[var(--g-text)]"
                 data-testid="procedure-store"
               >
@@ -482,6 +485,7 @@ watch(() => [route.name, route.params.procedureId], load);
               max-height="40rem"
               :message="showError('body') ? t(showError('body')) : ''"
               :message-type="showError('body') ? 'error' : 'info'"
+              :disabled="readOnly"
               data-testid="procedure-body"
             />
             <template v-else>
