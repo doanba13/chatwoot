@@ -304,7 +304,14 @@ const crumbs = computed(() => [
   { label: headerTitle.value },
 ]);
 
-const H2 = 'm-0 [font:var(--g-text-section)] text-[var(--g-text)]';
+// Board 6: a compact card with a label column on the left (stacked on a
+// phone).
+const CARD =
+  'flex flex-col gap-4 max-w-[760px] p-[18px] bg-[var(--g-surface)] border border-[var(--g-agent-border)] rounded-[var(--g-radius-card)]';
+const ROW =
+  'grid items-start gap-x-4 gap-y-1.5 md:grid-cols-[7rem_minmax(0,1fr)]';
+const LABEL =
+  'm-0 md:pt-2 text-xs font-semibold uppercase tracking-[.04em] text-[var(--g-text-muted)]';
 
 onMounted(load);
 watch(() => [route.name, route.params.ruleId], load);
@@ -313,15 +320,43 @@ watch(() => [route.name, route.params.ruleId], load);
 <template>
   <AgentPage>
     <template #header>
-      <GotchuPageHeader :title="headerTitle" :crumbs="crumbs">
-        <template #pill>
+      <GotchuPageHeader :title="headerTitle" :crumbs="crumbs" compact>
+        <template #actions>
+          <Button
+            :label="t('GOTCHU_AGENT.CANCEL')"
+            size="sm"
+            variant="ghost"
+            color="slate"
+            data-testid="rule-cancel"
+            @click="router.push({ name: 'agent_rules' })"
+          />
+        </template>
+      </GotchuPageHeader>
+    </template>
+
+    <AgentUnconfigured v-if="unconfigured" />
+    <template v-else-if="!isLoading">
+      <p
+        v-if="errorKey"
+        class="mb-0 text-sm text-[var(--g-danger-text)]"
+        data-testid="rule-error"
+      >
+        {{ t(errorKey) }}
+      </p>
+
+      <!-- Board 6: one compact card, its heading and status on top, a label
+        column on the left. -->
+      <div :class="CARD" data-testid="rule-card">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 class="m-0 text-lg font-semibold text-[var(--g-text)]">
+            {{ headerTitle }}
+          </h1>
           <StatusPill
-            v-if="rule"
-            :status="rule.status"
-            :version="rule.version"
+            :status="rule?.status ?? 'testing'"
+            :version="rule?.version ?? null"
           />
           <span
-            v-if="rule?.status === 'testing'"
+            v-if="isNew || rule?.status === 'testing'"
             class="text-xs text-[var(--g-text-muted)]"
           >
             {{ t(`${R}TESTING_NOTE`) }}
@@ -353,99 +388,83 @@ watch(() => [route.name, route.params.ruleId], load);
               @click="setStatus('archived')"
             />
           </template>
-        </template>
-        <template #actions>
-          <Button
-            :label="t('GOTCHU_AGENT.CANCEL')"
-            size="sm"
-            variant="ghost"
-            color="slate"
-            data-testid="rule-cancel"
-            @click="router.push({ name: 'agent_rules' })"
+        </div>
+
+        <div :class="ROW">
+          <span :class="LABEL">{{ t(`${R}NAME`) }}</span>
+          <Input
+            v-model="form.title"
+            :disabled="readOnly"
+            :aria-label="t(`${R}NAME`)"
+            data-testid="rule-title"
           />
-        </template>
-      </GotchuPageHeader>
-    </template>
+        </div>
 
-    <AgentUnconfigured v-if="unconfigured" />
-    <template v-else-if="!isLoading">
-      <p
-        v-if="errorKey"
-        class="mb-0 text-sm text-[var(--g-danger-text)]"
-        data-testid="rule-error"
-      >
-        {{ t(errorKey) }}
-      </p>
-
-      <div class="flex flex-col gap-6 max-w-[720px]">
-        <Input
-          v-model="form.title"
-          :label="t(`${R}NAME`)"
-          :disabled="readOnly"
-          data-testid="rule-title"
-        />
-
-        <section class="flex flex-col gap-3">
-          <h2 :class="H2">{{ t(`${R}WHEN`) }}</h2>
-          <template v-for="(_, i) in form.conditions" :key="i">
-            <p
-              v-if="i > 0"
-              class="mb-0 text-xs font-semibold uppercase text-[var(--g-text-muted)]"
-            >
-              {{ t(`${R}AND`) }}
-            </p>
-            <ConditionRow
-              v-model="form.conditions[i]"
-              :facts="facts"
-              :sending="form.sending"
-              :read-only="readOnly"
-              @remove="removeCondition(i)"
-            />
-          </template>
-          <button
-            v-if="!readOnly"
-            type="button"
-            class="self-start px-0 text-sm font-medium border-0 bg-transparent text-[var(--g-agent)]"
-            data-testid="rule-add-condition"
-            @click="addCondition"
-          >
-            {{ t(`${R}ADD_CONDITION`) }}
-          </button>
-          <p
-            v-if="usesOrderCount"
-            class="mb-0 text-xs text-[var(--g-text-muted)]"
-          >
-            {{ t(`${R}ORDERS_NOTE`) }}
-          </p>
-        </section>
-
-        <section class="flex flex-col gap-2">
-          <h2 :class="H2">{{ t(`${R}COL_SENDING`) }}</h2>
-          <div
-            class="inline-flex self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
-            role="group"
-          >
+        <section :class="ROW">
+          <h2 :class="LABEL">{{ t(`${R}WHEN`) }}</h2>
+          <div class="flex flex-col min-w-0 gap-3">
+            <template v-for="(_, i) in form.conditions" :key="i">
+              <p
+                v-if="i > 0"
+                class="mb-0 text-xs font-semibold uppercase text-[var(--g-text-muted)]"
+              >
+                {{ t(`${R}AND`) }}
+              </p>
+              <ConditionRow
+                v-model="form.conditions[i]"
+                :facts="facts"
+                :sending="form.sending"
+                :read-only="readOnly"
+                @remove="removeCondition(i)"
+              />
+            </template>
             <button
-              v-for="sending in SENDINGS"
-              :key="sending"
+              v-if="!readOnly"
               type="button"
-              class="px-3 py-1 text-sm font-semibold border-0 rounded-[calc(var(--g-radius-segment)-2px)] disabled:cursor-not-allowed"
-              :class="segment(form.sending === sending)"
-              :aria-pressed="form.sending === sending"
-              :disabled="readOnly"
-              :data-testid="`rule-sending-${sending}`"
-              @click="form = { ...form, sending }"
+              class="self-start px-0 text-sm font-medium border-0 bg-transparent text-[var(--g-agent)]"
+              data-testid="rule-add-condition"
+              @click="addCondition"
             >
-              {{ t(sendingKey(sending)) }}
+              {{ t(`${R}ADD_CONDITION`) }}
             </button>
+            <p
+              v-if="usesOrderCount"
+              class="mb-0 text-xs text-[var(--g-text-muted)]"
+            >
+              {{ t(`${R}ORDERS_NOTE`) }}
+            </p>
           </div>
-          <p class="mb-0 text-xs text-[var(--g-text-muted)]">
-            {{ t(`${R}SENDING_HINT`) }}
-          </p>
         </section>
 
-        <section class="flex flex-col gap-2">
-          <h2 :class="H2">{{ t(`${R}SAY`) }}</h2>
+        <section :class="ROW">
+          <h2 :class="LABEL">{{ t(`${R}COL_SENDING`) }}</h2>
+          <div class="flex flex-col min-w-0 gap-2">
+            <div
+              class="inline-flex self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
+              role="group"
+            >
+              <button
+                v-for="sending in SENDINGS"
+                :key="sending"
+                type="button"
+                class="px-3 py-1 text-sm font-semibold border-0 rounded-[calc(var(--g-radius-segment)-2px)] disabled:cursor-not-allowed"
+                :class="segment(form.sending === sending)"
+                :aria-pressed="form.sending === sending"
+                :disabled="readOnly"
+                :data-testid="`rule-sending-${sending}`"
+                @click="form = { ...form, sending }"
+              >
+                {{ t(sendingKey(sending)) }}
+              </button>
+            </div>
+            <p class="mb-0 text-xs text-[var(--g-text-muted)]">
+              {{ t(`${R}SENDING_HINT`) }}
+            </p>
+          </div>
+        </section>
+
+        <section :class="ROW">
+          <h2 :class="LABEL">{{ t(`${R}SAY`) }}</h2>
           <TextArea
             v-model="form.say"
             :max-length="600"
@@ -458,88 +477,90 @@ watch(() => [route.name, route.params.ruleId], load);
           />
         </section>
 
-        <section class="flex flex-col gap-3">
-          <h2 :class="H2">{{ t(`${R}APPLIES_TO`) }}</h2>
-          <div
-            class="inline-flex self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
-            role="group"
-          >
-            <button
-              v-for="mode in ['all', 'store', 'inbox']"
-              :key="mode"
-              type="button"
-              class="px-3 py-1 text-sm font-semibold border-0 rounded-[calc(var(--g-radius-segment)-2px)] disabled:cursor-not-allowed"
-              :class="
-                segment(
-                  mode === 'inbox'
-                    ? showInboxPicker
-                    : scopeMode === mode && !pendingInbox
-                )
-              "
-              :disabled="readOnly || (mode !== 'all' && !stores.length)"
-              :data-testid="`rule-scope-${mode}`"
-              @click="setScopeMode(mode)"
+        <section :class="ROW">
+          <h2 :class="LABEL">{{ t(`${R}APPLIES_TO`) }}</h2>
+          <div class="flex flex-col min-w-0 gap-3">
+            <div
+              class="inline-flex self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
+              role="group"
             >
-              {{
-                mode === 'all'
-                  ? t('GOTCHU_AGENT.SCOPE.ALL_STORES')
-                  : mode === 'store'
-                    ? t(`${R}ONE_STORE`)
-                    : t(`${R}ONE_INBOX`)
-              }}
-            </button>
-          </div>
-          <div
-            v-if="scopeMode !== 'all' || pendingInbox"
-            class="flex flex-wrap gap-2"
-          >
-            <Select
-              v-model="storeKeyModel"
-              :options="storeOptions"
-              :disabled="readOnly"
-              :aria-label="t(`${R}ONE_STORE`)"
-            />
-            <Select
-              v-if="showInboxPicker"
-              v-model="inboxIdModel"
-              :options="scopeInboxOptions"
-              :placeholder="t(`${R}ONE_INBOX`)"
-              :disabled="readOnly"
-              :aria-label="t(`${R}ONE_INBOX`)"
-            />
-          </div>
-          <div
-            v-if="!showInboxPicker"
-            class="flex flex-wrap items-center gap-2 text-sm"
-          >
-            <span class="text-[var(--g-text-muted)]">{{
-              t(`${R}EXCEPT`)
-            }}</span>
-            <span
-              v-for="id in form.scope.exceptInboxIds"
-              :key="id"
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--g-radius-tag)] bg-[var(--g-surface-inbox)] text-[var(--g-text)]"
-            >
-              {{ exceptLabel(id) }}
               <button
-                v-if="!readOnly"
+                v-for="mode in ['all', 'store', 'inbox']"
+                :key="mode"
                 type="button"
-                class="p-0 border-0 bg-transparent i-lucide-x size-3.5 text-[var(--g-text-muted)]"
-                :aria-label="t(`${R}REMOVE_EXCEPT`)"
-                @click="removeExcept(id)"
+                class="px-3 py-1 text-sm font-semibold border-0 rounded-[calc(var(--g-radius-segment)-2px)] disabled:cursor-not-allowed"
+                :class="
+                  segment(
+                    mode === 'inbox'
+                      ? showInboxPicker
+                      : scopeMode === mode && !pendingInbox
+                  )
+                "
+                :disabled="readOnly || (mode !== 'all' && !stores.length)"
+                :data-testid="`rule-scope-${mode}`"
+                @click="setScopeMode(mode)"
+              >
+                {{
+                  mode === 'all'
+                    ? t('GOTCHU_AGENT.SCOPE.ALL_STORES')
+                    : mode === 'store'
+                      ? t(`${R}ONE_STORE`)
+                      : t(`${R}ONE_INBOX`)
+                }}
+              </button>
+            </div>
+            <div
+              v-if="scopeMode !== 'all' || pendingInbox"
+              class="flex flex-wrap gap-2"
+            >
+              <Select
+                v-model="storeKeyModel"
+                :options="storeOptions"
+                :disabled="readOnly"
+                :aria-label="t(`${R}ONE_STORE`)"
               />
-            </span>
-            <Select
-              v-if="!readOnly && exceptOptions.length"
-              v-model="exceptPick"
-              :options="exceptOptions"
-              :placeholder="t(`${R}SWITCH_OFF_INBOX`)"
-              :aria-label="t(`${R}SWITCH_OFF_INBOX`)"
-            />
+              <Select
+                v-if="showInboxPicker"
+                v-model="inboxIdModel"
+                :options="scopeInboxOptions"
+                :placeholder="t(`${R}ONE_INBOX`)"
+                :disabled="readOnly"
+                :aria-label="t(`${R}ONE_INBOX`)"
+              />
+            </div>
+            <div
+              v-if="!showInboxPicker"
+              class="flex flex-wrap items-center gap-2 text-sm"
+            >
+              <span class="text-[var(--g-text-muted)]">{{
+                t(`${R}EXCEPT`)
+              }}</span>
+              <span
+                v-for="id in form.scope.exceptInboxIds"
+                :key="id"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--g-radius-tag)] bg-[var(--g-surface-inbox)] text-[var(--g-text)]"
+              >
+                {{ exceptLabel(id) }}
+                <button
+                  v-if="!readOnly"
+                  type="button"
+                  class="p-0 border-0 bg-transparent i-lucide-x size-3.5 text-[var(--g-text-muted)]"
+                  :aria-label="t(`${R}REMOVE_EXCEPT`)"
+                  @click="removeExcept(id)"
+                />
+              </span>
+              <Select
+                v-if="!readOnly && exceptOptions.length"
+                v-model="exceptPick"
+                :options="exceptOptions"
+                :placeholder="t(`${R}SWITCH_OFF_INBOX`)"
+                :aria-label="t(`${R}SWITCH_OFF_INBOX`)"
+              />
+            </div>
           </div>
         </section>
 
-        <div v-if="!readOnly" class="flex flex-wrap gap-2">
+        <div v-if="!readOnly" class="flex flex-wrap justify-end gap-2">
           <Button
             :label="t(`${R}TEST`)"
             size="sm"

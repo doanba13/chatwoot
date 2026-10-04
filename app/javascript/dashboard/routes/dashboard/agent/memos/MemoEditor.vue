@@ -38,6 +38,8 @@ const checkMessages = ref([]);
 const saving = ref(false);
 const memo = ref(null);
 const pendingInbox = ref(false);
+// Whether the supporter has chosen a scope on this form yet.
+const scopeTouched = ref(false);
 
 const emptyForm = () => ({
   text: '',
@@ -46,6 +48,19 @@ const emptyForm = () => ({
   until: '',
 });
 const form = ref(emptyForm());
+
+// Board 8: a new memo starts on one store, the first; a supporter widens it
+// to every store on purpose. The store list may arrive after the form.
+const defaultStore = () => {
+  if (!isNew.value || scopeTouched.value || form.value.scope.storeKey) return;
+  const first = stores.value[0]?.key;
+  if (first) {
+    form.value = {
+      ...form.value,
+      scope: { ...form.value.scope, storeKey: first },
+    };
+  }
+};
 
 const fail = error => {
   if (error?.response?.status === 503) unconfigured.value = true;
@@ -72,6 +87,8 @@ const load = async () => {
     if (isNew.value) {
       memo.value = null;
       form.value = emptyForm();
+      scopeTouched.value = false;
+      defaultStore();
       return;
     }
     const found = (data.memos ?? []).find(m => m.id === memoId.value);
@@ -141,6 +158,7 @@ const scopeMode = computed(() => {
   return 'all';
 });
 const setScopeMode = mode => {
+  scopeTouched.value = true;
   pendingInbox.value = mode === 'inbox' && form.value.scope.inboxId == null;
   if (mode === 'all') setScope({ storeKey: null, inboxId: null });
   else
@@ -154,7 +172,10 @@ const storeOptions = computed(() =>
 );
 const storeKeyModel = computed({
   get: () => form.value.scope.storeKey ?? '',
-  set: key => setScope({ storeKey: key || null, inboxId: null }),
+  set: key => {
+    scopeTouched.value = true;
+    setScope({ storeKey: key || null, inboxId: null });
+  },
 });
 const scopeInboxOptions = computed(() =>
   inboxOptions(form.value.scope.storeKey, {
@@ -187,20 +208,33 @@ const crumbs = computed(() => [
   { label: t(`${M}LIST_TITLE`), to: { name: 'agent_memos' } },
   { label: headerTitle.value },
 ]);
-const H2 = 'm-0 text-sm font-semibold text-[var(--g-text)]';
+// Board 8: one card, its title in the display face, a label column on the
+// left (stacked on a phone).
+const CARD =
+  'flex flex-col gap-4 max-w-[760px] p-[18px] md:p-6 bg-[var(--g-surface)] border border-[var(--g-agent-border)] rounded-[var(--g-radius-card)]';
+const ROW =
+  'grid items-start gap-x-4 gap-y-1.5 md:grid-cols-[6rem_minmax(0,1fr)]';
+const LABEL =
+  'm-0 md:pt-2 text-xs font-semibold uppercase tracking-[.04em] text-[var(--g-text-muted)]';
 
 onMounted(load);
+watch(() => stores.value.length, defaultStore);
 watch(() => [route.name, route.params.memoId], load);
 </script>
 
 <template>
   <AgentPage>
     <template #header>
-      <GotchuPageHeader :title="headerTitle" :crumbs="crumbs" />
+      <GotchuPageHeader :title="headerTitle" :crumbs="crumbs" compact />
     </template>
 
     <AgentUnconfigured v-if="unconfigured" />
-    <div v-else-if="!isLoading" class="flex flex-col gap-6 max-w-[720px]">
+    <div v-else-if="!isLoading" :class="CARD" data-testid="memo-card">
+      <h1
+        class="m-0 [font:var(--g-text-display)] tracking-[var(--g-tracking-display)] text-[var(--g-text)] max-md:text-[32px] max-md:leading-[36px]"
+      >
+        {{ headerTitle }}
+      </h1>
       <p
         v-if="errorKey"
         class="mb-0 text-sm text-[var(--g-danger-text)]"
@@ -209,29 +243,31 @@ watch(() => [route.name, route.params.memoId], load);
         {{ t(errorKey) }}
       </p>
 
-      <section class="flex flex-col gap-2">
-        <h2 :class="H2">{{ t(`${M}TEXT`) }}</h2>
-        <TextArea
-          v-model="form.text"
-          :max-length="600"
-          show-character-count
-          auto-height
-          min-height="6rem"
-          data-testid="memo-text"
-        />
-        <ul
-          v-if="checkMessages.length"
-          class="flex flex-col gap-1 p-0 m-0 list-none text-sm text-[var(--g-danger-text)]"
-          data-testid="memo-checks"
-        >
-          <li v-for="message in checkMessages" :key="message">
-            {{ message }}
-          </li>
-        </ul>
+      <section :class="ROW">
+        <h2 :class="LABEL">{{ t(`${M}TEXT`) }}</h2>
+        <div class="flex flex-col min-w-0 gap-2">
+          <TextArea
+            v-model="form.text"
+            :max-length="600"
+            show-character-count
+            auto-height
+            min-height="6rem"
+            data-testid="memo-text"
+          />
+          <ul
+            v-if="checkMessages.length"
+            class="flex flex-col gap-1 p-0 m-0 list-none text-sm text-[var(--g-danger-text)]"
+            data-testid="memo-checks"
+          >
+            <li v-for="message in checkMessages" :key="message">
+              {{ message }}
+            </li>
+          </ul>
+        </div>
       </section>
 
-      <section class="flex flex-col gap-2">
-        <h2 :class="H2">{{ t(`${M}COL_KIND`) }}</h2>
+      <section :class="ROW">
+        <h2 :class="LABEL">{{ t(`${M}COL_KIND`) }}</h2>
         <div
           class="inline-flex self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
           role="group"
@@ -251,70 +287,76 @@ watch(() => [route.name, route.params.memoId], load);
         </div>
       </section>
 
-      <section class="flex flex-col gap-2">
-        <h2 :class="H2">{{ t(`${M}COL_SCOPE`) }}</h2>
-        <div
-          class="inline-flex self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
-          role="group"
-        >
-          <button
-            v-for="mode in ['all', 'store', 'inbox']"
-            :key="mode"
-            type="button"
-            class="px-3 py-1 text-sm font-semibold border-0 rounded-[calc(var(--g-radius-segment)-2px)] disabled:cursor-not-allowed"
-            :class="segment(scopeMode === mode)"
-            :disabled="mode !== 'all' && !stores.length"
-            :data-testid="`memo-scope-${mode}`"
-            @click="setScopeMode(mode)"
+      <section :class="ROW">
+        <h2 :class="LABEL">{{ t(`${M}COL_SCOPE`) }}</h2>
+        <div class="flex flex-col min-w-0 gap-2">
+          <div
+            class="inline-flex self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
+            role="group"
           >
-            {{
-              mode === 'all'
-                ? t('GOTCHU_AGENT.SCOPE.ALL_STORES')
-                : mode === 'store'
-                  ? t('GOTCHU_AGENT.RULE.ONE_STORE')
-                  : t('GOTCHU_AGENT.RULE.ONE_INBOX')
-            }}
-          </button>
+            <button
+              v-for="mode in ['all', 'store', 'inbox']"
+              :key="mode"
+              type="button"
+              class="px-3 py-1 text-sm font-semibold border-0 rounded-[calc(var(--g-radius-segment)-2px)] disabled:cursor-not-allowed"
+              :class="segment(scopeMode === mode)"
+              :aria-pressed="scopeMode === mode"
+              :disabled="mode !== 'all' && !stores.length"
+              :data-testid="`memo-scope-${mode}`"
+              @click="setScopeMode(mode)"
+            >
+              {{
+                mode === 'all'
+                  ? t('GOTCHU_AGENT.SCOPE.ALL_STORES')
+                  : mode === 'store'
+                    ? t('GOTCHU_AGENT.RULE.ONE_STORE')
+                    : t('GOTCHU_AGENT.RULE.ONE_INBOX')
+              }}
+            </button>
+          </div>
+          <div v-if="scopeMode !== 'all'" class="flex flex-wrap gap-2">
+            <Select
+              v-model="storeKeyModel"
+              :options="storeOptions"
+              :aria-label="t('GOTCHU_AGENT.RULE.ONE_STORE')"
+            />
+            <Select
+              v-if="scopeMode === 'inbox'"
+              v-model="inboxIdModel"
+              :options="scopeInboxOptions"
+              :placeholder="t('GOTCHU_AGENT.RULE.ONE_INBOX')"
+              :aria-label="t('GOTCHU_AGENT.RULE.ONE_INBOX')"
+            />
+          </div>
+          <p
+            v-if="pendingInbox"
+            class="mb-0 text-xs text-[var(--g-text-muted)]"
+          >
+            {{ t('GOTCHU_AGENT.RULE.PROBLEM_PICK_INBOX') }}
+          </p>
         </div>
-        <div v-if="scopeMode !== 'all'" class="flex flex-wrap gap-2">
-          <Select
-            v-model="storeKeyModel"
-            :options="storeOptions"
-            :aria-label="t('GOTCHU_AGENT.RULE.ONE_STORE')"
-          />
-          <Select
-            v-if="scopeMode === 'inbox'"
-            v-model="inboxIdModel"
-            :options="scopeInboxOptions"
-            :placeholder="t('GOTCHU_AGENT.RULE.ONE_INBOX')"
-            :aria-label="t('GOTCHU_AGENT.RULE.ONE_INBOX')"
-          />
-        </div>
-        <p v-if="pendingInbox" class="mb-0 text-xs text-[var(--g-text-muted)]">
-          {{ t('GOTCHU_AGENT.RULE.PROBLEM_PICK_INBOX') }}
-        </p>
       </section>
 
-      <section class="flex flex-col gap-2">
-        <h2 :class="H2">
-          {{ t(`${M}UNTIL`) }}
-          <span class="font-normal text-[var(--g-text-muted)]">
+      <section :class="ROW">
+        <h2 :class="LABEL">{{ t(`${M}UNTIL`) }}</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <input
+            v-model="form.until"
+            type="date"
+            class="self-start h-10 px-3 text-sm border rounded-[var(--g-radius-control)] border-[var(--g-border)] bg-[var(--g-surface)] text-[var(--g-text)]"
+            data-testid="memo-until"
+          />
+          <span class="text-xs text-[var(--g-text-muted)]">
             {{ t(`${M}OPTIONAL`) }}
           </span>
-        </h2>
-        <input
-          v-model="form.until"
-          type="date"
-          class="self-start h-10 px-3 text-sm border rounded-[var(--g-radius-control)] border-[var(--g-border)] bg-[var(--g-surface)] text-[var(--g-text)]"
-          data-testid="memo-until"
-        />
+        </div>
       </section>
 
-      <div class="flex flex-col gap-3 pt-4 border-t border-[var(--g-border)]">
-        <p class="mb-0 text-sm text-[var(--g-text-muted)]">
+      <div class="flex flex-col gap-3">
+        <p class="mb-0 text-xs text-[var(--g-text-muted)]">
           {{ t(`${M}REFUSAL_HINT`) }}
         </p>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
           <Button
             v-if="memo"
             :label="t(`${M}REMOVE`)"
@@ -322,6 +364,7 @@ watch(() => [route.name, route.params.memoId], load);
             variant="faded"
             color="ruby"
             :disabled="saving"
+            class="ltr:mr-auto rtl:ml-auto"
             data-testid="memo-remove"
             @click="remove"
           />
