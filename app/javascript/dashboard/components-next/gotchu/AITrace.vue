@@ -27,10 +27,6 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  who: {
-    type: String,
-    default: 'Gotchu',
-  },
 });
 // A kind this build does not know falls through to a check rather than dropping
 // the step: a missing line reads as "Gotchu did not check that".
@@ -53,12 +49,9 @@ const { t } = useI18n();
 
 const isOpen = ref(props.defaultOpen);
 
-const summary = computed(() =>
-  t(
-    'GOTCHU.TRACE.CHECKED',
-    { name: props.who, count: props.steps.length },
-    props.steps.length
-  )
+// Board 1: "How it got here · 7 steps".
+const stepCount = computed(() =>
+  t('GOTCHU.TRACE.STEPS', { count: props.steps.length }, props.steps.length)
 );
 
 const iconFor = step => STEP_ICONS[step.kind] ?? FALLBACK_ICON;
@@ -89,7 +82,12 @@ const toggle = () => {
       <AgentDot :streaming="!!streaming" />
       <span v-if="streaming">{{ streaming }}</span>
       <template v-else>
-        <span>{{ summary }}</span>
+        <span>
+          <span class="font-semibold">
+            {{ t('GOTCHU.TRACE.HOW_IT_GOT_HERE') }}
+          </span>
+          <span class="text-[var(--g-text-muted)]"> · {{ stepCount }}</span>
+        </span>
         <!-- The chevron sits at the end of the row, not against the summary:
           the whole header is the hit area, so the affordance belongs at its
           edge rather than floating mid-row. -->

@@ -20,19 +20,15 @@ const steps = [
 const mountComponent = (props = {}) => mount(AITrace, { props });
 
 describe('AITrace', () => {
-  it('counts what was checked, singular and plural', () => {
+  // Board 1's summary row: "How it got here · 7 steps".
+  it('says how it got here and counts the steps, singular and plural', () => {
     expect(mountComponent({ steps }).text()).toContain(
-      'Gotchu checked 3 things'
+      'How it got here · 3 steps'
     );
     expect(mountComponent({ steps: [steps[0]] }).text()).toContain(
-      'Gotchu checked 1 thing'
+      'How it got here · 1 step'
     );
-  });
-
-  it('names whoever did the checking', () => {
-    expect(mountComponent({ steps, who: 'Linh' }).text()).toContain(
-      'Linh checked 3 things'
-    );
+    expect(mountComponent({ steps }).text()).not.toContain('checked');
   });
 
   it('starts collapsed and reveals the steps in place', async () => {

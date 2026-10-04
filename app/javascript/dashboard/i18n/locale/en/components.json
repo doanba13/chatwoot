@@ -87,7 +87,8 @@
       "CHECK": "check this"
     },
     "TRACE": {
-      "CHECKED": "{name} checked {count} thing | {name} checked {count} things",
+      "HOW_IT_GOT_HERE": "How it got here",
+      "STEPS": "{count} step | {count} steps",
       "ORDER": "Looked up {name}",
       "DAYS_OLD": "{n} day old | {n} days old",
       "TRACKING": "Checked the tracking",
