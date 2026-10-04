@@ -17,6 +17,11 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # `params[:tier]` to `nil`, not to a fourth string here.
   ALLOWED_TIERS = %w[hand_over draft auto].freeze
 
+  # Strong parameters for create and revise, the way RulesController takes
+  # its own: each is a scalar (phrases a list of scalars) or absent, so an
+  # object sent where a string belongs never reaches the gateway body.
+  PROCEDURE_FIELDS = %i[slug title body store_key].freeze
+
   rescue_from Gotchu::ProcedureService::ConfigurationError, with: :render_unconfigured
   rescue_from Gotchu::ProcedureService::UnavailableError, with: :render_unavailable
   rescue_from Gotchu::ProcedureService::ValidationError, with: :render_invalid
@@ -62,23 +67,25 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   # Always created at status 'testing'; the gateway ignores anything else
   # sent under that key, and this controller offers no field for one.
   def create
+    fields = procedure_fields
     render json: service.create(
-      slug: params[:slug],
-      title: params[:title],
-      text: params[:body],
-      phrases: params[:phrases],
-      store_key: params[:store_key]
+      slug: fields[:slug],
+      title: fields[:title],
+      text: fields[:body],
+      phrases: fields[:phrases],
+      store_key: fields[:store_key]
     )
   end
 
   # A new version. The slug is identity and never travels here — the gateway
   # carries the existing row's slug over regardless.
   def update
+    fields = procedure_fields
     render json: service.revise(
       id: params[:id].to_i,
-      title: params[:title],
-      text: params[:body],
-      phrases: params[:phrases]
+      title: fields[:title],
+      text: fields[:body],
+      phrases: fields[:phrases]
     )
   end
 
@@ -144,6 +151,10 @@ class Api::V1::Accounts::Gotchu::ProceduresController < Api::V1::Accounts::BaseC
   end
 
   private
+
+  def procedure_fields
+    params.slice(*PROCEDURE_FIELDS, :phrases).permit(*PROCEDURE_FIELDS, phrases: [])
+  end
 
   # Api::BaseController's own check calls `Current.account_user.administrator?`
   # and raises NoMethodError -- a 500 -- when no account_user is set, which is

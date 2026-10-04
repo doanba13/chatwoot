@@ -241,6 +241,22 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         expect(forwarded_body).not_to have_key('status')
       end
 
+      # Strong parameters: a field arrives as the scalar (or list of scalars)
+      # it is, or not at all. An object where a string belongs never reaches
+      # the gateway body, nor does a field the permit list does not name.
+      it 'forwards only the permitted scalar fields, never an object in their place' do
+        configure_gateway
+        stub_write(procedures_endpoint, body: { id: 9 })
+
+        post procedures_url,
+             params: valid_params.merge(title: { 'en' => 'Return window', 'admin' => true },
+                                        phrases: [{ 'text' => 'I want to return this', 'weight' => 9 }],
+                                        store_key: { 'key' => 'persoliebe' }, version: 7, status: 'active'),
+             headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body.keys).to match_array(%w[slug body actor])
+      end
+
       it 'uses the short gesture timeout, unlike replay' do
         configure_gateway
         fake_response = instance_double(HTTParty::Response, code: 200, body: { id: 9 }.to_json)
@@ -330,6 +346,18 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(response.parsed_body).to eq({ 'id' => 9, 'version' => 2 })
+      end
+
+      it 'forwards title, body and phrases as scalars only, never an object in their place' do
+        configure_gateway
+        stub_write(revise_endpoint, body: { id: 9 })
+
+        patch procedure_url(9),
+              params: revise_params.merge(title: { 'en' => 'x' }, phrases: ['return', { 'text' => 'refund' }], status: 'active'),
+              headers: admin.create_new_auth_token, as: :json
+
+        expect(forwarded_body).to eq('title' => nil, 'body' => 'Offer a 45 day return window.', 'phrases' => nil,
+                                     'actor' => "chatwoot:#{admin.id}")
       end
 
       it 'takes the actor from the session, never from the body, and never forwards a slug' do
@@ -495,7 +523,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
       configure_gateway
 
       put binding_url(9, 'email'), params: { tier: 'auto', expected_version: 3 }, headers: agent.create_new_auth_token,
-                                    as: :json
+                                   as: :json
 
       expect(response).to have_http_status(:unauthorized)
       expect(a_request(:put, binding_endpoint)).not_to have_been_made
@@ -509,11 +537,11 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         # (`render json: service.set_binding(...)`), so it must relay that
         # wrapper exactly as received.
         stub_put(binding_endpoint, body: { binding: { procedureId: 9, channel: 'email', tier: 'draft',
-                                                        authorisedVersion: nil, setBy: 'chatwoot:1',
-                                                        setAt: '2026-09-23T00:00:00Z' } })
+                                                      authorisedVersion: nil, setBy: 'chatwoot:1',
+                                                      setAt: '2026-09-23T00:00:00Z' } })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:success)
         expect(response.parsed_body['binding']['tier']).to eq('draft')
@@ -525,7 +553,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, body: { binding: nil })
 
         put binding_url(9, 'email'), params: { tier: nil, expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:success)
         expect(response.parsed_body).to eq('binding' => nil)
@@ -547,7 +575,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, body: { binding: { channel: 'email', tier: 'draft' } })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(forwarded_body.keys).to contain_exactly('tier', 'actor', 'expectedVersion')
         expect(forwarded_body['expectedVersion']).to eq(3)
@@ -572,7 +600,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, body: { binding: nil })
 
         put binding_url(9, 'email'), params: { tier: nil, expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(forwarded_body).to have_key('tier')
         expect(forwarded_body['tier']).to be_nil
@@ -582,7 +610,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         configure_gateway
 
         put binding_url(9, 'email'), params: { tier: 'bogus', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['reason']).to eq('invalid')
@@ -606,7 +634,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         configure_gateway
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: '' },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['reason']).to eq('version_required')
@@ -618,7 +646,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, body: { binding: { channel: 'email', tier: 'draft' } })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(
           a_request(:put, binding_endpoint).with(
@@ -633,7 +661,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, status: 404, body: { error: 'no such procedure' })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:not_found)
         expect(response.parsed_body['reason']).to eq('not_found')
@@ -644,7 +672,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, status: 409, body: { error: 'the procedure changed since you opened it' })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:conflict)
         expect(response.parsed_body['reason']).to eq('stale_version')
@@ -655,7 +683,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, status: 409, body: { error: 'only an active procedure can be raised to auto' })
 
         put binding_url(9, 'email'), params: { tier: 'auto', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:conflict)
         expect(response.parsed_body['reason']).to eq('not_active_for_auto')
@@ -666,7 +694,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, status: 409, body: { error: 'some future reason nobody wrote a case for' })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:bad_gateway)
         expect(response.parsed_body['reason']).to eq('unavailable')
@@ -677,7 +705,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_put(binding_endpoint, status: 400, body: { error: 'unknown channel' })
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['reason']).to eq('invalid')
@@ -688,7 +716,7 @@ RSpec.describe 'Gotchu Procedures API', type: :request do
         stub_request(:put, binding_endpoint).with(query: { secret: gateway_secret }).to_timeout
 
         put binding_url(9, 'email'), params: { tier: 'draft', expected_version: 3 },
-                                      headers: admin.create_new_auth_token, as: :json
+                                     headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:bad_gateway)
         expect(response.parsed_body['reason']).to eq('unavailable')
