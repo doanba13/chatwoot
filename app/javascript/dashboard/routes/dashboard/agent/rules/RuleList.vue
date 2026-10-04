@@ -212,7 +212,7 @@ onMounted(load);
             </BaseTableCell>
             <BaseTableCell>
               <span
-                class="text-xs font-semibold"
+                class="text-xs font-semibold whitespace-nowrap"
                 :class="SENDING_TONE[rule.sending]"
               >
                 {{ t(sendingKey(rule.sending)) }}

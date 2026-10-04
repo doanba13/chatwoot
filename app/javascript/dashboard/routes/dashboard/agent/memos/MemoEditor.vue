@@ -269,7 +269,7 @@ watch(() => [route.name, route.params.memoId], load);
       <section :class="ROW">
         <h2 :class="LABEL">{{ t(`${M}COL_KIND`) }}</h2>
         <div
-          class="inline-flex self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
+          class="inline-flex self-start justify-self-start p-0.5 gap-0.5 rounded-[var(--g-radius-segment)] bg-[var(--g-slate-tint)]"
           role="group"
         >
           <button
@@ -343,7 +343,7 @@ watch(() => [route.name, route.params.memoId], load);
           <input
             v-model="form.until"
             type="date"
-            class="self-start h-10 px-3 text-sm border rounded-[var(--g-radius-control)] border-[var(--g-border)] bg-[var(--g-surface)] text-[var(--g-text)]"
+            class="!w-auto !mb-0 h-10 px-3 text-sm border rounded-[var(--g-radius-control)] border-[var(--g-border)] bg-[var(--g-surface)] text-[var(--g-text)]"
             data-testid="memo-until"
           />
           <span class="text-xs text-[var(--g-text-muted)]">

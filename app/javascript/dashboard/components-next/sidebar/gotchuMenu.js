@@ -10,11 +10,14 @@ const CHANNEL_ICONS = {
 // A store's dot, --g-store-1..5 by position: the order storeIndex uses. A
 // VNode, as the sidebar's other drawn icons are (SidebarProfileMenuStatus):
 // the entries' icon props take a class string or a VNode, not a function.
+// The rail sizes an icon to its 16 px box, so the 8 px dot sits inside one.
 const storeDot = index =>
-  h('span', {
-    class: 'inline-block size-2 rounded-full',
-    style: { background: `var(--g-store-${(index % 5) + 1})` },
-  });
+  h('span', { class: 'inline-flex items-center justify-center' }, [
+    h('span', {
+      class: 'inline-block size-2 rounded-full',
+      style: { background: `var(--g-store-${(index % 5) + 1})` },
+    }),
+  ]);
 
 // Stores and inboxes (board 1): each store routes to its own conversations
 // and expands to its mapped inboxes, then the account's unmapped email inbox
