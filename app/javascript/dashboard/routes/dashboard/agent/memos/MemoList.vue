@@ -111,7 +111,7 @@ onMounted(() => {
         {{ t(errorKey) }}
       </p>
       <BaseTable
-        v-if="!isLoading"
+        v-if="!isLoading && !errorKey"
         :headers="headers"
         :items="memos"
         :no-data-message="t('GOTCHU_AGENT.MEMO.EMPTY')"

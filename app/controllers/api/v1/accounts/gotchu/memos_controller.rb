@@ -49,15 +49,26 @@ class Api::V1::Accounts::Gotchu::MemosController < Api::V1::Accounts::BaseContro
   end
 
   # A composer memo sends no scope unless the user widened or narrowed it, so
-  # the gateway derives the scope from the conversation (spec §6.5). The
-  # conversation id is the one authorised above, never read raw from params.
+  # the gateway derives the scope from the conversation (spec §6.5). A scope
+  # the caller did not send is never invented here either: on the screen path
+  # the gateway requires one and says so, and an absent scope must reach it
+  # absent, never as all stores. The conversation id is the one authorised
+  # above, never read raw from params.
   def memo_body
-    scope = params.fetch(:scope, {}).permit(:store_key, :inbox_id)
     {
       text: params[:text], kind: params[:kind], until: params[:until].presence,
       conversationId: @conversation&.display_id,
-      scope: @conversation && scope.blank? ? nil : { storeKey: scope[:store_key].presence, inboxId: scope[:inbox_id].presence&.to_i }
+      scope: scope_body
     }.compact
+  end
+
+  def scope_body
+    return nil unless params.key?(:scope)
+
+    scope = params.fetch(:scope, {}).permit(:store_key, :inbox_id)
+    return nil if @conversation && scope.blank?
+
+    { storeKey: scope[:store_key].presence, inboxId: scope[:inbox_id].presence&.to_i }
   end
 
   def service

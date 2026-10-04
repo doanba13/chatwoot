@@ -46,7 +46,21 @@ const now = ref(new Date());
 // this page cannot say which).
 const outcome = reactive({});
 const stopping = reactive({});
+// The hold each Stop was pressed on, kept so its card and answer stay on
+// screen after a re-read no longer lists the cycle. Without it the card of a
+// lost Stop vanishes, which reads as "stopped" (spec §9.6).
+const pressed = reactive({});
 
+const procedures = computed(() => overview.value?.procedures ?? []);
+const holding = computed(() => overview.value?.holding ?? []);
+// The live holds, then any hold a Stop answered that a re-read has dropped.
+const holdCards = computed(() => {
+  const live = new Set(holding.value.map(hold => hold.cycleId));
+  const answered = Object.entries(pressed)
+    .filter(([id, hold]) => hold && outcome[id] && !live.has(Number(id)))
+    .map(([, hold]) => hold);
+  return [...holding.value, ...answered];
+});
 const loadOverview = async () => {
   try {
     const { data } = await AgentAPI.overview(7);
@@ -73,6 +87,7 @@ const loadProposals = async () => {
 const stop = async cycleId => {
   if (stopping[cycleId]) return;
   stopping[cycleId] = true;
+  pressed[cycleId] = holding.value.find(hold => hold.cycleId === cycleId);
   try {
     await AgentAPI.stopAuto(cycleId);
     outcome[cycleId] = { key: `${O}STOPPED` };
@@ -92,8 +107,6 @@ const onProposalDecided = id => {
   proposals.value = proposals.value.filter(p => p.id !== id);
 };
 
-const procedures = computed(() => overview.value?.procedures ?? []);
-const holding = computed(() => overview.value?.holding ?? []);
 const noMatchCount = computed(() => overview.value?.noMatch?.count ?? 0);
 
 const sentence = computed(() => {
@@ -112,7 +125,7 @@ const channelLabel = channel =>
 const tierOf = (procedure, channel) => procedure.tiers?.[channel] ?? 'off';
 
 const nothingToDecide = computed(
-  () => !holding.value.length && !proposals.value.length
+  () => !holdCards.value.length && !proposals.value.length
 );
 
 const headers = computed(() => [
@@ -254,7 +267,7 @@ onMounted(() => {
       </h2>
 
       <div
-        v-for="hold in holding"
+        v-for="hold in holdCards"
         :key="hold.cycleId"
         class="flex flex-col gap-2 p-4 bg-[var(--g-surface)] border rounded-[var(--g-radius-card)] border-[var(--g-agent-border)]"
         :data-testid="`holding-${hold.cycleId}`"

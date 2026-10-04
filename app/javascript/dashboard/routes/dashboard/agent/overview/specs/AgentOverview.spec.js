@@ -49,6 +49,38 @@ describe('AgentOverview', () => {
     );
   });
 
+  it('says a procedure is set to send on its own, never that it sends', async () => {
+    // A stored Auto may never fire (only email can, and only for a store that
+    // is switched on), so the headline names the setting, not a send.
+    AgentAPI.overview.mockResolvedValue({
+      data: {
+        capabilities: { overview: true },
+        procedures: [
+          {
+            id: 1,
+            title: 'Where is my order',
+            status: 'active',
+            version: 2,
+            tiers: { email: 'draft', messenger: 'auto', web: 'off' },
+            used: 3,
+            sentUnedited: null,
+            handedOver: null,
+          },
+        ],
+        holding: [],
+        noMatch: { count: 0, conversationIds: [] },
+        proposalsPending: 0,
+        rulesActive: 0,
+      },
+    });
+    const wrapper = mount(AgentOverview, {
+      global: { stubs: { 'router-link': true } },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('is set to send on its own');
+    expect(wrapper.text()).not.toMatch(/procedures? sends? on (its|their) own/);
+  });
+
   it('stops a holding send and keeps it as a draft', async () => {
     AgentAPI.overview.mockResolvedValue({
       data: {
@@ -72,16 +104,21 @@ describe('AgentOverview', () => {
   });
 
   it('says it is no longer waiting, never stopped, on a 409', async () => {
-    AgentAPI.overview.mockResolvedValue({
+    const overview = holds => ({
       data: {
         capabilities: { overview: true },
         procedures: [],
-        holding: [holding],
+        holding: holds,
         noMatch: { count: 0, conversationIds: [] },
         proposalsPending: 0,
         rulesActive: 0,
       },
     });
+    // After a real 409 the cycle is no longer holding, so the re-read the
+    // page makes no longer lists it: the answer must survive that.
+    AgentAPI.overview
+      .mockResolvedValueOnce(overview([holding]))
+      .mockResolvedValue(overview([]));
     AgentAPI.stopAuto.mockRejectedValue(
       Object.assign(new Error('x'), {
         response: { status: 409, data: { reason: 'not_holding' } },

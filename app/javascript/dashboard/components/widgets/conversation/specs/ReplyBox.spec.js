@@ -535,6 +535,21 @@ describe('composer tabs', () => {
     }
   );
 
+  it('opens the Reply tab when the dock asks to insert a draft', async () => {
+    const { wrapper } = mountWith(email);
+    await wrapper.setData({ composerTab: 'instruct' });
+    wrapper
+      .findComponent({ name: 'DraftDockContainer' })
+      .vm.$emit('wantsReply');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.composerTab).toBe('reply');
+    expect(
+      wrapper
+        .findComponent({ name: 'DraftDockContainer' })
+        .props('replyMounted')
+    ).toBe(true);
+  });
+
   it('still sends on the hotkey in the Reply tab', async () => {
     const { wrapper } = mountWith(email);
     await wrapper.setData({ composerTab: 'reply', isFocused: true });

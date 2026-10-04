@@ -1,5 +1,12 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { wordStep } from './traceWords';
 import { emitter } from 'shared/helpers/mitt';
@@ -50,9 +57,18 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  // Whether the reply editor is on screen. On the Instruct and Memo tabs it
+  // is not, so Insert first asks for the Reply tab and inserts once it is
+  // there: an insert fired at an unmounted editor reaches no listener, and
+  // the stamp would mark the next reply, typed from scratch, as an edit of
+  // this draft.
+  replyMounted: {
+    type: Boolean,
+    default: true,
+  },
 });
 
-const emit = defineEmits(['draftState']);
+const emit = defineEmits(['draftState', 'wantsReply']);
 
 /**
  * Whether the gestures that reach a CUSTOMER are reachable from this deployment.
@@ -478,9 +494,14 @@ const insertIntoRichEditor = computed(() =>
   [INBOX_TYPES.WEB, INBOX_TYPES.EMAIL].includes(props.channelType)
 );
 
-const onInsert = () => {
+const onInsert = async () => {
   const { text, cycleId } = view.value;
   if (!text) return;
+
+  if (!props.replyMounted) {
+    emit('wantsReply');
+    await nextTick();
+  }
 
   emitter.emit(
     insertIntoRichEditor.value
@@ -633,10 +654,15 @@ const versionLabel = computed(() => {
   return t('GOTCHU.DRAFT.FROM_INSTRUCTION', { version: to.version });
 });
 
-// Whether the dock holds a draft to act on, for the composer's tabs: ReplyBox
-// offers Instruct only while it does. Display only; nothing reads it to send.
+// Whether the dock holds a draft to INSTRUCT about, for the composer's tabs:
+// ReplyBox offers Instruct only while it does. Where instructing is switched
+// off the tab would have no field to type in, so it is not offered there. An
+// instruction in flight keeps it, so the tab does not move mid-redraft.
+// Display only; nothing reads it to send.
 const hasDraft = computed(
-  () => waiting.value || ['ready', 'streaming'].includes(view.value.state)
+  () =>
+    instructAvailable.value &&
+    (waiting.value || ['ready', 'streaming'].includes(view.value.state))
 );
 watch(hasDraft, value => emit('draftState', { hasDraft: value }), {
   immediate: true,

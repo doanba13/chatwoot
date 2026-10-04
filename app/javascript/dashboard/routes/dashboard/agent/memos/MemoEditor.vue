@@ -96,8 +96,10 @@ const load = async () => {
 };
 
 // A 409 keeps the text: the banner says the memo changed underneath.
+// "One inbox" chosen before an inbox is picked would save store-wide, which
+// is not what was asked, so saving waits for the inbox.
 const save = async () => {
-  if (saving.value || !form.value.text.trim()) return;
+  if (saving.value || !form.value.text.trim() || pendingInbox.value) return;
   saving.value = true;
   errorKey.value = '';
   checkMessages.value = [];
@@ -287,6 +289,9 @@ watch(() => [route.name, route.params.memoId], load);
             :aria-label="t('GOTCHU_AGENT.RULE.ONE_INBOX')"
           />
         </div>
+        <p v-if="pendingInbox" class="mb-0 text-xs text-[var(--g-text-muted)]">
+          {{ t('GOTCHU_AGENT.RULE.PROBLEM_PICK_INBOX') }}
+        </p>
       </section>
 
       <section class="flex flex-col gap-2">
@@ -331,7 +336,7 @@ watch(() => [route.name, route.params.memoId], load);
             :label="t(`${M}SAVE`)"
             size="sm"
             :is-loading="saving"
-            :disabled="!form.text.trim()"
+            :disabled="!form.text.trim() || pendingInbox"
             data-testid="memo-save"
             @click="save"
           />

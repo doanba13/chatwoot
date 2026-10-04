@@ -1426,7 +1426,9 @@ export default {
       :conversation-id="conversationId"
       :channel-type="channelType"
       :instruct-mode="composerTab === 'instruct'"
+      :reply-mounted="composerTab === 'reply'"
       @draft-state="onDraftState"
+      @wants-reply="setComposerTab('reply')"
     />
     <MemoComposer
       v-if="composerTab === 'memo'"

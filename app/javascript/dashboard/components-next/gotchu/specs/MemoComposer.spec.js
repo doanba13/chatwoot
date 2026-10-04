@@ -45,6 +45,20 @@ describe('MemoComposer', () => {
     });
   });
 
+  it('sends nothing from a conversation with no store until All stores is chosen', async () => {
+    // Spec §6.5: defaulting to all stores is the trap; widening is a choice.
+    const wrapper = mount(MemoComposer, {
+      props: { conversationId: 4471, storeKey: null, inboxId: 1 },
+    });
+    await wrapper
+      .find('textarea')
+      .setValue('Sign off with the first name only.');
+    await wrapper.find('[data-testid="memo-add"]').trigger('click');
+    await flushPromises();
+    expect(MemosAPI.create).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('This conversation has no store yet.');
+  });
+
   it('names all stores explicitly when the conversation has no store, because an absent scope is refused', async () => {
     MemosAPI.create.mockResolvedValue({ data: { id: 8 } });
     const wrapper = mount(MemoComposer, {
@@ -53,6 +67,7 @@ describe('MemoComposer', () => {
     await wrapper
       .find('textarea')
       .setValue('Sign off with the first name only.');
+    await wrapper.find('[data-testid="memo-scope-all"]').trigger('click');
     await wrapper.find('[data-testid="memo-add"]').trigger('click');
     await flushPromises();
     expect(MemosAPI.create).toHaveBeenCalledWith({

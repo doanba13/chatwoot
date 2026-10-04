@@ -31,4 +31,18 @@ describe('MemoList', () => {
     );
     expect(wrapper.find('table').exists()).toBe(false);
   });
+
+  it('shows the failure, and never an empty list, when the read fails', async () => {
+    MemosAPI.list.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        response: { status: 502, data: { reason: 'unavailable' } },
+      })
+    );
+    const wrapper = mount(MemoList, {
+      global: { stubs: { 'router-link': true } },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('Gotchu did not confirm that.');
+    expect(wrapper.text()).not.toContain('No memos yet.');
+  });
 });

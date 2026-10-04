@@ -60,4 +60,18 @@ describe('RuleList', () => {
     expect(wrapper.text()).toContain('Testing');
     expect(wrapper.text()).toContain('would apply 4');
   });
+
+  it('shows the failure, and never an empty list, when the read fails', async () => {
+    RulesAPI.list.mockRejectedValue(
+      Object.assign(new Error('x'), {
+        response: { status: 502, data: { reason: 'unavailable' } },
+      })
+    );
+    const wrapper = mount(RuleList, {
+      global: { stubs: { 'router-link': true } },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('Gotchu did not confirm that.');
+    expect(wrapper.text()).not.toContain('No rules here yet.');
+  });
 });

@@ -26,22 +26,30 @@ const M = 'GOTCHU_AGENT.MEMO.';
 
 const text = ref('');
 const kind = ref('standing_fact');
-const scope = ref(props.storeKey ? 'store' : 'all');
+// With no store on the conversation nothing is chosen: widening to all
+// stores is the supporter's own choice, never a default (spec §6.5: the
+// default is exactly the trap the gateway refuses).
+const scope = ref(props.storeKey ? 'store' : null);
 const busy = ref(false);
 const errorKey = ref('');
 const checkMessages = ref([]);
 
 // With no store on the conversation there is nothing to derive a scope from,
 // and the gateway refuses an absent one, so All stores is the only choice and
-// is always sent explicitly.
+// is always sent explicitly, once picked. A store that arrives after the tab
+// opened becomes the default again.
 const scopes = computed(() =>
   props.storeKey ? ['store', 'all', 'inbox'] : ['all']
 );
 watch(
   () => props.storeKey,
   key => {
-    if (!key) scope.value = 'all';
+    if (key && scope.value === null) scope.value = 'store';
+    if (!key && scope.value !== 'all') scope.value = null;
   }
+);
+const canAdd = computed(
+  () => Boolean(text.value.trim()) && scope.value !== null
 );
 
 const SCOPE_LABELS = {
@@ -70,7 +78,7 @@ const body = () => {
 
 // Every failure keeps the text.
 const add = async () => {
-  if (busy.value || !text.value.trim()) return;
+  if (busy.value || !canAdd.value) return;
   busy.value = true;
   errorKey.value = '';
   checkMessages.value = [];
@@ -122,6 +130,13 @@ const segment = active =>
       <li v-for="message in checkMessages" :key="message">{{ message }}</li>
     </ul>
     <p
+      v-if="!storeKey && scope === null"
+      class="mb-0 text-xs text-[var(--g-text-muted)]"
+      data-testid="memo-composer-no-store"
+    >
+      {{ t(`${M}COMPOSER_SCOPE_REQUIRED`) }}
+    </p>
+    <p
       v-if="errorKey"
       class="mb-0 text-xs text-[var(--g-danger-text)]"
       data-testid="memo-composer-error"
@@ -169,7 +184,7 @@ const segment = active =>
         :label="t(`${M}COMPOSER_ADD`)"
         size="sm"
         :is-loading="busy"
-        :disabled="!text.trim()"
+        :disabled="!canAdd"
         data-testid="memo-add"
         @click="add"
       />

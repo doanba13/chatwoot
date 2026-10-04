@@ -4,8 +4,9 @@ import RulesAPI from 'dashboard/api/gotchu/rules';
 import RuleEditor from '../RuleEditor.vue';
 
 vi.mock('dashboard/api/gotchu/rules', () => ({
-  default: { show: vi.fn(), list: vi.fn(), check: vi.fn() },
+  default: { show: vi.fn(), list: vi.fn(), check: vi.fn(), revise: vi.fn() },
 }));
+const role = vi.hoisted(() => ({ value: 'agent' }));
 vi.mock('dashboard/api/gotchu/stores', () => ({
   default: {
     list: vi.fn().mockResolvedValue({ data: { stores: [], inboxes: [] } }),
@@ -17,7 +18,7 @@ vi.mock('vue-router', async o => ({
   useRouter: () => ({ replace: vi.fn() }),
 }));
 vi.mock('dashboard/composables/store', () => ({
-  useMapGetter: name => ({ value: name === 'getCurrentRole' ? 'agent' : [] }),
+  useMapGetter: name => (name === 'getCurrentRole' ? role : { value: [] }),
   useStore: () => ({ dispatch: vi.fn() }),
 }));
 withFullI18n();
@@ -36,6 +37,10 @@ const rule = {
 };
 
 describe('RuleEditor', () => {
+  afterEach(() => {
+    role.value = 'agent';
+  });
+
   it('renders read-only for an agent: no save, no activate, inputs disabled', async () => {
     RulesAPI.show.mockResolvedValue({ data: rule });
     RulesAPI.list.mockResolvedValue({
@@ -49,5 +54,33 @@ describe('RuleEditor', () => {
     expect(wrapper.find('[data-testid="rule-activate"]').exists()).toBe(false);
     expect(wrapper.find('textarea').attributes('disabled')).toBeDefined();
     expect(RulesAPI.check).not.toHaveBeenCalled();
+  });
+
+  it('will not save a rule set to one inbox until the inbox is picked', async () => {
+    role.value = 'administrator';
+    const StoresAPI = (await import('dashboard/api/gotchu/stores')).default;
+    StoresAPI.list.mockResolvedValue({
+      data: {
+        stores: [{ key: 'persoliebe', name: 'persoliebe', inboxes: [] }],
+        inboxes: [],
+      },
+    });
+    RulesAPI.show.mockResolvedValue({
+      data: { ...rule, scope: { ...rule.scope, storeKey: 'persoliebe' } },
+    });
+    RulesAPI.list.mockResolvedValue({
+      data: { rules: [], facts: [], capabilities: { rules: true } },
+    });
+    const wrapper = mount(RuleEditor, {
+      global: { stubs: { 'router-link': true } },
+    });
+    await flushPromises();
+    await wrapper.find('[data-testid="rule-scope-inbox"]').trigger('click');
+    await wrapper.find('[data-testid="rule-save"]').trigger('click');
+    await flushPromises();
+    expect(
+      wrapper.find('[data-testid="rule-save"]').attributes('disabled')
+    ).toBeDefined();
+    expect(RulesAPI.revise).not.toHaveBeenCalled();
   });
 });

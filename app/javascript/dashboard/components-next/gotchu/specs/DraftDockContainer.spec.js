@@ -602,6 +602,52 @@ describe('DraftDockContainer gotchu stamp', () => {
     }
   });
 
+  it.each([
+    [true, true],
+    [false, false],
+  ])(
+    'reports a draft to instruct about only where instructing is switched on (instruct %s)',
+    async (instruct, hasDraft) => {
+      AiDraftAPI.getDraft.mockResolvedValue({
+        data: {
+          cycle: reviewing(),
+          draft: { version: 1, body },
+          capabilities: { instruct },
+        },
+      });
+      const wrapper = await mountContainer({ conversationId: 3582 });
+      expect(wrapper.emitted('draftState').at(-1)).toEqual([{ hasDraft }]);
+    }
+  );
+
+  it('asks for the Reply tab and inserts only after it, when the editor is not on screen', async () => {
+    // On the Instruct or Memo tab the reply editor is unmounted: an insert
+    // fired straight away reaches no listener, and the stamp would mark the
+    // next reply, typed from scratch, as an edit of this draft.
+    let wrapper;
+    const seen = [];
+    const onInsertEvent = () =>
+      seen.push(wrapper.emitted('wantsReply')?.length ?? 0);
+    emitter.on(BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR, onInsertEvent);
+    try {
+      wrapper = await mountContainer({
+        conversationId: 3581,
+        replyMounted: false,
+      });
+      await wrapper.find('button').trigger('click');
+      await flushPromises();
+
+      expect(wrapper.emitted('wantsReply')).toHaveLength(1);
+      expect(seen).toEqual([1]);
+      expect(insertedDraftFor(3581)).toEqual({
+        cycleId: 2964,
+        draftVersion: 1,
+      });
+    } finally {
+      emitter.off(BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR, onInsertEvent);
+    }
+  });
+
   it('clears the memory when a later poll shows a different draft version', async () => {
     vi.useFakeTimers();
     const wrapper = await mountContainer({ conversationId: 3580 });

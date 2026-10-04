@@ -52,6 +52,23 @@ RSpec.describe 'Gotchu Memos API', type: :request do
                                  'scope' => { 'storeKey' => 'giftera', 'inboxId' => nil }, 'until' => '2026-12-16')
   end
 
+  # Spec §11: on the screen path the scope is required, and the gateway says
+  # so. An absent scope must reach it absent, never as all stores.
+  it 'never invents a scope the caller did not send' do
+    stub_write(memos_endpoint, body: { id: 9 })
+    post memos_url, params: { text: 'Orders ship from Shenzhen.', kind: 'standing_fact' },
+                    headers: agent.create_new_auth_token, as: :json
+    expect(sent.last).not_to have_key('scope')
+  end
+
+  it 'forwards an explicit all-stores scope from the composer' do
+    create(:inbox_member, user: agent, inbox: conversation.inbox)
+    stub_write(memos_endpoint, body: { id: 10 })
+    post memos_url, params: engraved.merge(conversation_id: conversation.display_id, scope: { store_key: nil }),
+                    headers: agent.create_new_auth_token, as: :json
+    expect(sent.last).to include('scope' => { 'storeKey' => nil, 'inboxId' => nil })
+  end
+
   it 'forwards a conversation the agent may open, and never a body store for it' do
     create(:inbox_member, user: agent, inbox: conversation.inbox)
     stub_write(memos_endpoint, body: { id: 6 })

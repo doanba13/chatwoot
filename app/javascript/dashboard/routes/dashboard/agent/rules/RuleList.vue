@@ -155,7 +155,7 @@ onMounted(load);
         @tab-changed="onTab"
       />
       <BaseTable
-        v-if="!isLoading"
+        v-if="!isLoading && !errorKey"
         :headers="headers"
         :items="shown"
         :no-data-message="t('GOTCHU_AGENT.RULE.EMPTY')"

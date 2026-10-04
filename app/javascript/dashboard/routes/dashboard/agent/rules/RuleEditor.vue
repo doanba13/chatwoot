@@ -52,7 +52,14 @@ const saving = ref(false);
 const testing = ref(false);
 const exceptPick = ref('');
 
-const problems = computed(() => localProblems(form.value, facts.value));
+// "One inbox" chosen before an inbox is picked. Until one is, the rule would
+// save store-wide, which is not what was asked, so saving waits.
+const pendingInbox = ref(false);
+
+const problems = computed(() => [
+  ...localProblems(form.value, facts.value),
+  ...(pendingInbox.value ? [`${R}PROBLEM_PICK_INBOX`] : []),
+]);
 // Spec §14: the overlap warning belongs to a rule that adds text and leaves
 // sending alone; a rule that holds sending back demotes nothing.
 const shownOverlaps = computed(() =>
@@ -205,8 +212,6 @@ const usesOrderCount = computed(() =>
 );
 
 // Applies to: all stores, one store, or one inbox under a store (spec §3).
-// `pendingInbox` holds "One inbox" chosen before an inbox is picked.
-const pendingInbox = ref(false);
 const scopeMode = computed(() => {
   if (form.value.scope.inboxId != null) return 'inbox';
   if (form.value.scope.storeKey) return 'store';

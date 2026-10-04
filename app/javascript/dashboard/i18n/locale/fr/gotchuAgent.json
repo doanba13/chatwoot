@@ -184,7 +184,8 @@
         "DE": "German",
         "FR": "French",
         "EN": "English"
-      }
+      },
+      "PROBLEM_PICK_INBOX": "Pick the inbox, or choose a whole store."
     },
     "CANCEL": "Cancel",
     "MEMO": {
@@ -237,7 +238,7 @@
     "OVERVIEW": {
       "TITLE": "Your agent",
       "STATUS_NO_AUTO": "Drafting replies for {stores} stores. Everything waits for a person.",
-      "STATUS_SOME_AUTO": "Drafting replies for {stores} stores. {n} procedure sends on its own, on {channels} only. Everything else waits for a person. | Drafting replies for {stores} stores. {n} procedures send on their own, on {channels} only. Everything else waits for a person.",
+      "STATUS_SOME_AUTO": "Drafting replies for {stores} stores. {n} procedure is set to send on its own, on {channels} only. Everything else waits for a person. | Drafting replies for {stores} stores. {n} procedures are set to send on their own, on {channels} only. Everything else waits for a person.",
       "NEW_PROCEDURE": "New procedure",
       "PAUSE": "Pause agent",
       "PROCEDURES": "Procedures",
