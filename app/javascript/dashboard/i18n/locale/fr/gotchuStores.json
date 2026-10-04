@@ -4,11 +4,11 @@
     "DESCRIPTION": "Indiquez à Gotchu à quelle boutique appartient chaque boîte de réception. Une page Messenger ou un widget de site appartient en général à une seule boutique. Une boîte mail vers laquelle plusieurs boutiques transfèrent n'appartient à aucune : laissez-la partagée et indiquez plus bas l'adresse de chaque boutique. Connectez vos boutiques Shopify en haut de cette page ; Gotchu ne lit leurs commandes et livraisons qu'après votre autorisation sur Shopify.",
     "LOADING": "Chargement des boîtes de réception et des boutiques",
     "NO_STORES": "Aucune boutique Shopify n'est encore connectée à ce compte. Connectez une boutique ci-dessus, puis associez ici ses boîtes de réception.",
-    "UNCONFIGURED": "Gotchu n'est pas configuré sur ce Chatwoot. Un opérateur doit définir GOTCHU_GATEWAY_URL, un secret de passerelle pour ce compte et GOTCHU_GESTURE_SECRET.",
+    "UNCONFIGURED": "Gotchu n'est pas configuré sur ce bureau. Un opérateur doit définir GOTCHU_GATEWAY_URL, un secret de passerelle pour ce compte et GOTCHU_GESTURE_SECRET.",
     "LOAD_FAILED": {
       "TITLE": "Impossible de charger vos boutiques",
       "UNAVAILABLE": "Gotchu n'a pas répondu. Rechargez la page pour réessayer.",
-      "UNCONFIGURED": "Gotchu n'est pas configuré sur ce Chatwoot."
+      "UNCONFIGURED": "Gotchu n'est pas configuré sur ce bureau."
     },
     "SAVE": "Enregistrer l'association",
     "SAVED": "Association enregistrée. Les nouvelles conversations sont désormais réparties avec elle.",
@@ -43,14 +43,14 @@
     },
     "UNLISTED": {
       "TITLE": "Boîtes de réception non visibles pour Gotchu",
-      "DESCRIPTION": "Ces boîtes de réception sont toujours associées, mais Chatwoot ne les liste plus pour Gotchu -- supprimées, ou non visibles pour l'utilisateur Chatwoot de Gotchu. L'enregistrement garde chacune associée à sa boutique actuelle, sauf si vous la retirez ci-dessous.",
+      "DESCRIPTION": "Ces boîtes de réception sont toujours associées, mais votre liste de boîtes de réception ne les montre plus à Gotchu -- supprimées, ou non visibles pour l'utilisateur avec lequel Gotchu se connecte. L'enregistrement garde chacune associée à sa boutique actuelle, sauf si vous la retirez ci-dessous.",
       "ITEM": "Boîte de réception #{id} ({channel}), associée à {store}",
       "PENDING_REMOVAL": "Sera retirée de {store} lors de l'enregistrement",
       "REMOVE": "Retirer l'association",
       "UNDO": "Annuler"
     },
     "ERRORS": {
-      "UNCONFIGURED": "Gotchu n'est pas configuré sur ce Chatwoot.",
+      "UNCONFIGURED": "Gotchu n'est pas configuré sur ce bureau.",
       "UNAVAILABLE": "Gotchu n'a pas confirmé la modification. Rechargez pour voir ce qui a été enregistré.",
       "INVALID": "Une ou plusieurs boîtes de réception ou adresses ne peuvent pas être utilisées. Vérifiez les adresses et réessayez.",
       "DUPLICATE": "Une boîte de réception ou une adresse est associée à plus d'une boutique.",

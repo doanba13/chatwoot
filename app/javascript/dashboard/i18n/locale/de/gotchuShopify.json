@@ -16,7 +16,7 @@
       "DISCONNECTED": "Getrennt"
     },
     "ERRORS": {
-      "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet. Ein Operator muss GOTCHU_GATEWAY_URL, ein Gateway-Secret für dieses Konto und GOTCHU_GESTURE_SECRET setzen.",
+      "UNCONFIGURED": "Gotchu ist auf diesem Desk nicht eingerichtet. Ein Operator muss GOTCHU_GATEWAY_URL, ein Gateway-Secret für dieses Konto und GOTCHU_GESTURE_SECRET setzen.",
       "UNAVAILABLE": "Gotchu hat die Anfrage nicht bestätigt. Bitte gleich erneut versuchen.",
       "INVALID_SHOP": "Gib die myshopify.com-Adresse deines Shops ein, z. B. dein-shop.myshopify.com.",
       "INVALID_PREFIX": "1 bis 10 Buchstaben oder Ziffern, mindestens ein Buchstabe.",

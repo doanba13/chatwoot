@@ -78,7 +78,7 @@ describe('Gotchu stores page (Index.vue)', () => {
     });
     const text = (await mountPage()).text();
     expect(text).toContain('Could not load your stores');
-    expect(text).toContain('Gotchu is not configured on this Chatwoot.');
+    expect(text).toContain('Gotchu is not configured on this desk.');
     expect(text).not.toContain(NO_STORES);
   });
 

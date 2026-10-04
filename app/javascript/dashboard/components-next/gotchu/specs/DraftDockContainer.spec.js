@@ -306,13 +306,13 @@ describe('DraftDockContainer failure modes', () => {
     const unset = await mountContainer();
 
     expect(dead.text()).toContain('Gotchu is not answering');
-    expect(unset.text()).toContain('not configured on this Chatwoot');
+    expect(unset.text()).toContain('not configured on this desk');
     expect(dead.text()).not.toBe(unset.text());
   });
 
   it.each([
     [502, 'Gotchu is not answering'],
-    [503, 'Gotchu is not configured on this Chatwoot'],
+    [503, 'Gotchu is not configured on this desk'],
   ])('never reads a %s as an empty composer', async (status, sentence) => {
     AiDraftAPI.getDraft.mockRejectedValue(httpError(status));
 
@@ -868,7 +868,7 @@ describe('DraftDockContainer instruct', () => {
     [
       'unconfigured',
       503,
-      'Instructions are not configured on this Chatwoot, so nothing was sent.',
+      'Instructions are not configured on this desk, so nothing was sent.',
     ],
     [
       'invalid',

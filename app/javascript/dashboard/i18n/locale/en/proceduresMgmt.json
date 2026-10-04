@@ -35,10 +35,10 @@
       "REPLAY": "Replay"
     },
     "UNCONFIGURED": {
-      "DESCRIPTION": "Procedures are not configured on this Chatwoot. Set the following on the gateway and restart it to turn this on:"
+      "DESCRIPTION": "Procedures are not configured on this desk. Set the following on the gateway and restart it to turn this on:"
     },
     "ERRORS": {
-      "UNCONFIGURED": "Procedures are not configured on this Chatwoot, so nothing was sent.",
+      "UNCONFIGURED": "Procedures are not configured on this desk, so nothing was sent.",
       "UNAVAILABLE": "Could not confirm the request reached Gotchu. Check the gateway before trying again.",
       "INVALID": "Gotchu rejected this procedure. Check the slug format, the length limits, and that the title, body and trigger phrases don't name a specific customer or order.",
       "DUPLICATE_SLUG": "A procedure with this slug already exists for this store.",

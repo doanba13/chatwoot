@@ -4,11 +4,11 @@
     "DESCRIPTION": "Sag Gotchu, zu welchem Shop jeder Posteingang gehört. Eine Messenger-Seite oder ein Website-Widget gehört meist zu einem Shop. Ein Postfach, in das mehrere Shops weiterleiten, gehört zu keinem: lass es geteilt und trag unten die Adresse jedes Shops ein. Oben auf dieser Seite verbindest du deine Shopify-Shops; Gotchu liest Bestellungen und Sendungen erst, nachdem du den Zugriff bei Shopify bestätigt hast.",
     "LOADING": "Posteingänge und Shops werden geladen",
     "NO_STORES": "Mit diesem Konto ist noch kein Shopify-Shop verbunden. Verbinde oben einen Shop und ordne dann hier seine Posteingänge zu.",
-    "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet. Ein Betreiber muss GOTCHU_GATEWAY_URL, ein Gateway-Secret für dieses Konto und GOTCHU_GESTURE_SECRET setzen.",
+    "UNCONFIGURED": "Gotchu ist auf diesem Desk nicht eingerichtet. Ein Betreiber muss GOTCHU_GATEWAY_URL, ein Gateway-Secret für dieses Konto und GOTCHU_GESTURE_SECRET setzen.",
     "LOAD_FAILED": {
       "TITLE": "Deine Shops konnten nicht geladen werden",
       "UNAVAILABLE": "Gotchu hat nicht geantwortet. Lade die Seite neu, um es erneut zu versuchen.",
-      "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet."
+      "UNCONFIGURED": "Gotchu ist auf diesem Desk nicht eingerichtet."
     },
     "SAVE": "Zuordnung speichern",
     "SAVED": "Zuordnung gespeichert. Neue Unterhaltungen werden ab jetzt danach zugeordnet.",
@@ -43,14 +43,14 @@
     },
     "UNLISTED": {
       "TITLE": "Für Gotchu nicht mehr sichtbare Posteingänge",
-      "DESCRIPTION": "Diese Posteingänge sind noch zugeordnet, aber Chatwoot listet sie für Gotchu nicht mehr -- gelöscht, oder für Gotchus Chatwoot-Nutzer nicht sichtbar. Beim Speichern bleibt jeder seinem aktuellen Shop zugeordnet, sofern du ihn nicht unten entfernst.",
+      "DESCRIPTION": "Diese Posteingänge sind noch zugeordnet, aber deine Posteingangsliste zeigt sie Gotchu nicht mehr -- gelöscht, oder für den Nutzer, mit dem Gotchu sich anmeldet, nicht sichtbar. Beim Speichern bleibt jeder seinem aktuellen Shop zugeordnet, sofern du ihn nicht unten entfernst.",
       "ITEM": "Posteingang #{id} ({channel}), zugeordnet zu {store}",
       "PENDING_REMOVAL": "Wird beim Speichern von {store} entfernt",
       "REMOVE": "Zuordnung entfernen",
       "UNDO": "Rückgängig"
     },
     "ERRORS": {
-      "UNCONFIGURED": "Gotchu ist auf diesem Chatwoot nicht eingerichtet.",
+      "UNCONFIGURED": "Gotchu ist auf diesem Desk nicht eingerichtet.",
       "UNAVAILABLE": "Gotchu hat die Änderung nicht bestätigt. Lade die Seite neu, um zu sehen, was gespeichert wurde.",
       "INVALID": "Ein oder mehrere Posteingänge oder Adressen können nicht verwendet werden. Prüfe die Adressen und versuch es erneut.",
       "DUPLICATE": "Ein Posteingang oder eine Adresse ist mehr als einem Shop zugeordnet.",
