@@ -18,6 +18,7 @@ import MessageSignatureMissingAlert from './MessageSignatureMissingAlert.vue';
 import ReplyBoxBanner from './ReplyBoxBanner.vue';
 import QuotedEmailPreview from './QuotedEmailPreview.vue';
 import DraftDockContainer from 'dashboard/components-next/gotchu/DraftDockContainer.vue';
+import MemoComposer from 'dashboard/components-next/gotchu/MemoComposer.vue';
 import {
   forgetInsertedDraft,
   stampSendPayload,
@@ -77,6 +78,7 @@ export default {
     AttachmentPreview,
     AudioRecorder,
     DraftDockContainer,
+    MemoComposer,
     ReplyBoxBanner,
     EmojiIconPicker,
     MessageSignatureMissingAlert,
@@ -186,6 +188,13 @@ export default {
       showArticleSearchPopover: false,
       hasRecordedAudio: false,
       copilotAcceptedMessages: {},
+      // Which composer surface shows: 'instruct' | 'reply' | 'memo'. Separate
+      // from `replyType` (REPLY | NOTE), which stays exactly as it was: only
+      // the Reply tab renders the editor and the send panel, and only it
+      // answers the send hotkeys.
+      composerTab: 'reply',
+      composerTabChosen: false,
+      dockHasDraft: false,
     };
   },
   computed: {
@@ -577,6 +586,10 @@ export default {
       if (conversationId !== oldConversationId) {
         this.switchDraftContext(conversationId, this.effectiveReplyMode);
         this.resetRecorderAndClearAttachments();
+        // A new conversation starts on Reply until its dock reports a draft.
+        this.composerTab = 'reply';
+        this.composerTabChosen = false;
+        this.dockHasDraft = false;
       }
     },
     message() {
@@ -783,6 +796,7 @@ export default {
     },
     isAValidEvent(selectedKey) {
       return (
+        this.composerTab === 'reply' &&
         !this.showUserMentions &&
         !this.showMentions &&
         !this.showCannedMenu &&
@@ -1347,6 +1361,24 @@ export default {
       this.$emit('toggleEditorSize');
       this.$nextTick(() => this.messageEditor?.focusEditorInputField());
     },
+    setComposerTab(tab) {
+      this.composerTab = tab;
+      this.composerTabChosen = true;
+    },
+    // The dock reports whether it holds a draft to act on. Until the
+    // supporter picks a tab, the composer opens on Instruct when there is one
+    // and on Reply otherwise; it never leaves a half-typed reply for Instruct,
+    // and never stays on an Instruct tab with nothing to instruct.
+    onDraftState({ hasDraft }) {
+      this.dockHasDraft = hasDraft;
+      if (!hasDraft && this.composerTab === 'instruct') {
+        this.composerTab = 'reply';
+        return;
+      }
+      if (!this.composerTabChosen && this.composerTab === 'reply') {
+        if (hasDraft && !this.message) this.composerTab = 'instruct';
+      }
+    },
     onSubmitCopilotReply() {
       const acceptedMessage = this.copilot.accept();
       this.message = acceptedMessage;
@@ -1372,7 +1404,10 @@ export default {
       :characters-remaining="charactersRemaining"
       :editor-content="message"
       :has-content="hasMeaningfulEditorContent"
+      :composer-tab="composerTab"
+      :instruct-available="dockHasDraft"
       @set-reply-mode="setReplyMode"
+      @set-composer-tab="setComposerTab"
       @toggle-editor-size="toggleEditorSize"
       @toggle-copilot="copilot.toggleEditor"
       @execute-copilot-action="executeCopilotAction"
@@ -1390,6 +1425,14 @@ export default {
     <DraftDockContainer
       :conversation-id="conversationId"
       :channel-type="channelType"
+      :instruct-mode="composerTab === 'instruct'"
+      @draft-state="onDraftState"
+    />
+    <MemoComposer
+      v-if="composerTab === 'memo'"
+      :conversation-id="conversationId"
+      :store-key="currentChat.custom_attributes?.store_key || null"
+      :inbox-id="inboxId"
     />
     <ArticleSearchPopover
       v-if="showArticleSearchPopover && connectedPortalSlug"
@@ -1397,7 +1440,10 @@ export default {
       @insert="handleInsert"
       @close="onSearchPopoverClose"
     />
+    <!-- Only the Reply tab renders the editor and the send panel (this one
+      and the bottom panel below): a tab that shows no reply cannot send one. -->
     <Transition
+      v-if="composerTab === 'reply'"
       mode="out-in"
       enter-active-class="transition-all duration-300 ease-out"
       enter-from-class="opacity-0 translate-y-2 scale-[0.98]"
@@ -1514,6 +1560,7 @@ export default {
     </Transition>
 
     <Transition
+      v-if="composerTab === 'reply'"
       mode="out-in"
       enter-active-class="transition-all duration-300 ease-out"
       enter-from-class="opacity-0 translate-y-2 scale-[0.98]"

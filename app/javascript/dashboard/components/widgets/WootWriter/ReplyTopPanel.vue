@@ -19,6 +19,19 @@ export default {
     OnClickOutside: vOnClickOutside,
   },
   props: {
+    // Which composer surface is showing: 'instruct' | 'reply' | 'memo'.
+    // Owned by ReplyBox; only the Reply tab can send, and only it shows the
+    // private-note switch.
+    composerTab: {
+      type: String,
+      default: 'reply',
+    },
+    // The Instruct tab is offered only while the draft dock has a draft to
+    // act on.
+    instructAvailable: {
+      type: Boolean,
+      default: false,
+    },
     mode: {
       type: String,
       default: REPLY_EDITOR_MODES.REPLY,
@@ -56,7 +69,12 @@ export default {
       default: false,
     },
   },
-  emits: ['setReplyMode', 'toggleEditorSize', 'executeCopilotAction'],
+  emits: [
+    'setReplyMode',
+    'setComposerTab',
+    'toggleEditorSize',
+    'executeCopilotAction',
+  ],
   setup(props, { emit }) {
     const setReplyMode = mode => {
       emit('setReplyMode', mode);
@@ -93,18 +111,26 @@ export default {
       showCopilotMenu.value = false;
     };
 
-    // Key hints shown on the toggles. `⌥` is how the shortcuts modal writes
-    // Alt; these are the two bindings registered just below.
-    const replyKeyHint = '⌥L';
+    // Key hint shown on the private-note switch. `⌥` is how the shortcuts
+    // modal writes Alt; Alt+P and Alt+L are registered just below.
     const noteKeyHint = '⌥P';
 
+    // Alt+P and Alt+L flip the reply mode, so they act only in the Reply tab,
+    // read at key time: from Instruct or Memo they would change a mode nothing
+    // on screen shows, and the supporter would come back to a Reply tab in a
+    // mode they did not pick.
+    const inReplyTab = () => props.composerTab === 'reply';
     const keyboardEvents = {
       'Alt+KeyP': {
-        action: () => handleNoteClick(),
+        action: () => {
+          if (inReplyTab()) handleNoteClick();
+        },
         allowOnFocusedInput: false,
       },
       'Alt+KeyL': {
-        action: () => handleReplyClick(),
+        action: () => {
+          if (inReplyTab()) handleReplyClick();
+        },
         allowOnFocusedInput: false,
       },
     };
@@ -120,7 +146,6 @@ export default {
       copilotToggleRef,
       toggleCopilotMenu,
       handleClickOutside,
-      replyKeyHint,
       noteKeyHint,
     };
   },
@@ -129,15 +154,14 @@ export default {
       // A restricted reply forces note mode, as the previous toggle component did.
       return this.isReplyRestricted || this.mode === REPLY_EDITOR_MODES.NOTE;
     },
-    replyButtonClass() {
-      return {
-        'is-active': !this.isOnNote,
-      };
-    },
-    noteButtonClass() {
-      return {
-        'is-active': this.isOnNote,
-      };
+    tabs() {
+      return [
+        ...(this.instructAvailable
+          ? [{ key: 'instruct', label: 'CONVERSATION.REPLYBOX.INSTRUCT' }]
+          : []),
+        { key: 'reply', label: 'CONVERSATION.REPLYBOX.REPLY' },
+        { key: 'memo', label: 'CONVERSATION.REPLYBOX.MEMO' },
+      ];
     },
     charLengthClass() {
       return this.charactersRemaining < 0 ? 'text-n-ruby-9' : 'text-n-slate-11';
@@ -148,6 +172,15 @@ export default {
         : `${this.charactersRemaining} ${CHAR_LENGTH_WARNING.UNDER_50}`;
     },
   },
+  methods: {
+    // On, the switch turns the note back into a reply; off, it makes the
+    // reply a note. A restricted channel keeps it on and disabled, and
+    // handleReplyClick refuses there too.
+    togglePrivateNote() {
+      if (this.isOnNote) this.handleReplyClick();
+      else this.handleNoteClick();
+    },
+  },
 };
 </script>
 
@@ -155,30 +188,38 @@ export default {
   <div
     class="flex justify-between gap-2 h-[3.25rem] items-center ltr:pl-3 ltr:pr-2 rtl:pr-3 rtl:pl-2"
   >
-    <div class="flex items-center gap-1.5">
+    <div class="flex items-center gap-1.5" role="tablist">
       <button
+        v-for="tab in tabs"
+        :key="tab.key"
         type="button"
+        role="tab"
         class="mode-toggle"
-        :class="replyButtonClass"
-        :disabled="disabled || isReplyRestricted"
-        :aria-pressed="!isOnNote"
-        @click="handleReplyClick"
+        :class="{ 'is-active': composerTab === tab.key }"
+        :aria-selected="composerTab === tab.key"
+        :data-testid="`composer-tab-${tab.key}`"
+        @click="$emit('setComposerTab', tab.key)"
       >
-        {{ $t('CONVERSATION.REPLYBOX.REPLY') }}
-        <kbd class="mode-toggle__key">{{ replyKeyHint }}</kbd>
-      </button>
-      <button
-        type="button"
-        class="mode-toggle"
-        :class="noteButtonClass"
-        :disabled="disabled"
-        :aria-pressed="isOnNote"
-        @click="handleNoteClick"
-      >
-        {{ $t('CONVERSATION.REPLYBOX.PRIVATE_NOTE') }}
-        <kbd class="mode-toggle__key">{{ noteKeyHint }}</kbd>
+        {{ $t(tab.label) }}
       </button>
     </div>
+    <button
+      v-if="composerTab === 'reply'"
+      type="button"
+      role="switch"
+      class="note-switch"
+      :class="{ 'is-on': isOnNote }"
+      :aria-checked="isOnNote ? 'true' : 'false'"
+      :disabled="disabled || isReplyRestricted"
+      data-testid="private-note-toggle"
+      @click="togglePrivateNote"
+    >
+      <span class="note-switch__track" aria-hidden="true">
+        <span class="note-switch__thumb" />
+      </span>
+      {{ $t('CONVERSATION.REPLYBOX.PRIVATE_NOTE') }}
+      <kbd class="mode-toggle__key">{{ noteKeyHint }}</kbd>
+    </button>
     <div class="flex items-center mx-4 my-0">
       <div v-if="isMessageLengthReachingThreshold" class="text-xs">
         <span :class="charLengthClass">
@@ -225,7 +266,7 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-// Reply / Private note are two bordered toggles rather than one sliding pill:
+// The composer tabs are bordered toggles rather than one sliding pill:
 // 4px 10px, control radius, weight 500, active taking the tank ground.
 .mode-toggle {
   @apply inline-flex items-center gap-1.5 py-1 px-2.5 text-sm font-medium border rounded-[var(--g-radius-control)] border-[var(--g-border)] text-[var(--g-text-muted)] transition-colors duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)];
@@ -240,6 +281,36 @@ export default {
 
   &:disabled {
     @apply opacity-50 cursor-not-allowed;
+  }
+}
+
+// Private note is a switch inside the Reply tab, not a tab of its own: the
+// canvas draws Instruct · Reply · Memo, and supporters still need notes.
+.note-switch {
+  @apply inline-flex items-center gap-2 ltr:ml-auto rtl:mr-auto text-sm font-medium text-[var(--g-text-muted)] bg-transparent border-0;
+
+  &.is-on {
+    @apply text-[var(--g-text)];
+  }
+
+  &:disabled {
+    @apply opacity-60 cursor-not-allowed;
+  }
+}
+
+.note-switch__track {
+  @apply relative inline-flex items-center w-7 h-4 rounded-full bg-[var(--g-slate-tint-strong)] transition-colors duration-[var(--g-dur-hover)];
+
+  .is-on & {
+    @apply bg-[var(--g-agent)];
+  }
+}
+
+.note-switch__thumb {
+  @apply absolute size-3 rounded-full bg-white ltr:left-0.5 rtl:right-0.5 transition-transform duration-[var(--g-dur-hover)];
+
+  .is-on & {
+    @apply ltr:translate-x-3 rtl:-translate-x-3;
   }
 }
 

@@ -507,3 +507,37 @@ describe('ReplyBox gotchu stamp', () => {
     expect(insertedDraftFor(1)).toBeNull();
   });
 });
+
+describe('composer tabs', () => {
+  const email = { inbox: { channel_type: 'Channel::Email' } };
+
+  it.each(['instruct', 'memo'])(
+    'renders no reply editor and no send panel in the %s tab',
+    async tab => {
+      const { wrapper } = mountWith(email);
+      await wrapper.setData({ composerTab: tab });
+      expect(
+        wrapper.findComponent({ name: 'WootMessageEditor' }).exists()
+      ).toBe(false);
+      expect(wrapper.findComponent({ name: 'ReplyBottomPanel' }).exists()).toBe(
+        false
+      );
+    }
+  );
+
+  it.each(['instruct', 'memo'])(
+    'sends nothing on Enter or Mod+Enter in the %s tab, even with focus left behind',
+    async tab => {
+      const { wrapper } = mountWith(email);
+      await wrapper.setData({ composerTab: tab, isFocused: true });
+      expect(wrapper.vm.isAValidEvent('enter')).toBe(false);
+      expect(wrapper.vm.isAValidEvent('cmd_enter')).toBe(false);
+    }
+  );
+
+  it('still sends on the hotkey in the Reply tab', async () => {
+    const { wrapper } = mountWith(email);
+    await wrapper.setData({ composerTab: 'reply', isFocused: true });
+    expect(wrapper.vm.isAValidEvent('cmd_enter')).toBe(true);
+  });
+});

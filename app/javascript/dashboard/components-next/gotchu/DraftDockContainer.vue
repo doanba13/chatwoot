@@ -43,7 +43,16 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  // The composer's Instruct tab (agent-screens plan decision 10): the
+  // instruction state stays here, and this only says whether its field is
+  // open. ReplyBox passes false on the Reply and Memo tabs.
+  instructMode: {
+    type: Boolean,
+    default: true,
+  },
 });
+
+const emit = defineEmits(['draftState']);
 
 /**
  * Whether the gestures that reach a CUSTOMER are reachable from this deployment.
@@ -624,6 +633,15 @@ const versionLabel = computed(() => {
   return t('GOTCHU.DRAFT.FROM_INSTRUCTION', { version: to.version });
 });
 
+// Whether the dock holds a draft to act on, for the composer's tabs: ReplyBox
+// offers Instruct only while it does. Display only; nothing reads it to send.
+const hasDraft = computed(
+  () => waiting.value || ['ready', 'streaming'].includes(view.value.state)
+);
+watch(hasDraft, value => emit('draftState', { hasDraft: value }), {
+  immediate: true,
+});
+
 // The sentence for each step lives in traceWords.js, in one place.
 const traceSteps = computed(() =>
   (view.value.trace ?? []).map(step => wordStep(step, t, te)).filter(Boolean)
@@ -707,12 +725,15 @@ const dockStreamingText = computed(() =>
     failed submission has to give back. The dock's own instruction row is part of
     the customer-facing set above and stays dark with it. -->
   <DraftInstruct
-    v-if="canInstruct"
+    v-if="canInstruct && instructMode"
     v-model="instruction"
     :busy="submitting"
-    :message="instructNotice ? $t(instructNotice.key) : null"
+    :message="
+      instructNotice ? $t(instructNotice.key) : $t('GOTCHU.DRAFT.INSTRUCT_HINT')
+    "
     :tone="instructNotice ? instructNotice.tone : 'info'"
     :max-length="MAX_INSTRUCTION_CHARS"
+    autofocus
     @submit="onInstruct"
   />
 </template>

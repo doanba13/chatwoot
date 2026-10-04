@@ -285,7 +285,9 @@
         "REMOVE_PREVIEW": "Zitierte E-Mail-Themen entfernen",
         "COLLAPSE": "Vorschau ausblenden",
         "EXPAND": "Vorschau erweitern"
-      }
+      },
+      "INSTRUCT": "Instruct",
+      "MEMO": "Memo"
     },
     "VISIBLE_TO_AGENTS": "Privater Hinweis: Nur für Sie und Ihr Team sichtbar",
     "CHANGE_STATUS": "Gesprächsstatus geändert",

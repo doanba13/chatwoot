@@ -47,6 +47,11 @@ const props = defineProps({
     type: Number,
     default: 2000,
   },
+  // Focus the field when it mounts: the composer's Instruct tab opens it.
+  autofocus: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['update:modelValue', 'submit']);
@@ -88,6 +93,7 @@ const toneClass = computed(() => {
         :disabled="busy"
         :maxlength="maxLength"
         :placeholder="$t('GOTCHU.DRAFT.INSTRUCT_PLACEHOLDER')"
+        :autofocus="autofocus"
         @update:model-value="emit('update:modelValue', $event)"
         @enter="submit"
       />

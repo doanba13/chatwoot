@@ -126,7 +126,8 @@
     "DRAFT": {
       "HEADER": "Draft v{version} · from {procedure} · tier: {tier}",
       "HEADER_NO_PROCEDURE": "Draft v{version} · no procedure matched",
-      "HEADER_NO_TIER": "Draft v{version} · from {procedure}"
+      "HEADER_NO_TIER": "Draft v{version} · from {procedure}",
+      "INSTRUCT_HINT": "Plain words are enough. Gotchu keeps the format."
     }
   }
 }
