@@ -86,6 +86,7 @@ const modelValue = defineModel({
           :key="option.value"
           :value="option.value"
           :disabled="option.disabled"
+          :title="option.title || undefined"
         >
           {{ option.label }}
         </option>

@@ -44,11 +44,14 @@ export const factOptions = (facts, sending, t, te) =>
   facts.map(f => {
     const blocked = sending !== 'no_change' && f.origin === 'customer_text';
     const key = `${R}FACTS.${f.name.toUpperCase()}`;
+    const reasonKey = blocked ? `${R}LANGUAGE_NEEDS_NO_CHANGE` : null;
     return {
       value: f.name,
       label: te(key) ? t(key) : f.name,
       disabled: blocked,
-      reasonKey: blocked ? `${R}LANGUAGE_NEEDS_NO_CHANGE` : null,
+      reasonKey,
+      // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys
+      title: reasonKey ? t(reasonKey) : undefined,
     };
   });
 

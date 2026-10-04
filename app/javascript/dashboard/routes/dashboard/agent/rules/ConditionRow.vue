@@ -97,11 +97,18 @@ const booleanValue = computed({
   },
 });
 
-// A disabled fact cannot explain itself inside a native select, so the
-// reasons are said under the row (spec §5.2: Language with a sending effect).
-const reasons = computed(() => [
-  ...new Set(options.value.filter(o => o.disabled).map(o => o.reasonKey)),
-]);
+// A disabled fact explains itself on its own option (a title), and under the
+// row only where it explains something (spec §5.2: Language with a sending
+// effect): while a fact is still being picked, or when the row's own fact is
+// the disabled one. Under a row already reading "Order contains" it said
+// nothing about that row (staging recheck, 2026-10-05).
+const reasons = computed(() => {
+  const disabled = options.value.filter(o => o.disabled);
+  const relevant = condition.value.fact
+    ? disabled.filter(o => o.value === condition.value.fact)
+    : disabled;
+  return [...new Set(relevant.map(o => o.reasonKey))];
+});
 </script>
 
 <template>

@@ -86,8 +86,9 @@ const used = rule => {
 const SENDING_TONE = {
   never_auto:
     'px-2 py-0.5 rounded-full bg-[var(--g-slate-tint)] text-[var(--g-text)]',
+  // Ink, as board 5 draws it: a hand-over is the strongest hold, not an error.
   hand_over:
-    'px-2 py-0.5 rounded-full bg-[var(--g-danger-tint)] text-[var(--g-danger-text)]',
+    'px-2 py-0.5 rounded-full bg-[var(--g-ink)] text-[var(--g-on-ink)]',
   no_change: 'text-[var(--g-text-muted)]',
 };
 
