@@ -26,6 +26,21 @@ describe('wordStep', () => {
       result: 'match 0.71, next best 0.52',
     });
   });
+  // The gateway sends raw cosine scores; board 1 shows two decimals, and a
+  // runner-up that is absent or no different from the score is no runner-up.
+  it.each([
+    [0.8887976514749183, 0.5212345, 'match 0.89, next best 0.52'],
+    [0.8887976514749183, 0.8887976514749183, 'match 0.89'],
+    [0.8887976514749183, null, 'match 0.89'],
+  ])('rounds a match of %s against %s', (score, runnerUp, result) => {
+    expect(
+      wordStep(
+        { kind: 'procedure', title: 'W', version: 1, score, runnerUp },
+        t,
+        te
+      ).result
+    ).toBe(result);
+  });
   it('still words an old procedure step with a title only, with the existing sentence', () => {
     expect(wordStep({ kind: 'procedure', title: 'X' }, t, te).did).toBe(
       'Followed "X"'
@@ -91,7 +106,9 @@ describe('wordStep', () => {
         t,
         te
       ).result
-    ).toBe('Late parcels · could not check has_tracking, so it holds sending');
+    ).toBe(
+      'Late parcels · could not check “Has tracking”, so it holds sending'
+    );
   });
   it('never says a text-only rule holds sending when its fact was missing', () => {
     expect(
@@ -112,7 +129,7 @@ describe('wordStep', () => {
         t,
         te
       ).result
-    ).toBe('Gift wrap · could not check order_tag, so its text was left out');
+    ).toBe('Gift wrap · could not check “Order tag”, so its text was left out');
   });
   it.each([
     [

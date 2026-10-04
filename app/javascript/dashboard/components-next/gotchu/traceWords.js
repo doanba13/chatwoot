@@ -53,19 +53,25 @@ const wordFulfillment = (step, t) => ({
   ]),
 });
 
+// Board 1's "match 0.71, next best 0.52": two decimals. A runner-up that is
+// absent, or rounds to the score itself (one procedure, margin 0), is none.
+const twoPlaces = n => Number(n).toFixed(2);
+const wordMatch = (step, t) => {
+  if (step.score == null) return '';
+  const score = twoPlaces(step.score);
+  const next = step.runnerUp == null ? null : twoPlaces(step.runnerUp);
+  return next == null || next === score
+    ? t(`${T}MATCH_ONLY`, { score })
+    : t(`${T}MATCH`, { score, next });
+};
+
 const wordProcedure = (step, t) => ({
   kind: 'procedure',
   did:
     step.version != null
       ? t(`${T}PROCEDURE_V`, { title: step.title, version: step.version })
       : t(`${T}PROCEDURE`, { title: step.title }),
-  result:
-    step.score == null
-      ? ''
-      : t(step.runnerUp == null ? `${T}MATCH_ONLY` : `${T}MATCH`, {
-          score: step.score,
-          next: step.runnerUp,
-        }),
+  result: wordMatch(step, t),
 });
 
 const wordMemo = (step, t) => ({
@@ -81,7 +87,15 @@ const holdsSending = effect => effect && effect !== 'none';
 // Why a skipped row was not shown. A missing fact holds sending only for a
 // rule with a sending effect; the cap and an unreadable or out-of-scope row
 // drop text only, so a sending effect is never left unsaid (spec §8.1, §8.4).
-const skippedPhrase = (rule, t) => {
+// A fact in the words the rule editor uses for it ("Order contains"), never
+// its machine name; one this build has no words for stays as it came.
+const factWords = (fact, t, te) => {
+  const key = `GOTCHU_AGENT.RULE.FACTS.${String(fact).toUpperCase()}`;
+  // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys
+  return te(key) ? `“${t(key)}”` : fact;
+};
+
+const skippedPhrase = (rule, t, te) => {
   const missing = rule.missing ?? [];
   const stillHolds = holdsSending(rule.effect) ? t(`${T}RULE_STILL_HOLDS`) : '';
   if (missing.length === 1 && missing[0] === 'inbox') {
@@ -91,7 +105,7 @@ const skippedPhrase = (rule, t) => {
     const key = holdsSending(rule.effect)
       ? `${T}RULE_MISSING`
       : `${T}RULE_MISSING_TEXT_ONLY`;
-    return t(key, { facts: missing.join(', ') });
+    return t(key, { facts: missing.map(f => factWords(f, t, te)).join(', ') });
   }
   const REASONS = {
     render_cap: `${T}RULE_RENDER_CAP`,
@@ -106,15 +120,15 @@ const APPLIED_PHRASES = {
   none: `${T}RULE_ADDS_TEXT`,
 };
 
-const rulePhrase = (rule, t) => {
+const rulePhrase = (rule, t, te) => {
   if (rule.outcome === 'would_apply') return t(`${T}RULE_TESTING`);
-  if (rule.outcome === 'skipped') return skippedPhrase(rule, t);
+  if (rule.outcome === 'skipped') return skippedPhrase(rule, t, te);
   return t(APPLIED_PHRASES[rule.effect] ?? APPLIED_PHRASES.none);
 };
 
 // Testing rules last, so a supporter never reads one as having shaped the
 // draft.
-const wordRules = (step, t) => {
+const wordRules = (step, t, te) => {
   const rules = step.rules ?? [];
   const applied = rules.filter(r => r.outcome === 'applied').length;
   const ordered = [
@@ -124,7 +138,7 @@ const wordRules = (step, t) => {
   return {
     kind: 'rule',
     did: t(`${T}RULES`, { n: applied }),
-    result: ordered.map(r => `${r.title} · ${rulePhrase(r, t)}`).join('; '),
+    result: ordered.map(r => `${r.title} · ${rulePhrase(r, t, te)}`).join('; '),
   };
 };
 
@@ -175,7 +189,7 @@ export const wordStep = (step, t, te) => {
         result: '',
       };
     case 'rule':
-      return wordRules(step, t);
+      return wordRules(step, t, te);
     case 'read':
       return wordRead(step, t, te);
     case 'thread':
