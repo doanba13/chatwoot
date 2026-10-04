@@ -12,6 +12,9 @@ const props = defineProps({
   active: { type: Boolean, default: false },
   component: { type: Function, default: null },
   badgeCount: { type: [Number, String], default: 0 },
+  badgeTone: { type: String, default: 'muted' },
+  // A muted second word after the label, e.g. "all stores" on a shared inbox.
+  sublabel: { type: String, default: '' },
   hideTreeLine: { type: Boolean, default: false },
   thinTreeLine: { type: Boolean, default: false },
 });
@@ -59,8 +62,13 @@ const TREE_CONNECTOR =
         <span v-if="icon" class="size-4 grid place-content-center rounded-full">
           <Icon :icon="icon" class="size-4 inline-block" />
         </span>
-        <div class="flex-1 truncate min-w-0 text-sm">{{ label }}</div>
-        <SidebarUnreadBadge :count="badgeCount" />
+        <div class="flex-1 truncate min-w-0 text-sm">
+          {{ label }}
+          <span v-if="sublabel" class="text-xs text-n-slate-10">
+            {{ sublabel }}
+          </span>
+        </div>
+        <SidebarUnreadBadge :count="badgeCount" :tone="badgeTone" />
       </template>
     </component>
   </Policy>

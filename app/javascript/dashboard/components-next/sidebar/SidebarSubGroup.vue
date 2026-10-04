@@ -22,6 +22,9 @@ const props = defineProps({
   collapsible: { type: Boolean, default: false },
   showTreeLine: { type: Boolean, default: false },
   endTreeLine: { type: Boolean, default: false },
+  // Optional: a sub-group that also routes (a store in the rail). Its label
+  // becomes a link and the chevron alone toggles.
+  to: { type: [String, Object], default: null },
 });
 
 const emit = defineEmits(['update-sort']);
@@ -135,6 +138,7 @@ watch([hasActiveChild, storageKey], expandSubGroupOnActiveChild, {
         :is-expanded="isSubGroupExpanded"
         :show-tree-line="showTreeLine"
         :end-tree-line="endTreeLine"
+        :to="to"
         :sort-options="sortOptions"
         :active-sort="activeSort"
         class="my-1"

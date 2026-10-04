@@ -1,4 +1,71 @@
+import { h } from 'vue';
 import { QUEUES } from '../gotchu/queues';
+
+const CHANNEL_ICONS = {
+  email: 'i-lucide-mail',
+  messenger: 'i-lucide-message-circle',
+  web: 'i-lucide-globe',
+};
+
+// A store's dot, --g-store-1..5 by position: the order storeIndex uses.
+const storeDot = index => () =>
+  h('span', {
+    class: 'inline-block size-2 rounded-full',
+    style: { background: `var(--g-store-${(index % 5) + 1})` },
+  });
+
+// Stores and inboxes (board 1): each store routes to its own conversations
+// and expands to its mapped inboxes, then the account's unmapped email inbox
+// (the shared Support Mail) as "Email, via …". The unmapped inboxes follow
+// the stores, labelled with their own name and "all stores". A store with no
+// inbox the signed-in agent can see is a plain entry, so it does not vanish.
+const storesGroup = ({ t, accountScopedRoute, stores, inboxes }) => {
+  const mapped = new Set(stores.flatMap(s => s.inboxes.map(i => i.id)));
+  const nameOf = id => inboxes.find(i => i.id === id)?.name ?? `#${id}`;
+  const unmapped = inboxes.filter(i => !mapped.has(i.id));
+  const inboxRoute = id =>
+    accountScopedRoute('inbox_dashboard', { inbox_id: id });
+  const storeEntries = stores.map((store, index) => {
+    const own = store.inboxes.map(inbox => ({
+      name: `store-${store.key}-inbox-${inbox.id}`,
+      label: nameOf(inbox.id),
+      icon: CHANNEL_ICONS[inbox.channel] ?? 'i-lucide-inbox',
+      to: inboxRoute(inbox.id),
+    }));
+    const shared = unmapped
+      .filter(inbox => inbox.channel === 'email')
+      .map(inbox => ({
+        name: `store-${store.key}-shared-${inbox.id}`,
+        label: t('SIDEBAR.EMAIL_VIA_SHARED', { name: inbox.name }),
+        icon: CHANNEL_ICONS.email,
+        to: inboxRoute(inbox.id),
+        shared: true,
+      }));
+    const children = [...own, ...shared];
+    return {
+      name: `store-${store.key}`,
+      label: store.name,
+      icon: storeDot(index),
+      to: accountScopedRoute('queue_conversations', {
+        queue: `store-${store.key}`,
+      }),
+      ...(children.length ? { children, collapsible: true } : {}),
+    };
+  });
+  const sharedEntries = unmapped.map(inbox => ({
+    name: `shared-${inbox.id}`,
+    label: inbox.name,
+    sublabel: t('SIDEBAR.ALL_STORES'),
+    icon: CHANNEL_ICONS[inbox.channel] ?? 'i-lucide-inbox',
+    to: inboxRoute(inbox.id),
+  }));
+  return {
+    name: 'Stores',
+    label: t('SIDEBAR.STORES'),
+    icon: 'i-lucide-store',
+    children: [...storeEntries, ...sharedEntries],
+  };
+};
 
 // The rail, agent first (spec 2026-10-03 §4). Chatwoot's Inbox, Captain,
 // Calls, Companies and Campaigns are deliberately absent; the spec beside
@@ -15,7 +82,12 @@ export function gotchuMenu({
   helpCenterGroup,
   contactsTo,
   folders = [],
+  counts = {},
+  stores = [],
+  inboxes = [],
 }) {
+  // A count that could not be read is undefined, and renders no badge.
+  const queueCounts = counts.queue ?? {};
   return [
     {
       name: 'Agent',
@@ -39,6 +111,8 @@ export function gotchuMenu({
             'agent_procedure_new',
             'agent_procedure',
           ],
+          badgeCount: counts.procedures,
+          badgeTone: 'muted',
         },
         {
           name: 'Rules',
@@ -46,6 +120,8 @@ export function gotchuMenu({
           icon: 'i-lucide-sliders-horizontal',
           to: accountScopedRoute('agent_rules'),
           activeOn: ['agent_rules', 'agent_rule_new', 'agent_rule'],
+          badgeCount: counts.rules,
+          badgeTone: 'muted',
         },
         {
           name: 'Memos',
@@ -53,6 +129,8 @@ export function gotchuMenu({
           icon: 'i-lucide-bookmark',
           to: accountScopedRoute('agent_memos'),
           activeOn: ['agent_memos', 'agent_memo_new', 'agent_memo'],
+          badgeCount: counts.memosPending,
+          badgeTone: 'hot',
         },
       ],
     },
@@ -69,6 +147,10 @@ export function gotchuMenu({
           icon: queue.icon,
           to: accountScopedRoute('queue_conversations', { queue: queue.key }),
           activeOn: ['queue_conversations', 'conversation_through_queue'],
+          // Needs you is the one queue counted in the rail, as a hot count.
+          ...(queue.mineOrUnassigned
+            ? { badgeCount: queueCounts[queue.key], badgeTone: 'hot' }
+            : {}),
         })),
         {
           name: 'All',
@@ -94,6 +176,7 @@ export function gotchuMenu({
         })),
       ],
     },
+    storesGroup({ t, accountScopedRoute, stores, inboxes }),
     // Until the per-procedure Insights page exists, Insights is Chatwoot's
     // report pages, passed through unchanged so each keeps its own permission
     // gate: an agent allowed some reports but not the overview still sees them.

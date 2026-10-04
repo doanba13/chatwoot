@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
@@ -20,6 +20,12 @@ import SidebarAccountSwitcher from './SidebarAccountSwitcher.vue';
 import Logo from 'next/icon/Logo.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
 import { gotchuMenu } from './gotchuMenu';
+import { useGotchuCounts } from './useGotchuCounts';
+import {
+  ensureLoaded as ensureStoresLoaded,
+  stores as gotchuStores,
+  inboxes as gotchuInboxes,
+} from 'dashboard/components-next/gotchu/agent/sharedStores';
 
 const props = defineProps({
   isMobileSidebarOpen: {
@@ -50,6 +56,16 @@ const { width: windowWidth } = useWindowSize();
 const isMobile = computed(() => windowWidth.value < 768);
 
 const accountId = useMapGetter('getCurrentAccountId');
+
+// Gotchu's rail counts and the stores and inboxes group. The store list is the
+// shared, account-keyed one the conversation cards read, so an account switch
+// reloads it rather than showing the previous account's stores.
+const currentUser = useMapGetter('getCurrentUser');
+const { counts: gotchuCounts } = useGotchuCounts({
+  t,
+  userId: computed(() => currentUser.value?.id),
+});
+watch(accountId, id => ensureStoresLoaded(id), { immediate: true });
 const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
@@ -480,6 +496,9 @@ const menuItems = computed(() =>
       { page: 1, search: undefined }
     ),
     folders: conversationCustomViews.value,
+    counts: gotchuCounts.value,
+    stores: gotchuStores.value,
+    inboxes: gotchuInboxes.value,
   })
 );
 </script>

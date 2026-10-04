@@ -15,6 +15,15 @@ module Gotchu
         attribute_display_name: 'Gotchu procedure',
         attribute_display_type: 'text',
         attribute_values: []
+      },
+      # Declared so the conversation filter can query it: the rail's store
+      # entries are virtual folders over it. The webhook receiver writes it;
+      # the resolver reads it, which is why the attributes panel hides it.
+      {
+        attribute_key: 'store_key',
+        attribute_display_name: 'Store',
+        attribute_display_type: 'text',
+        attribute_values: []
       }
     ].freeze
 

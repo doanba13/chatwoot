@@ -27,6 +27,7 @@ describe('gotchuMenu', () => {
     expect(build().map(item => item.name)).toEqual([
       'Agent',
       'Queue',
+      'Stores',
       'Insights',
       'Customers',
       'Portals',
@@ -152,5 +153,45 @@ describe('gotchuMenu', () => {
       'contacts_edit_segment',
       'contacts_edit_label',
     ]);
+  });
+
+  it('puts a hot count on Memos when proposals wait, and lists stores with their inboxes, shared mail last', () => {
+    const menu = build({
+      counts: { procedures: 6, rules: 4, memosPending: 2, queue: {} },
+      stores: [
+        {
+          key: 'persoliebe',
+          name: 'persoliebe',
+          inboxes: [{ id: 2, channel: 'messenger' }],
+        },
+      ],
+      inboxes: [
+        { id: 1, name: 'Support Mail', channel: 'email' },
+        { id: 2, name: 'Messenger', channel: 'messenger' },
+      ],
+    });
+    const agent = menu.find(g => g.name === 'Agent');
+    expect(agent.children.find(c => c.name === 'Memos')).toMatchObject({
+      badgeCount: 2,
+      badgeTone: 'hot',
+    });
+    const stores = menu.find(g => g.name === 'Stores');
+    expect(stores.children.map(c => c.name)).toEqual([
+      'store-persoliebe',
+      'shared-1',
+    ]);
+    expect(stores.children[0].to).toEqual({
+      name: 'queue_conversations',
+      params: { queue: 'store-persoliebe' },
+    });
+    expect(stores.children[0].children.map(c => c.label)).toEqual([
+      'Messenger',
+      'SIDEBAR.EMAIL_VIA_SHARED',
+    ]);
+  });
+
+  it('renders no badge for a count it could not read', () => {
+    const agent = build({ counts: {} }).find(g => g.name === 'Agent');
+    expect(agent.children.every(c => !c.badgeCount)).toBe(true);
   });
 });

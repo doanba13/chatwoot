@@ -44,8 +44,19 @@ const dragging = ref(false);
 const [showAllAttributes, toggleShowAllAttributes] = useToggle(false);
 
 const currentChat = computed(() => getters.getSelectedChat.value);
+// Written by Gotchu to record or route what the agent does; never for hand
+// editing. store_key in particular is read by the resolver. Display only.
+const MACHINE_ATTRIBUTES = new Set([
+  'store_key',
+  'gotchu_state',
+  'gotchu_procedure',
+  'gotchu_reason',
+  'gotchu_tier',
+]);
 const attributes = computed(() =>
-  getters['attributes/getAttributesByModel'].value(props.attributeType)
+  getters['attributes/getAttributesByModel']
+    .value(props.attributeType)
+    .filter(a => !MACHINE_ATTRIBUTES.has(a.attribute_key))
 );
 
 const contactIdentifier = computed(

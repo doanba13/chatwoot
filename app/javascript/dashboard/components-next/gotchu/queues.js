@@ -76,6 +76,25 @@ const payloadFor = (states, userId) => {
   );
 };
 
+// A store in the rail is a virtual folder over the conversation's
+// `store_key`, routed through the queue route as `store-<key>`. The filter
+// can query it because `store_key` is a declared attribute
+// (Gotchu::QueueAttributes). Display routing only.
+export const STORE_QUEUE_PREFIX = 'store-';
+
+export function storeFolder(key) {
+  if (!key) return undefined;
+  return {
+    id: `store:${key}`,
+    name: key,
+    query: {
+      payload: [
+        { ...condition('store_key', 'equal_to', [key]), query_operator: null },
+      ],
+    },
+  };
+}
+
 // The tabs under a queue's header (board 1): All · Drafts · Handed over.
 // Each narrows the queue by `gotchu_state`, never widens it.
 export const QUEUE_TABS = [

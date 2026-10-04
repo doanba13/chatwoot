@@ -35,6 +35,11 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  // With a route, the label is a link and only the chevron toggles.
+  to: {
+    type: [String, Object],
+    default: null,
+  },
 });
 
 const emit = defineEmits(['toggle', 'update-sort']);
@@ -48,9 +53,10 @@ const TREE_ELBOW =
 <template>
   <div class="relative min-w-0" :class="{ 'ms-5': collapsible }">
     <component
-      :is="collapsible ? 'button' : 'div'"
-      :type="collapsible ? 'button' : undefined"
-      :aria-expanded="collapsible ? isExpanded : undefined"
+      :is="to ? 'router-link' : collapsible ? 'button' : 'div'"
+      :to="to || undefined"
+      :type="collapsible && !to ? 'button' : undefined"
+      :aria-expanded="collapsible && !to ? isExpanded : undefined"
       :title="label"
       class="relative flex h-8 w-full min-w-0 items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-n-slate-10 select-none"
       :class="[
@@ -58,14 +64,14 @@ const TREE_ELBOW =
         showTreeLine &&
           (endTreeLine ? `before:h-3 ${TREE_ELBOW}` : 'before:-bottom-1'),
         {
-          'pointer-events-none': !collapsible,
-          'cursor-pointer hover:bg-n-alpha-2': collapsible,
+          'pointer-events-none': !collapsible && !to,
+          'cursor-pointer hover:bg-n-alpha-2': collapsible || to,
           'pe-14': collapsible && sortOptions.length,
           'pe-8': collapsible && !sortOptions.length,
           'pe-10': !collapsible && sortOptions.length,
         },
       ]"
-      @click.stop="collapsible ? emit('toggle') : undefined"
+      @click.stop="collapsible && !to ? emit('toggle') : undefined"
     >
       <div class="inline-flex min-w-0 items-center gap-2">
         <Icon v-if="icon" :icon="icon" class="size-4 flex-shrink-0" />

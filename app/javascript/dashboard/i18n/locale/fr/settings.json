@@ -309,6 +309,9 @@
   },
   "SIDEBAR": {
     "AGENT_OVERVIEW": "Overview",
+    "STORES": "Stores and inboxes",
+    "EMAIL_VIA_SHARED": "Email, via {name}",
+    "ALL_STORES": "all stores",
     "RULES": "Rules",
     "MEMOS": "Memos",
     "NO_ITEMS": "Aucun élément",
