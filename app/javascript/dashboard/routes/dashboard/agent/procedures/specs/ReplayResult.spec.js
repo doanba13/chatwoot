@@ -75,7 +75,10 @@ describe('ReplayResult', () => {
     };
 
     const text = mountComponent(result, 2).text();
-    expect(text).toContain('more exist in the window than this scan covers');
+    expect(text).toContain(
+      'Scanned the last 200 conversations — more exist in the window'
+    );
+    expect(text).not.toContain('--');
     // Never claims the 30-day window when the scan was actually capped by
     // conversation count -- replayScopeView's own honesty rule.
     expect(text).not.toContain('last 30 days');
