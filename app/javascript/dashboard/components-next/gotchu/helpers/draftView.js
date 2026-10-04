@@ -8,7 +8,7 @@
  *
  * The payload contract, from apps/gateway/src/handlers.ts (`DraftBody`):
  *
- *   { cycle: { id, state, storeKey, expiresAt } | null,
+ *   { cycle: { id, state, storeKey, expiresAt, tier } | null,
  *     draft: { version, body } | null }
  *
  * `cycle: null` and `draft: null` are both ordinary outcomes there, not errors.
@@ -153,6 +153,21 @@ const viewFrom = payload => {
 };
 
 /**
+ * The cycle's own tier (`reply_cycle.tier`), the row the release requires to
+ * read `auto` before it approves: a string, `null` when the row has none, and
+ * `undefined` when the gateway predates the field. That last one is its own
+ * answer on purpose: "this gateway does not say" is not "the row says
+ * nothing", and the header treats them differently.
+ */
+const cycleTierOf = payload => {
+  const cycle = payload?.cycle;
+  if (!cycle || typeof cycle !== 'object' || !('tier' in cycle)) {
+    return undefined;
+  }
+  return typeof cycle.tier === 'string' ? cycle.tier : null;
+};
+
+/**
  * What the agent looked at to write the draft, as the gateway's structured
  * steps — worded by the container, not here. Carried on every view, an empty
  * list included, so nothing downstream has to ask whether the field exists.
@@ -160,4 +175,5 @@ const viewFrom = payload => {
 export const draftViewFrom = payload => ({
   ...viewFrom(payload),
   trace: Array.isArray(payload?.trace) ? payload.trace : [],
+  cycleTier: cycleTierOf(payload),
 });

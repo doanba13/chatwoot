@@ -1380,52 +1380,91 @@ describe('DraftDockContainer instruction outcome', () => {
     }
   );
 
-  // The trace records the tier when the draft was written; the conversation's
-  // `gotchu_tier` says what holds now. A Stop or a refused release clears it,
-  // so an `auto` the conversation no longer carries reads as a draft. The
-  // attribute only ever lowers the trace's word: a visitor can write it.
+  // The header names the cycle's own tier (`cycle.tier`, reply_cycle.tier):
+  // the row the release requires to read `auto` before it approves. The trace
+  // records the binding as drafted, and the conversation's `gotchu_tier`
+  // attribute is a best-effort mirror any token can delete, so neither may
+  // turn a scheduled release into "draft". A gateway from before the field
+  // answers no `tier`, and the header then shows the trace's word unchanged.
+  const autoStep = {
+    kind: 'tier',
+    tier: 'auto',
+    channel: 'email',
+    refusal: null,
+  };
   it.each([
+    ['an auto row', autoStep, { tier: 'auto' }, 'tier: auto'],
     [
-      { kind: 'tier', tier: 'auto', channel: 'email', refusal: null },
-      'Draft v1 · from Where is my order · tier: auto',
-      { conversationTier: 'auto' },
+      'an auto row under a draft trace',
+      { ...autoStep, tier: 'draft' },
+      { tier: 'auto' },
+      'tier: auto',
     ],
     [
-      { kind: 'tier', tier: 'auto', channel: 'email', refusal: null },
-      'Draft v1 · from Where is my order · tier: draft',
-      {},
+      'a draft row',
+      { ...autoStep, tier: 'draft' },
+      { tier: 'draft' },
+      'tier: draft',
     ],
     [
-      { kind: 'tier', tier: 'draft', channel: 'email', refusal: null },
-      'Draft v1 · from Where is my order · tier: draft',
-      { conversationTier: 'auto' },
+      'a draft row under an auto trace (a refused or stopped release)',
+      autoStep,
+      { tier: 'draft' },
+      'tier: draft',
     ],
     [
+      'a hand-over row',
       {
         kind: 'tier',
         tier: 'hand_over',
         channel: 'web',
         refusal: 'handover_tier',
       },
-      'Draft v1 · from Where is my order · tier: hand over',
-      { conversationTier: 'hand_over' },
+      { tier: 'hand_over' },
+      'tier: hand over',
     ],
     [
-      { kind: 'tier', tier: 'auto', channel: 'email', refusal: null },
-      'Draft v1 · from Where is my order · tier: hand over',
-      { conversationTier: 'hand_over' },
+      'a hand-over row under an auto trace',
+      autoStep,
+      { tier: 'hand_over' },
+      'tier: hand over',
     ],
     [
-      { kind: 'tier', tier: null, channel: null, refusal: null },
-      'Draft v1 · from Where is my order · tier: channel unknown',
+      'a row with no tier under an auto trace (nothing can release)',
+      autoStep,
+      { tier: null },
+      'tier: draft',
+    ],
+    [
+      'a row with no tier under an off trace',
+      { ...autoStep, tier: 'off' },
+      { tier: null },
+      'tier: off',
+    ],
+    [
+      'no tier field, auto trace (an older gateway)',
+      autoStep,
       {},
+      'tier: auto',
+    ],
+    [
+      'no tier field, draft trace (an older gateway)',
+      { ...autoStep, tier: 'draft' },
+      {},
+      'tier: draft',
+    ],
+    [
+      'an unknown channel',
+      { kind: 'tier', tier: null, channel: null, refusal: null },
+      { tier: null },
+      'tier: channel unknown',
     ],
   ])(
-    'names the procedure and the tier in the header, and never says it is sending: %j',
-    async (tierStep, heading, props) => {
+    'names the procedure and the tier in the header, and never says it is sending: %s',
+    async (_name, tierStep, cycleFields, tierWords) => {
       AiDraftAPI.getDraft.mockResolvedValue({
         data: {
-          cycle: reviewing(),
+          cycle: reviewing(cycleFields),
           draft: { version: 1, body },
           trace: [
             { kind: 'procedure', title: 'Where is my order', version: 4 },
@@ -1434,14 +1473,37 @@ describe('DraftDockContainer instruction outcome', () => {
         },
       });
 
-      const wrapper = await mountContainer(props);
+      const wrapper = await mountContainer();
 
-      expect(wrapper.text()).toContain(heading);
+      expect(wrapper.text()).toContain(
+        `Draft v1 · from Where is my order · ${tierWords}`
+      );
       expect(wrapper.text()).not.toMatch(
         /sending on its own|sends on its own/i
       );
     }
   );
+
+  // The attribute is no longer read for the header at all: an auto row with
+  // the conversation carrying no gotchu_tier is still auto.
+  it('says auto for an auto row whatever the conversation attribute says', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue({
+      data: {
+        cycle: reviewing({ tier: 'auto' }),
+        draft: { version: 1, body },
+        trace: [
+          { kind: 'procedure', title: 'Where is my order', version: 4 },
+          autoStep,
+        ],
+      },
+    });
+
+    const wrapper = await mountContainer({ conversationTier: 'draft' });
+
+    expect(wrapper.text()).toContain(
+      'Draft v1 · from Where is my order · tier: auto'
+    );
+  });
 
   it('words the gateway trace into steps above the draft', async () => {
     AiDraftAPI.getDraft.mockResolvedValue({

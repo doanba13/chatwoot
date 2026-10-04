@@ -66,13 +66,6 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-  // The conversation's `gotchu_tier` attribute: what holds NOW. The trace's
-  // tier step records what was known when the draft was written, and a Stop
-  // or a refused release since then clears this attribute.
-  conversationTier: {
-    type: String,
-    default: null,
-  },
 });
 
 const emit = defineEmits(['draftState', 'wantsReply']);
@@ -681,15 +674,21 @@ const traceSteps = computed(() =>
 );
 
 const TIERS = ['off', 'hand_over', 'draft', 'auto'];
-// The tier the header names. The conversation's attribute only ever LOWERS
-// the trace's word: an `auto` the conversation no longer carries (a Stop or a
-// refused release cleared it) reads as its current tier, else a draft. A
-// visitor can write the attribute, so it can never make a draft read as auto.
-const headerTier = traced => {
-  if (traced !== 'auto' || props.conversationTier === 'auto') return traced;
-  return ['hand_over', 'draft'].includes(props.conversationTier)
-    ? props.conversationTier
-    : 'draft';
+// The tier the header names: the cycle's own row (`cycle.tier`), which the
+// release requires to read `auto` before it approves, so it is the one word
+// that cannot say "draft" while a release is scheduled. The trace records the
+// binding as drafted; a Stop or a refused release since then lowers the row,
+// not the trace. A row with no tier lets nothing release, so a traced `auto`
+// reads as a draft there. A gateway from before the field (`undefined`)
+// leaves the trace's word as it is, which can only over-say `auto`.
+// The conversation's `gotchu_tier` attribute is never read here: it is a
+// best-effort mirror that a failed write, an attribute merge or any token
+// can lose, and lowering on its absence told supporters to reply by hand
+// while a release was scheduled.
+const headerTier = (traced, row) => {
+  if (row === undefined) return traced;
+  if (row !== null) return row;
+  return traced === 'auto' ? 'draft' : traced;
 };
 
 // "Draft v1 · from Where is my order · tier: draft". It names the tier and
@@ -704,7 +703,7 @@ const dockHeading = computed(() => {
   if (!procedure || noMatch) {
     return t('GOTCHU.DRAFT.HEADER_NO_PROCEDURE', { version });
   }
-  const shown = tier ? headerTier(tier.tier) : null;
+  const shown = tier ? headerTier(tier.tier, view.value.cycleTier) : null;
   if (!tier || (tier.channel != null && !TIERS.includes(shown))) {
     return t('GOTCHU.DRAFT.HEADER_NO_TIER', {
       version,
