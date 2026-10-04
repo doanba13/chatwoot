@@ -346,6 +346,11 @@ Rails.application.routes.draw do
               member { post :decision }
             end
 
+            # The Agent overview (board 2) and its Stop for a holding auto
+            # send (spec §9.6): every agent, as stopping is the safe direction.
+            get 'agent/overview', to: 'agent#overview'
+            post 'cycles/:id/stop_auto', to: 'agent#stop_auto'
+
             # Item 6.4: Gotchu's own Shopify app. The install hands back
             # Shopify's consent URL; Shopify's return lands on the gateway's
             # public host, which forwards the browser to the stores page, and
