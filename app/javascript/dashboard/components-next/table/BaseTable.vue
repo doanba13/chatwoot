@@ -20,6 +20,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // The Agent boards' table: in its own card, which also scrolls the table
+  // sideways on a narrow screen so the page never does, with headers in the
+  // sentence case their strings are written in.
+  boxed: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const columns = computed(() =>
@@ -47,17 +54,29 @@ const showHeaders = computed(
 </script>
 
 <template>
-  <div class="w-full">
+  <div
+    class="w-full"
+    :class="{
+      'overflow-x-auto bg-[var(--g-surface)] border border-[var(--g-border)] rounded-[var(--g-radius-card)]':
+        boxed,
+    }"
+    :data-testid="boxed ? 'base-table-box' : undefined"
+  >
     <table
       class="base-table min-w-full table-auto divide-y divide-[var(--g-border)]"
+      :class="{ 'base-table--boxed': boxed }"
       :data-identifier-columns="identifierColumns"
     >
-      <thead v-if="showHeaders" class="border-t border-[var(--g-border)]">
+      <thead
+        v-if="showHeaders"
+        :class="boxed ? '' : 'border-t border-[var(--g-border)]'"
+      >
         <tr>
           <th
             v-for="(column, index) in columns"
             :key="index"
-            class="py-4 ltr:pr-4 rtl:pl-4 text-start text-xs font-medium text-n-slate-11 capitalize"
+            class="py-4 ltr:pr-4 rtl:pl-4 text-start text-xs font-medium text-n-slate-11"
+            :class="boxed ? 'normal-case' : 'capitalize'"
           >
             <slot :name="`header-${index}`" :header="headers[index]">
               {{ column.label }}
@@ -83,6 +102,17 @@ const showHeaders = computed(
 </template>
 
 <style scoped lang="scss">
+/* A boxed table keeps the card's inner gutter on its first column, and is
+   wide enough to scroll inside its box rather than squeeze its columns. */
+.base-table--boxed {
+  min-width: 40rem;
+
+  th:first-child,
+  :deep(td:first-child) {
+    padding-inline-start: 1rem;
+  }
+}
+
 /* Identifier columns render in mono. CSS cannot take an nth-child index from a
    custom property, so the rules are enumerated and `data-identifier-columns`
    selects the ones that apply; eight covers every table in the dashboard.

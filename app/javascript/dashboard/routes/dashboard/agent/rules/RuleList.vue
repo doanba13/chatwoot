@@ -16,6 +16,7 @@ import NotBuiltChip from 'dashboard/components-next/gotchu/agent/NotBuiltChip.vu
 import ScopeChip from 'dashboard/components-next/gotchu/agent/ScopeChip.vue';
 import StatusPill from 'dashboard/components-next/gotchu/agent/StatusPill.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import { BRAND_BUTTON_CLASS } from 'dashboard/components-next/gotchu/agent/brandButton';
 import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import {
   BaseTable,
@@ -118,8 +119,10 @@ onMounted(load);
           <Button
             v-if="isAdmin && available"
             :label="t('GOTCHU_AGENT.RULE.NEW')"
-            icon="i-lucide-plus"
             size="sm"
+            color="slate"
+            no-animation
+            :class="BRAND_BUTTON_CLASS"
             data-testid="rule-new"
             @click="router.push({ name: 'agent_rule_new' })"
           />
@@ -149,13 +152,17 @@ onMounted(load);
       >
         {{ t(errorKey) }}
       </p>
-      <TabBar
-        :tabs="tabs"
-        :initial-active-tab="filterIndex"
-        @tab-changed="onTab"
-      />
+      <!-- Its own sideways scroll on a narrow screen, so the page never does. -->
+      <div class="max-w-full overflow-x-auto">
+        <TabBar
+          :tabs="tabs"
+          :initial-active-tab="filterIndex"
+          @tab-changed="onTab"
+        />
+      </div>
       <BaseTable
         v-if="!isLoading && !errorKey"
+        boxed
         :headers="headers"
         :items="shown"
         :no-data-message="t('GOTCHU_AGENT.RULE.EMPTY')"

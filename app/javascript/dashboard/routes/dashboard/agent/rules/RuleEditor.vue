@@ -358,7 +358,7 @@ watch(() => [route.name, route.params.ruleId], load);
           <Button
             :label="t('GOTCHU_AGENT.CANCEL')"
             size="sm"
-            variant="faded"
+            variant="ghost"
             color="slate"
             data-testid="rule-cancel"
             @click="router.push({ name: 'agent_rules' })"
@@ -543,7 +543,6 @@ watch(() => [route.name, route.params.ruleId], load);
           <Button
             :label="t(`${R}TEST`)"
             size="sm"
-            variant="faded"
             color="slate"
             :is-loading="testing"
             :disabled="problems.length > 0"
@@ -557,6 +556,7 @@ watch(() => [route.name, route.params.ruleId], load);
                 : t('GOTCHU_AGENT.PROCEDURE.SAVE_AS', { version: nextVersion })
             "
             size="sm"
+            color="slate"
             :is-loading="saving"
             :disabled="problems.length > 0"
             data-testid="rule-save"

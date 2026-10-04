@@ -172,19 +172,13 @@ onMounted(() => {
           <Button
             v-if="isAdmin && available"
             :label="t(`${O}NEW_PROCEDURE`)"
-            icon="i-lucide-plus"
             size="sm"
+            color="slate"
             data-testid="overview-new-procedure"
             @click="router.push({ name: 'agent_procedure_new' })"
           />
           <span class="inline-flex items-center gap-2">
-            <Button
-              :label="t(`${O}PAUSE`)"
-              size="sm"
-              variant="faded"
-              color="slate"
-              disabled
-            />
+            <Button :label="t(`${O}PAUSE`)" size="sm" color="slate" disabled />
             <NotBuiltChip />
           </span>
         </template>
@@ -207,7 +201,7 @@ onMounted(() => {
             · {{ t(`${O}LAST_7`) }}
           </span>
         </h2>
-        <BaseTable :headers="headers" :items="procedures">
+        <BaseTable boxed :headers="headers" :items="procedures">
           <template #row="{ items }">
             <BaseTableRow
               v-for="procedure in items"
@@ -237,7 +231,7 @@ onMounted(() => {
                 </p>
               </BaseTableCell>
               <BaseTableCell>
-                <span class="inline-flex flex-wrap gap-1.5">
+                <span class="inline-flex gap-1.5 whitespace-nowrap">
                   <TierChip
                     v-for="channel in CHANNELS"
                     :key="channel"
@@ -300,21 +294,23 @@ onMounted(() => {
           {{ t(outcome[hold.cycleId].key) }}
         </p>
         <div class="flex flex-wrap gap-2">
-          <router-link
-            :to="{
-              name: 'inbox_conversation',
-              params: { conversation_id: hold.conversationId },
-            }"
-            class="text-sm font-medium text-[var(--g-agent)] no-underline"
-          >
-            {{ t(`${O}REVIEW`) }}
-          </router-link>
+          <Button
+            :label="t(`${O}REVIEW`)"
+            size="sm"
+            color="slate"
+            :data-testid="`holding-review-${hold.cycleId}`"
+            @click="
+              router.push({
+                name: 'inbox_conversation',
+                params: { conversation_id: hold.conversationId },
+              })
+            "
+          />
           <Button
             v-if="!outcome[hold.cycleId] || outcome[hold.cycleId].retry"
             :label="t(`${O}STOP`)"
             size="sm"
-            variant="faded"
-            color="ruby"
+            color="slate"
             :is-loading="stopping[hold.cycleId]"
             :data-testid="`holding-stop-${hold.cycleId}`"
             @click="stop(hold)"

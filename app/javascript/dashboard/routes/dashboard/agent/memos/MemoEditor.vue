@@ -13,6 +13,7 @@ import AgentPage from 'dashboard/components-next/gotchu/agent/AgentPage.vue';
 import AgentUnconfigured from 'dashboard/components-next/gotchu/agent/AgentUnconfigured.vue';
 import GotchuPageHeader from 'dashboard/components-next/gotchu/agent/GotchuPageHeader.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import { BRAND_BUTTON_CLASS } from 'dashboard/components-next/gotchu/agent/brandButton';
 import Select from 'dashboard/components-next/select/Select.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 
@@ -327,7 +328,7 @@ watch(() => [route.name, route.params.memoId], load);
           <Button
             :label="t(`${M}CANCEL`)"
             size="sm"
-            variant="faded"
+            variant="ghost"
             color="slate"
             data-testid="memo-cancel"
             @click="router.push({ name: 'agent_memos' })"
@@ -335,6 +336,9 @@ watch(() => [route.name, route.params.memoId], load);
           <Button
             :label="t(`${M}SAVE`)"
             size="sm"
+            color="slate"
+            no-animation
+            :class="BRAND_BUTTON_CLASS"
             :is-loading="saving"
             :disabled="!form.text.trim() || pendingInbox"
             data-testid="memo-save"

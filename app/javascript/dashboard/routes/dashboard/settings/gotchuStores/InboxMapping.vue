@@ -16,6 +16,7 @@ import {
 } from './mapping';
 
 import Button from 'dashboard/components-next/button/Button.vue';
+import { BRAND_BUTTON_CLASS } from 'dashboard/components-next/gotchu/agent/brandButton';
 import Select from 'dashboard/components-next/select/Select.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -409,6 +410,9 @@ const save = async () => {
       <Button
         :label="t('GOTCHU_STORES.SAVE')"
         size="sm"
+        color="slate"
+        no-animation
+        :class="BRAND_BUTTON_CLASS"
         :is-loading="isSaving"
         :disabled="isSaving"
         @click="save"

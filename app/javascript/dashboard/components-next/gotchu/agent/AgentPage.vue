@@ -1,5 +1,7 @@
 <template>
-  <div class="h-full overflow-y-auto bg-[var(--g-bg)]">
+  <!-- w-full: the page ground runs to the right edge however narrow the
+    content is (a short form left a white band beside it). -->
+  <div class="w-full h-full min-w-0 overflow-y-auto bg-[var(--g-bg)]">
     <div
       class="box-border flex flex-col gap-8 px-12 py-10 max-md:px-4 max-md:py-6"
     >

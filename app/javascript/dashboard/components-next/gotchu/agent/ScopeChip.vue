@@ -18,9 +18,16 @@ const label = computed(() =>
 
 <template>
   <span class="inline-flex flex-wrap items-center gap-1.5">
+    <!-- Boards 5 and 7: the scope is a chip, tank for a store or all stores,
+      lilac for one inbox. -->
     <span
-      class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--g-radius-tag)]"
-      :class="label.inbox ? 'bg-[var(--g-surface-inbox)]' : ''"
+      class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold rounded-full text-[var(--g-text)] whitespace-nowrap"
+      :class="
+        label.inbox
+          ? 'bg-[var(--g-surface-inbox)]'
+          : 'bg-[var(--g-surface-tank)]'
+      "
+      data-testid="scope-chip"
     >
       <span
         v-if="label.store"

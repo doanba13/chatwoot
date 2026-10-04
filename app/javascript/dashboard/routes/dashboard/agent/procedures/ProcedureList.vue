@@ -15,6 +15,7 @@ import GotchuPageHeader from 'dashboard/components-next/gotchu/agent/GotchuPageH
 import ScopeChip from 'dashboard/components-next/gotchu/agent/ScopeChip.vue';
 import TierChip from 'dashboard/components-next/gotchu/agent/TierChip.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import { BRAND_BUTTON_CLASS } from 'dashboard/components-next/gotchu/agent/brandButton';
 import ReplayResult from './ReplayResult.vue';
 
 const { t } = useI18n();
@@ -98,8 +99,10 @@ onMounted(load);
           <Button
             v-if="isAdmin && available"
             :label="t('GOTCHU_AGENT.PROCEDURES.NEW')"
-            icon="i-lucide-plus"
             size="sm"
+            color="slate"
+            no-animation
+            :class="BRAND_BUTTON_CLASS"
             data-testid="procedure-new"
             @click="
               router.push({ name: 'agent_procedure_new', params: route.params })

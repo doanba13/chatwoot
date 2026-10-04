@@ -163,6 +163,7 @@ onMounted(async () => {
       <Button
         type="submit"
         :label="t('GOTCHU_SHOPIFY.CONNECT')"
+        color="slate"
         :is-loading="connecting"
         :disabled="!shop.trim()"
       />

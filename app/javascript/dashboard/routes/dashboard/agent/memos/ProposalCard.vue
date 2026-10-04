@@ -8,6 +8,7 @@ import { gatewayErrorKey } from 'dashboard/components-next/gotchu/agent/gatewayE
 import { proposalStores } from './memoView';
 
 import Button from 'dashboard/components-next/button/Button.vue';
+import { BRAND_BUTTON_CLASS } from 'dashboard/components-next/gotchu/agent/brandButton';
 
 // One nightly memo proposal (spec §6.4, a §11 ProposalView): Remember or
 // Dismiss. A 409 means someone else already decided; the card goes either
@@ -59,6 +60,9 @@ const decide = async decision => {
       <Button
         :label="t('GOTCHU_AGENT.MEMO.REMEMBER')"
         size="sm"
+        color="slate"
+        no-animation
+        :class="BRAND_BUTTON_CLASS"
         :is-loading="busy"
         data-testid="proposal-remember"
         @click="decide('confirm')"
@@ -66,7 +70,7 @@ const decide = async decision => {
       <Button
         :label="t('GOTCHU_AGENT.MEMO.DISMISS')"
         size="sm"
-        variant="faded"
+        variant="ghost"
         color="slate"
         :disabled="busy"
         data-testid="proposal-dismiss"

@@ -27,6 +27,7 @@ import GotchuPageHeader from 'dashboard/components-next/gotchu/agent/GotchuPageH
 import NotBuiltChip from 'dashboard/components-next/gotchu/agent/NotBuiltChip.vue';
 import StatusPill from 'dashboard/components-next/gotchu/agent/StatusPill.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import { BRAND_BUTTON_CLASS } from 'dashboard/components-next/gotchu/agent/brandButton';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import ProcedureTiers from './ProcedureTiers.vue';
@@ -324,7 +325,7 @@ watch(() => [route.name, route.params.procedureId], load);
             v-if="procedure"
             :label="t('GOTCHU_AGENT.PROCEDURE.HISTORY')"
             size="sm"
-            variant="faded"
+            variant="ghost"
             color="slate"
             data-testid="procedure-history"
             @click="openHistory"
@@ -333,7 +334,6 @@ watch(() => [route.name, route.params.procedureId], load);
             v-if="procedure && isAdmin"
             :label="t('GOTCHU_AGENT.PROCEDURE.REPLAY_30')"
             size="sm"
-            variant="faded"
             color="slate"
             :is-loading="replaying"
             data-testid="procedure-replay"
@@ -345,6 +345,9 @@ watch(() => [route.name, route.params.procedureId], load);
               t('GOTCHU_AGENT.PROCEDURE.SAVE_AS', { version: nextVersion })
             "
             size="sm"
+            color="slate"
+            no-animation
+            :class="BRAND_BUTTON_CLASS"
             :is-loading="saving"
             data-testid="procedure-save"
             @click="save"

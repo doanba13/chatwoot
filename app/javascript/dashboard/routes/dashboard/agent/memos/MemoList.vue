@@ -14,6 +14,7 @@ import AgentUnconfigured from 'dashboard/components-next/gotchu/agent/AgentUncon
 import GotchuPageHeader from 'dashboard/components-next/gotchu/agent/GotchuPageHeader.vue';
 import ScopeChip from 'dashboard/components-next/gotchu/agent/ScopeChip.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import { BRAND_BUTTON_CLASS } from 'dashboard/components-next/gotchu/agent/brandButton';
 import {
   BaseTable,
   BaseTableRow,
@@ -92,8 +93,10 @@ onMounted(() => {
           <Button
             v-if="available"
             :label="t('GOTCHU_AGENT.MEMO.NEW')"
-            icon="i-lucide-plus"
             size="sm"
+            color="slate"
+            no-animation
+            :class="BRAND_BUTTON_CLASS"
             data-testid="memo-new"
             @click="router.push({ name: 'agent_memo_new' })"
           />
@@ -112,6 +115,7 @@ onMounted(() => {
       </p>
       <BaseTable
         v-if="!isLoading && !errorKey"
+        boxed
         :headers="headers"
         :items="memos"
         :no-data-message="t('GOTCHU_AGENT.MEMO.EMPTY')"
