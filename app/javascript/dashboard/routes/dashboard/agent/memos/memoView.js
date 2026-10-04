@@ -4,13 +4,14 @@
 const M = 'GOTCHU_AGENT.MEMO.';
 
 // chatwoot:<id> is a person on this desk; cli:<name> an operator (the actor
-// shape the gateway accepts); anything else predates both and came from Lark.
-const nameOf = (author, agentsById, t) => {
+// shape the gateway accepts); anything else predates both and came from Lark,
+// where this desk has no name for them: null.
+const nameOf = (author, agentsById) => {
   const person = /^chatwoot:(\d+)$/.exec(author ?? '');
   if (person) return agentsById[person[1]]?.name ?? `#${person[1]}`;
   const operator = /^cli:(.+)$/.exec(author ?? '');
   if (operator) return operator[1];
-  return t(`${M}VIA_LARK`);
+  return null;
 };
 
 const ORIGIN_KEYS = {
@@ -27,15 +28,17 @@ export const originLabel = (memo, agentsById, t) => {
   if (source === 'proposal' && author?.startsWith('system:')) {
     return { key: `${M}FROM_PROPOSAL_AUTO`, params: {} };
   }
-  const name = nameOf(author, agentsById, t);
-  const base = ORIGIN_KEYS[source] ?? 'FROM_SCREEN';
+  const name = nameOf(author, agentsById);
+  // A Lark-era author gets a sentence that needs no name ("confirmed in
+  // Lark"), never "confirmed by via Lark".
+  const base = `${ORIGIN_KEYS[source] ?? 'FROM_SCREEN'}${name == null ? '_LARK' : ''}`;
+  const named = name == null ? {} : { name };
   if (memo.editedBy) {
-    return {
-      key: `${M}${base}_EDITED`,
-      params: { name, editor: nameOf(memo.editedBy, agentsById, t) },
-    };
+    const editor =
+      nameOf(memo.editedBy, agentsById) ?? t(`${M}SOMEONE_IN_LARK`);
+    return { key: `${M}${base}_EDITED`, params: { ...named, editor } };
   }
-  return { key: `${M}${base}`, params: { name } };
+  return { key: `${M}${base}`, params: named };
 };
 
 const shortDate = iso =>

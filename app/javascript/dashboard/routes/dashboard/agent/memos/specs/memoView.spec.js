@@ -72,8 +72,34 @@ describe('originLabel', () => {
         memo({ source: 'instruction', author: 'ou_7d1f', conversationId: 1 }),
         agents,
         t
-      ).params.name
-    ).toBe('GOTCHU_AGENT.MEMO.VIA_LARK');
+      )
+    ).toEqual({ key: 'GOTCHU_AGENT.MEMO.FROM_CONVERSATION_LARK', params: {} });
+  });
+  // The drive read "Proposed nightly, confirmed by via Lark": a Lark-era
+  // confirmer has no name here, so the sentence must not need one.
+  it('words a proposal confirmed in Lark without a name', () => {
+    expect(
+      originLabel(
+        memo({ source: 'proposal', author: 'ou_7d1f', conversationId: null }),
+        agents,
+        t
+      )
+    ).toEqual({ key: 'GOTCHU_AGENT.MEMO.FROM_PROPOSAL_LARK', params: {} });
+  });
+  it('keeps a Lark origin nameless after an edit, and names the editor', () => {
+    expect(
+      originLabel(
+        memo(
+          { source: 'proposal', author: 'ou_7d1f', conversationId: null },
+          'chatwoot:13'
+        ),
+        agents,
+        t
+      )
+    ).toEqual({
+      key: 'GOTCHU_AGENT.MEMO.FROM_PROPOSAL_LARK_EDITED',
+      params: { editor: 'Ben' },
+    });
   });
   it('names a command-line author by the name after cli:', () => {
     expect(
