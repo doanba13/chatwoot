@@ -328,6 +328,16 @@ Rails.application.routes.draw do
             # store_routes above stays administrator-only.
             get 'stores', to: 'stores#index'
 
+            # Rules (spec 2026-10-04 §4, §11): reads for every agent, writes
+            # for administrators (the controller's own before_action).
+            resources :rules, only: [:index, :show, :create, :update] do
+              member { post :status }
+              collection do
+                post :check
+                post :replay
+              end
+            end
+
             # Item 6.4: Gotchu's own Shopify app. The install hands back
             # Shopify's consent URL; Shopify's return lands on the gateway's
             # public host, which forwards the browser to the stores page, and

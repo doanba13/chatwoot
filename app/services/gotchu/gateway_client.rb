@@ -93,6 +93,10 @@ class Gotchu::GatewayClient
   # rubocop's Metrics/ParameterLists — every caller still passes named
   # arguments, just gathered into one hash first.
   #
+  # `checks_error`, when given, is raised on a 400 with the gateway's checks
+  # and its narrowed reason code (see `raise_checks`), instead of the plain
+  # `refusals` mapping that would lose them.
+  #
   # `conflict_classifier`, when given, is called on a 409 response *before*
   # `refusals` is consulted, and must return the exception class to raise —
   # for a route whose single 409 covers more than one cause. Every other call
@@ -120,6 +124,8 @@ class Gotchu::GatewayClient
   private
 
   def raise_refusal(response, opts)
+    raise_checks(response, opts[:checks_error]) if response.code == 400 && opts[:checks_error]
+
     classifier = opts[:conflict_classifier]
     raise classifier.call(response), "gateway responded with #{response.code}" if classifier && response.code == 409
 
@@ -127,6 +133,25 @@ class Gotchu::GatewayClient
       raise error_class, "gateway responded with #{response.code}" if codes.include?(response.code)
     end
     raise UnavailableError, "gateway responded with #{response.code}"
+  end
+
+  # The gateway's `error` on a 400 is a machine code, never merchant text. Only
+  # the codes a page acts on pass through (spec §11: the composer memo's
+  # `scope_required`); anything else reads 'invalid'.
+  REASONS_400 = %w[invalid scope_required].freeze
+
+  # A validation refusal carries the save-time checks (spec §10): fixed
+  # strings the gateway defines, so they may reach the page. Each one is cut
+  # down to the three fields the contract names, so nothing else a 400 body
+  # might carry rides along.
+  def raise_checks(response, error_class)
+    payload = JSON.parse(response.body.to_s)
+    payload = {} unless payload.is_a?(Hash)
+    reason = REASONS_400.include?(payload['error']) ? payload['error'] : 'invalid'
+    checks = Array(payload['checks']).select { |check| check.is_a?(Hash) }.map { |check| check.slice('id', 'ok', 'message') }
+    raise error_class.new(checks, reason)
+  rescue JSON::ParserError
+    raise error_class.new([], 'invalid')
   end
 
   def perform_http(verb, path, query, body, timeout)
