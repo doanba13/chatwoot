@@ -1,8 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useStore } from 'vuex';
-import { useMapGetter } from 'dashboard/composables/store';
+import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { dateFormat } from 'shared/helpers/timeHelper';
 
 import SidePanel from 'dashboard/components-next/side-panel/SidePanel.vue';

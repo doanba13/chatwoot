@@ -147,7 +147,16 @@
       "CLASH_MISSING": "Missing facts. A condition Gotchu cannot check counts as not met, and the trace says which one. A rule that holds sending still holds it.",
       "CLASH_TARGET": "A deleted store, inbox or label. The rule is marked “target missing” and never widens to all stores.",
       "CLASH_AUTO": "Sending on its own. Only a procedure can allow it; any matching rule can stop it. A rule that only adds text puts overlapping procedures back to Draft until someone raises them again.",
-      "CLASH_ACCOUNT": "Each account’s rules are its own. No rule, memo or condition reads another account’s data."
+      "CLASH_ACCOUNT": "Each account’s rules are its own. No rule, memo or condition reads another account’s data.",
+      "FILTER": {
+        "LIVE": "Active and testing",
+        "ACTIVE": "Active",
+        "TESTING": "Testing",
+        "ARCHIVED": "Archived",
+        "ALL": "All"
+      },
+      "WHAT_THEY_COVER": "What they cover",
+      "EMPTY": "No rules here yet."
     }
   }
 }
