@@ -69,6 +69,16 @@
       "EMAIL": "Email",
       "MESSENGER": "Messenger",
       "WEB": "Web chat"
+    },
+    "PROCEDURES": {
+      "TITLE": "Procedures",
+      "LEDE": "What Gotchu does for each kind of request. Only a procedure can let it send on its own.",
+      "NEW": "New procedure",
+      "EMPTY": "No procedures yet.",
+      "COL_PROCEDURE": "Procedure",
+      "COL_TIERS": "Email · Messenger · Web",
+      "COL_STORE": "Store",
+      "REPLAY": "Replay"
     }
   }
 }

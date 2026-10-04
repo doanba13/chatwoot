@@ -14,12 +14,12 @@ import {
   bodyError,
   phrasesError,
   isProcedureFormValid,
-} from '../../settings/procedures/validations';
+} from './validations';
 import {
   replayMatchCount,
   replayIsPartial,
   replayScopeView,
-} from '../../settings/procedures/replayView';
+} from './replayView';
 
 import AgentPage from 'dashboard/components-next/gotchu/agent/AgentPage.vue';
 import AgentUnconfigured from 'dashboard/components-next/gotchu/agent/AgentUnconfigured.vue';
