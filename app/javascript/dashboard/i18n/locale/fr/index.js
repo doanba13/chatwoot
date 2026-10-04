@@ -22,6 +22,7 @@ import general from './general.json';
 import generalSettings from './generalSettings.json';
 import gotchuShopify from './gotchuShopify.json';
 import gotchuStores from './gotchuStores.json';
+import gotchuAgent from './gotchuAgent.json';
 import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
@@ -70,6 +71,7 @@ export default {
   ...generalSettings,
   ...gotchuShopify,
   ...gotchuStores,
+  ...gotchuAgent,
   ...helpCenter,
   ...inbox,
   ...inboxMgmt,

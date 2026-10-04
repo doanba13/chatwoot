@@ -67,6 +67,14 @@
 
     --g-slate-tint: rgb(107 114 128 / 8%);
     --g-slate-tint-strong: rgb(107 114 128 / 14%);
+
+    // Canvas values with no token before 2026-10-04 (Agent screens).
+    --g-surface-note: #f6f6f4; // memo and note backgrounds
+    --g-surface-inbox: #eef0ff; // inbox scope chip
+    --g-agent-soft: #f2faf9; // redraft and working panel
+    --g-text-subtle: #4b5563; // secondary body text on white
+    --g-radius-tag: 4px;
+    --g-radius-segment: 8px; // segmented control, mark
     --g-scrim: rgb(20 33 61 / 40%);
 
     // Per-store identity — 8px dots and chips only, never a background.
@@ -137,6 +145,10 @@
     --g-text-muted: #9aa3b2;
     --g-ink: #fbfbfa;
     --g-on-ink: #14213d;
+    --g-surface-note: #1b2948;
+    --g-surface-inbox: #232c55;
+    --g-agent-soft: #17323a;
+    --g-text-subtle: #c5ccd8;
 
     // Brand itself stays theme-invariant, exactly as the design ships it: the
     // source's dark block omits `--brand` on purpose, and #ff6b8b carries on

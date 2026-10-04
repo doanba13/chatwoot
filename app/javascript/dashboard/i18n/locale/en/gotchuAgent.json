@@ -1,0 +1,19 @@
+{
+  "GOTCHU_AGENT": {
+    "NOT_BUILT": "Not built",
+    "STATUS_WITH_VERSION": "{status} · v{version}",
+    "STATUS": {
+      "ACTIVE": "Active",
+      "TESTING": "Testing",
+      "ARCHIVED": "Archived"
+    },
+    "ERRORS": {
+      "UNAVAILABLE": "Gotchu did not confirm that. Try again in a moment.",
+      "UNCONFIGURED": "Gotchu is not connected on this desk yet.",
+      "INVALID": "Gotchu could not accept that. Check the highlighted fields.",
+      "NOT_FOUND": "This no longer exists. Reload the list.",
+      "CHANGED": "This changed since you opened it. Reload to see the latest.",
+      "FORBIDDEN": "Only an administrator can change this."
+    }
+  }
+}
