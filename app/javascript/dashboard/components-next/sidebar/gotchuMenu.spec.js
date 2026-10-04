@@ -35,6 +35,32 @@ describe('gotchuMenu', () => {
     ]);
   });
 
+  // Boards 1 to 8 draw Agent, Queue and Stores as sections that stay open
+  // together; the rest of the rail keeps Chatwoot's accordion.
+  it('keeps Agent, Queue and Stores open, and only those', () => {
+    expect(
+      build()
+        .filter(item => item.open)
+        .map(item => item.name)
+    ).toEqual(['Agent', 'Queue', 'Stores']);
+  });
+
+  it('counts every queue, Needs you hot and the others muted', () => {
+    const queue = build({
+      counts: {
+        queue: { needs_you: 7, drafted: 12, auto_holding: 1, handed_over: 3 },
+      },
+    }).find(item => item.name === 'Queue');
+    expect(
+      queue.children.slice(0, 4).map(c => [c.badgeCount, c.badgeTone])
+    ).toEqual([
+      [7, 'hot'],
+      [12, 'muted'],
+      [1, 'muted'],
+      [3, 'muted'],
+    ]);
+  });
+
   it('never carries a Chatwoot paid or out-of-scope surface', () => {
     const names = JSON.stringify(build());
     ['Captain', 'Calls', 'Companies', 'Campaigns', '"Inbox"'].forEach(name =>

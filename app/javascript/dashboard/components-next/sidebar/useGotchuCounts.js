@@ -1,6 +1,6 @@
 // The rail's counts: procedures, active rules and pending memo proposals
-// from the Agent overview, and Needs you from the conversation filter's own
-// `all_count`. A read that fails leaves its count undefined, and an undefined
+// from the Agent overview, and each queue from the conversation filter's own
+// `all_count`, as the boards draw them. A read that fails leaves its count undefined, and an undefined
 // count renders no badge, never 0. Display only.
 import { onMounted, ref } from 'vue';
 import { useIntervalFn } from '@vueuse/core';
@@ -8,8 +8,6 @@ import { useIntervalFn } from '@vueuse/core';
 import AgentAPI from 'dashboard/api/gotchu/agent';
 import ConversationApi from 'dashboard/api/inbox/conversation';
 import { QUEUES, queueFolder } from 'dashboard/components-next/gotchu/queues';
-
-const NEEDS_YOU = QUEUES.find(queue => queue.mineOrUnassigned)?.key;
 
 export function useGotchuCounts({ t, userId }) {
   const counts = ref({ queue: {} });
@@ -28,8 +26,8 @@ export function useGotchuCounts({ t, userId }) {
     }
   };
 
-  const needsYouCount = async () => {
-    const folder = NEEDS_YOU && queueFolder(NEEDS_YOU, t, userId.value);
+  const queueCount = async key => {
+    const folder = queueFolder(key, t, userId.value);
     if (!folder) return undefined;
     try {
       const { data } = await ConversationApi.filter({
@@ -44,11 +42,16 @@ export function useGotchuCounts({ t, userId }) {
   };
 
   const load = async () => {
-    const [agent, needsYou] = await Promise.all([
+    const [agent, ...queues] = await Promise.all([
       overviewCounts(),
-      needsYouCount(),
+      ...QUEUES.map(queue => queueCount(queue.key)),
     ]);
-    counts.value = { ...agent, queue: { [NEEDS_YOU]: needsYou } };
+    counts.value = {
+      ...agent,
+      queue: Object.fromEntries(
+        QUEUES.map((queue, i) => [queue.key, queues[i]])
+      ),
+    };
   };
 
   onMounted(load);

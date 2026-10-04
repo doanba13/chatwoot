@@ -85,14 +85,14 @@ const groupNamed = groupName =>
     folders: FOLDERS,
   }).find(item => item.name === groupName);
 
-const mountGroup = (name, route) => {
+const mountGroup = (name, route, expanded = name) => {
   Object.assign(currentRoute, { params: {}, ...route });
   return mount(
     {
       components: { SidebarGroup },
       setup() {
         provideSidebarContext({
-          expandedItem: ref(name),
+          expandedItem: ref(expanded),
           setExpandedItem: () => {},
           isCollapsed: ref(false),
           isResizing: ref(false),
@@ -112,6 +112,17 @@ const activeLeaves = (route, name = 'Queue') =>
     .map(leaf => leaf.props('label'));
 
 afterEach(() => denied.clear());
+
+describe('a section the rail keeps open', () => {
+  it('shows its entries while another group is the expanded one', () => {
+    const leaves = mountGroup(
+      'Queue',
+      { name: 'agent_overview', path: '/app/accounts/1/agent' },
+      'Insights'
+    ).findAllComponents(SidebarGroupLeaf);
+    expect(leaves.filter(leaf => leaf.isVisible()).length).toBeGreaterThan(3);
+  });
+});
 
 describe('Sidebar queue entries', () => {
   it('highlights only the queue whose list is open', () => {

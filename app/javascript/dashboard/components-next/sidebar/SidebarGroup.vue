@@ -18,6 +18,9 @@ const props = defineProps({
   activeOn: { type: Array, default: () => [] },
   children: { type: Array, default: undefined },
   getterKeys: { type: Object, default: () => ({}) },
+  // A section the rail keeps open: it stays expanded whatever else is, and
+  // takes no part in the accordion (the Gotchu rail's Agent, Queue, Stores).
+  open: { type: Boolean, default: false },
 });
 
 const {
@@ -45,7 +48,9 @@ const navigableChildren = computed(() => {
 
 const route = useRoute();
 const router = useRouter();
-const isExpanded = computed(() => expandedItem.value === props.name);
+const isExpanded = computed(
+  () => props.open || expandedItem.value === props.name
+);
 const isExpandable = computed(() => props.children);
 const hasChildren = computed(
   () => Array.isArray(props.children) && props.children.length > 0
@@ -205,6 +210,7 @@ const handleCollapsedClick = () => {
 };
 
 const toggleTrigger = () => {
+  if (props.open) return;
   if (
     hasAccessibleChildren.value &&
     !isExpanded.value &&
@@ -219,7 +225,7 @@ const toggleTrigger = () => {
 
 onMounted(async () => {
   await nextTick();
-  if (hasActiveChild.value) {
+  if (hasActiveChild.value && !props.open) {
     setExpandedItem(props.name);
   }
   window.addEventListener('blur', handleWindowBlur);
@@ -234,7 +240,7 @@ onUnmounted(() => {
 watch(
   hasActiveChild,
   hasNewActiveChild => {
-    if (hasNewActiveChild && !isExpanded.value) {
+    if (hasNewActiveChild && !isExpanded.value && !props.open) {
       setExpandedItem(props.name);
     }
   },
@@ -296,7 +302,7 @@ watch(
         :getter-keys="getterKeys"
         :is-active="isActive"
         :has-active-child="hasActiveChild"
-        :expandable="hasChildren"
+        :expandable="hasChildren && !open"
         :is-expanded="isExpanded"
         @toggle="toggleTrigger"
       />

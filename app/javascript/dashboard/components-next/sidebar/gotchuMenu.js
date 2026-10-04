@@ -65,6 +65,7 @@ const storesGroup = ({ t, accountScopedRoute, stores, inboxes }) => {
     name: 'Stores',
     label: t('SIDEBAR.STORES'),
     icon: 'i-lucide-store',
+    open: true,
     children: [...storeEntries, ...sharedEntries],
   };
 };
@@ -91,10 +92,14 @@ export function gotchuMenu({
   // A count that could not be read is undefined, and renders no badge.
   const queueCounts = counts.queue ?? {};
   return [
+    // Agent, Queue and Stores are sections the rail keeps open together, as
+    // every board draws them (SidebarGroup's `open`); the rest keep the
+    // accordion.
     {
       name: 'Agent',
       label: t('SIDEBAR.AGENT'),
       icon: 'i-lucide-sparkles',
+      open: true,
       children: [
         {
           name: 'Overview',
@@ -140,6 +145,7 @@ export function gotchuMenu({
       name: 'Queue',
       label: t('SIDEBAR.QUEUE'),
       icon: 'i-lucide-message-circle',
+      open: true,
       children: [
         ...QUEUES.map(queue => ({
           name: queue.key,
@@ -149,10 +155,10 @@ export function gotchuMenu({
           icon: queue.icon,
           to: accountScopedRoute('queue_conversations', { queue: queue.key }),
           activeOn: ['queue_conversations', 'conversation_through_queue'],
-          // Needs you is the one queue counted in the rail, as a hot count.
-          ...(queue.mineOrUnassigned
-            ? { badgeCount: queueCounts[queue.key], badgeTone: 'hot' }
-            : {}),
+          // Every queue is counted, as the boards draw them; Needs you is the
+          // hot count.
+          badgeCount: queueCounts[queue.key],
+          badgeTone: queue.mineOrUnassigned ? 'hot' : 'muted',
         })),
         {
           name: 'All',
