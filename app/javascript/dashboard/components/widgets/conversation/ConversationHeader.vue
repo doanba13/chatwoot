@@ -220,9 +220,11 @@ const copyConversationId = async () => {
           second line under the title, which is what made this header two rows
           tall. They stay — each is a real affordance, the id is click-to-copy —
           but inline and muted, after the subject rather than beneath it. The id
-          is mono, as every identifier in this design is. -->
+          is mono, as every identifier in this design is. When the pane is
+          narrow (contact panel open) it gives way before the contact's name
+          rather than running under the status chips. -->
         <div
-          class="flex items-center min-w-0 gap-1 overflow-hidden text-xs conversation--header--actions text-[var(--g-text-muted)] text-ellipsis whitespace-nowrap"
+          class="flex items-center min-w-0 shrink-[4] gap-1 overflow-hidden text-xs conversation--header--actions text-[var(--g-text-muted)] text-ellipsis whitespace-nowrap"
         >
           <button
             type="button"
