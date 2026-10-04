@@ -7,8 +7,10 @@ const CHANNEL_ICONS = {
   web: 'i-lucide-globe',
 };
 
-// A store's dot, --g-store-1..5 by position: the order storeIndex uses.
-const storeDot = index => () =>
+// A store's dot, --g-store-1..5 by position: the order storeIndex uses. A
+// VNode, as the sidebar's other drawn icons are (SidebarProfileMenuStatus):
+// the entries' icon props take a class string or a VNode, not a function.
+const storeDot = index =>
   h('span', {
     class: 'inline-block size-2 rounded-full',
     style: { background: `var(--g-store-${(index % 5) + 1})` },

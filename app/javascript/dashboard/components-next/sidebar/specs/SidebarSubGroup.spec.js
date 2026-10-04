@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import SidebarSubGroup from '../SidebarSubGroup.vue';
 import { LOCAL_STORAGE_KEYS } from 'dashboard/constants/localStorage';
 import { provideSidebarContext } from '../provider';
+import { gotchuMenu } from '../gotchuMenu';
 
 vi.mock('dashboard/composables/store', () => ({
   useMapGetter: () => ref(1),
@@ -87,6 +88,29 @@ describe('SidebarSubGroup', () => {
     });
 
     window.localStorage.clear();
+  });
+
+  // b4970df1f handed the store's dot to the rail as a thunk, which Icon.vue
+  // printed as its own source text over the store names.
+  it('draws a store entry’s dot from the rail, never its source text', () => {
+    const store = gotchuMenu({
+      t: key => key,
+      accountScopedRoute: (name, params = {}) => ({ name, params }),
+      reportsGroup: { name: 'Reports', children: [] },
+      settingsGroup: { name: 'Settings', children: [] },
+      helpCenterGroup: { name: 'Portals', children: [] },
+      contactsTo: { name: 'contacts_dashboard_index' },
+      folders: [],
+      stores: [{ key: 'persoliebe', name: 'persoliebe', inboxes: [{ id: 2 }] }],
+      inboxes: [{ id: 2, name: 'Messenger', channel: 'messenger' }],
+    })
+      .find(g => g.name === 'Stores')
+      .children.find(c => c.name === 'store-persoliebe');
+    const wrapper = mountSubGroup({ ...store, isExpanded: true });
+
+    expect(wrapper.find('span.rounded-full').exists()).toBe(true);
+    expect(wrapper.text()).toContain('persoliebe');
+    expect(wrapper.text()).not.toContain('=>');
   });
 
   it('keeps collapsible sections expanded by default', () => {
