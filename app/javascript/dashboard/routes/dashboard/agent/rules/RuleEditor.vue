@@ -11,7 +11,7 @@ import { gatewayErrorKey } from 'dashboard/components-next/gotchu/agent/gatewayE
 import { useGotchuStores } from 'dashboard/components-next/gotchu/agent/useGotchuStores';
 import { inboxOptions } from 'dashboard/components-next/gotchu/agent/scopeView';
 import { emptyForm, formFromRule, toBody, localProblems } from './ruleForm';
-import { demotedTitle, sendingKey } from './ruleView';
+import { channelWord, demotedTitle, sendingKey } from './ruleView';
 
 import AgentPage from 'dashboard/components-next/gotchu/agent/AgentPage.vue';
 import AgentUnconfigured from 'dashboard/components-next/gotchu/agent/AgentUnconfigured.vue';
@@ -24,7 +24,7 @@ import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import ConditionRow from './ConditionRow.vue';
 import ChecksPanel from './ChecksPanel.vue';
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const currentRole = useMapGetter('getCurrentRole');
@@ -129,7 +129,12 @@ watch(
 
 const alertDemoted = demoted =>
   (demoted ?? []).forEach(d =>
-    useAlert(t(`${R}DEMOTED`, { title: demotedTitle(d), channel: d.channel }))
+    useAlert(
+      t(`${R}DEMOTED`, {
+        title: demotedTitle(d),
+        channel: channelWord(d.channel, t, te),
+      })
+    )
   );
 
 // A 409 keeps the form: the user's text stays, and the banner says the rule

@@ -1,4 +1,7 @@
-import { usedLabel, sendingKey, demotedTitle } from '../ruleView';
+import { withFullI18n } from 'test-i18n';
+import { usedLabel, sendingKey, demotedTitle, channelWord } from '../ruleView';
+
+const { t, te } = withFullI18n().global;
 
 describe('ruleView', () => {
   it('names a demoted procedure by its title, and by id only when the title is missing', () => {
@@ -12,6 +15,14 @@ describe('ruleView', () => {
     expect(demotedTitle({ procedureId: 7, title: '', channel: 'email' })).toBe(
       '#7'
     );
+  });
+  // The drive's toast read "moved back to Draft on email".
+  it.each([
+    ['email', 'Email'],
+    ['web', 'Web chat'],
+    ['sms', 'sms'],
+  ])('names the channel %s in words', (channel, word) => {
+    expect(channelWord(channel, t, te)).toBe(word);
   });
   it('says "would apply" for a testing rule', () => {
     expect(usedLabel({ status: 'testing', usedLast7d: 4 })).toEqual({

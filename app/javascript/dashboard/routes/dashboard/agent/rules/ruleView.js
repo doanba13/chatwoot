@@ -14,6 +14,14 @@ export const usedLabel = rule => ({
 export const demotedTitle = binding =>
   binding.title || `#${binding.procedureId}`;
 
+// A channel in the words the procedure screen uses ("Email", "Web chat"),
+// never its machine value; one this build does not know stays as it came.
+export const channelWord = (channel, t, te) => {
+  const key = `GOTCHU_AGENT.CHANNEL.${String(channel).toUpperCase()}`;
+  // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys
+  return te(key) ? t(key) : channel;
+};
+
 // One chip per condition: "<Fact label> <value>". Labels come from the locale
 // by fact name; a fact this build has no label for shows its raw name rather
 // than vanishing, because a hidden condition is a rule that looks broader

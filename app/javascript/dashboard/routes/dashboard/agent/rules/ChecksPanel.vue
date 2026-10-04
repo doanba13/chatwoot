@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { demotedTitle } from './ruleView';
+import { channelWord, demotedTitle } from './ruleView';
 
 // "Checked when saved" (board 6). The gateway's save-time checks run as the
 // administrator types; the words say "checked for", never a guarantee
@@ -15,7 +15,7 @@ const props = defineProps({
   localProblems: { type: Array, default: () => [] },
 });
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 const R = 'GOTCHU_AGENT.RULE.';
 
 // The conditions check's message carries the gateway parser's detail
@@ -96,7 +96,7 @@ const lacking = computed(() => {
         {{
           t(`${R}OVERLAP`, {
             title: demotedTitle(overlap),
-            channel: overlap.channel,
+            channel: channelWord(overlap.channel, t, te),
           })
         }}
       </li>
