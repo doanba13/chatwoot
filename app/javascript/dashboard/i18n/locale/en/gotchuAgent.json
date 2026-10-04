@@ -13,7 +13,9 @@
       "INVALID": "Gotchu could not accept that. Check the highlighted fields.",
       "NOT_FOUND": "This no longer exists. Reload the list.",
       "CHANGED": "This changed since you opened it. Reload to see the latest.",
-      "FORBIDDEN": "Only an administrator can change this."
+      "FORBIDDEN": "Only an administrator can change this.",
+      "DUPLICATE_SLUG": "A procedure with that short name already exists for this store.",
+      "NOT_ACTIVE_FOR_AUTO": "Only an active procedure can send on its own."
     },
     "SCOPE": {
       "ALL_STORES": "All stores",
@@ -26,13 +28,47 @@
       "AUTO_OFF_UNVERIFIABLE": "Auto is off here: this channel can’t prove whose order it is.",
       "AUTO_OFF_STORE": "Sending on its own is not switched on for this store.",
       "AUTO_HINT": "Sends on its own after the hold unless someone acts on the draft here or adds the gotchu-manual label. A private note or an assignment does not stop it.",
-      "KILL_LABEL": "To stop it on one conversation, add the label gotchu-manual."
+      "KILL_LABEL": "To stop it on one conversation, add the label {label}.",
+      "TIERS_LOADING": "Loading channels",
+      "AUTHORISES_VERSION": "Authorises v{version}",
+      "REVOKE": "Revoke",
+      "LIST_CRUMB": "Procedures",
+      "NEW_TITLE": "New procedure",
+      "WHEN": "When a customer says",
+      "ADD_PHRASE": "+ Add a way of saying it",
+      "REMOVE_PHRASE": "Remove this way of saying it",
+      "DO_THIS": "Do this",
+      "BRIEF_HINT": "Write it the way you would brief a new colleague. Shop policy still applies and wins over this.",
+      "MAY_SEND": "May send on its own",
+      "MAY_OFFER": "May offer",
+      "OFFER_GOODWILL": "Goodwill code, after a person confirms",
+      "OFFER_CANCEL": "Cancel order",
+      "LAST_REPLAY_TITLE": "Last replay",
+      "LAST_REPLAY": "Would have answered {matched} of the last {considered} conversations.",
+      "LAST_REPLAY_AMBIGUOUS": "Across all procedures, {ambiguous} were too close to call and were left alone.",
+      "NO_REPLAY": "Not replayed yet.",
+      "HISTORY": "History",
+      "HISTORY_ROW": "v{version} · {title} · {date} · {author}",
+      "REPLAY_30": "Replay last 30 days",
+      "SAVE_AS": "Save as v{version}",
+      "SLUG": "Short name",
+      "SLUG_HINT": "Used in links; can’t change later.",
+      "EDIT": "Edit",
+      "PREVIEW": "Preview",
+      "ACTIVATE": "Activate",
+      "DEACTIVATE": "Return to testing",
+      "ARCHIVE": "Archive"
     },
     "TIER": {
       "OFF": "Off",
       "HAND_OVER": "Hand over",
       "DRAFT": "Draft",
       "AUTO": "Auto"
+    },
+    "CHANNEL": {
+      "EMAIL": "Email",
+      "MESSENGER": "Messenger",
+      "WEB": "Web chat"
     }
   }
 }
