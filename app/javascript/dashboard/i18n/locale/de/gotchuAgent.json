@@ -186,6 +186,49 @@
         "EN": "English"
       }
     },
-    "CANCEL": "Cancel"
+    "CANCEL": "Cancel",
+    "MEMO": {
+      "LIST_TITLE": "Memos",
+      "LIST_LEDE": "Facts and style Gotchu keeps in mind. Teach one from any conversation with the Memo tab.",
+      "NEW": "New memo",
+      "EDIT_TITLE": "Edit memo",
+      "COL_MEMO": "Memo",
+      "COL_KIND": "Kind",
+      "COL_SCOPE": "Applies to",
+      "COL_FROM": "From",
+      "KIND": {
+        "STANDING_FACT": "Fact",
+        "STYLE": "Style"
+      },
+      "KIND_UNTIL": "{kind} · until {date}",
+      "FROM_CONVERSATION": "{name}, in a conversation",
+      "FROM_CONVERSATION_EDITED": "{name}, in a conversation · edited by {editor}",
+      "FROM_PROPOSAL": "Proposed nightly, confirmed by {name}",
+      "FROM_PROPOSAL_EDITED": "Proposed nightly, confirmed by {name} · edited by {editor}",
+      "FROM_PROPOSAL_AUTO": "Proposed nightly, stored without asking",
+      "FROM_SCREEN": "{name}, added here",
+      "FROM_SCREEN_EDITED": "{name}, added here · edited by {editor}",
+      "VIA_LARK": "via Lark",
+      "PROPOSALS_WAITING": "{n} proposal from this week’s conversations is waiting. | {n} proposals from this week’s conversations are waiting.",
+      "REVIEW": "Review",
+      "TEXT": "Memo text",
+      "UNTIL": "Until",
+      "OPTIONAL": "optional",
+      "REFUSAL_HINT": "A memo can’t name a customer, an order number or a code. Those are refused.",
+      "SAVE": "Save memo",
+      "CANCEL": "Cancel",
+      "REMOVE": "Remove",
+      "REMEMBER": "Remember",
+      "DISMISS": "Dismiss",
+      "SAID_TIMES": "Supporters said it {n} times this week · {stores}",
+      "COMPOSER_HINT": "Tell Gotchu something to keep in mind for this store.",
+      "COMPOSER_ADD": "Add memo",
+      "COMPOSER_SCOPE_STORE": "This store",
+      "COMPOSER_SCOPE_ALL": "All stores",
+      "COMPOSER_SCOPE_INBOX": "This inbox only",
+      "COMPOSER_SAVED": "Remembered.",
+      "COMPOSER_SCOPE_REQUIRED": "This conversation has no store yet. Choose All stores to remember it everywhere.",
+      "COMPOSER_NOT_FOUND": "This conversation could not be found here. Reload it and try again."
+    }
   }
 }
