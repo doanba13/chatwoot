@@ -60,9 +60,16 @@ const outOfRange = (facts, c) => {
   );
 };
 
+// A row with no fact or operator, or a list fact with no value yet: the
+// gateway would refuse it with its parser's words, so the page names it.
+const unfinished = c =>
+  !c.fact || !c.op || (Array.isArray(c.value) && c.value.length === 0);
+
 export const localProblems = (form, facts) => {
   const problems = [];
   if (!form.title.trim()) problems.push(`${R}PROBLEM_TITLE`);
+  if (form.conditions.some(unfinished))
+    problems.push(`${R}PROBLEM_INCOMPLETE_CONDITION`);
   if (form.say.trim() === '' && form.sending === 'no_change')
     problems.push(`${R}PROBLEM_DOES_NOTHING`);
   if (

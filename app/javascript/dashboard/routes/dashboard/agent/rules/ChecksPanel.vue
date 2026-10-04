@@ -18,6 +18,14 @@ const props = defineProps({
 const { t } = useI18n();
 const R = 'GOTCHU_AGENT.RULE.';
 
+// The conditions check's message carries the gateway parser's detail
+// ("all.0.fact: unknown fact"); the other checks' messages are the spec's
+// fixed sentences (§10) and pass through.
+const checkMessage = check =>
+  check.id === 'conditions' && !check.ok
+    ? t(`${R}PROBLEM_INCOMPLETE_CONDITION`)
+    : check.message;
+
 const CLASHES = [
   'CLASH_BASE',
   'CLASH_POLICY',
@@ -76,7 +84,7 @@ const lacking = computed(() => {
             check.ok ? 'i-lucide-check text-[var(--g-agent)]' : 'i-lucide-x'
           "
         />
-        {{ check.message }}
+        {{ checkMessage(check) }}
       </li>
       <li
         v-for="overlap in overlaps"

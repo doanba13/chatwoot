@@ -95,6 +95,38 @@ describe('ruleForm', () => {
     ).toBe(false);
   });
 
+  // The drive saved a rule with an empty condition row and got the gateway's
+  // raw "all.0.fact: unknown fact" back. A row with no fact, or a list with
+  // no value, is named here and keeps Save disabled.
+  it.each([
+    [{ fact: '', op: '', value: [] }],
+    [{ fact: 'channel', op: 'in', value: [] }],
+  ])('refuses an unfinished condition %j', condition => {
+    expect(
+      localProblems(
+        { ...emptyForm(), title: 'T', say: 'S', conditions: [condition] },
+        facts
+      )
+    ).toContain('GOTCHU_AGENT.RULE.PROBLEM_INCOMPLETE_CONDITION');
+  });
+
+  it('accepts a finished condition, number and list alike', () => {
+    expect(
+      localProblems(
+        {
+          ...emptyForm(),
+          title: 'T',
+          say: 'S',
+          conditions: [
+            { fact: 'channel', op: 'in', value: ['email'] },
+            { fact: 'order_age_days', op: 'gt', value: 0 },
+          ],
+        },
+        facts
+      )
+    ).toEqual([]);
+  });
+
   it('refuses a rule that does nothing', () => {
     expect(
       localProblems(
