@@ -338,6 +338,14 @@ Rails.application.routes.draw do
               end
             end
 
+            # Memos and nightly memo proposals (spec 2026-10-04 §6, §11):
+            # open to every agent, as any supporter can already add a memo by
+            # typing an instruction.
+            resources :memos, only: [:index, :create, :update, :destroy]
+            resources :memo_proposals, only: [:index] do
+              member { post :decision }
+            end
+
             # Item 6.4: Gotchu's own Shopify app. The install hands back
             # Shopify's consent URL; Shopify's return lands on the gateway's
             # public host, which forwards the browser to the stores page, and
