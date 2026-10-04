@@ -1,9 +1,111 @@
 {
   "PROCEDURES_MGMT": {
+    "HEADER": "Abläufe",
+    "HEADER_BTN_TXT": "Neuer Ablauf",
+    "DESCRIPTION": "Abläufe sind vom Händler verfasste Anweisungen, denen Gotchu folgt, wenn eine Kundennachricht zu einer von Ihnen geschriebenen Auslöseformulierung passt. Schreiben Sie einen Ablauf, testen Sie ihn per Probelauf an aktuellen Konversationen und aktivieren Sie ihn dann.",
+    "LOADING": "Abläufe werden geladen",
+    "SEARCH_PLACEHOLDER": "Abläufe durchsuchen...",
+    "NO_RESULTS": "Keine Abläufe gefunden, die Ihrer Suche entsprechen",
+    "COUNT": "{n} Ablauf | {n} Abläufe",
+    "LIST": {
+      "404": "Es gibt noch keine Abläufe.",
+      "GLOBAL": "Alle Shops",
+      "TABLE_HEADER": {
+        "SLUG": "Kurzname",
+        "TITLE": "Titel",
+        "STORE": "Shop",
+        "STATUS": "Status",
+        "TRIGGERS": "Auslöser",
+        "ACTIONS": "Aktionen"
+      }
+    },
+    "STATUS": {
+      "TESTING": "Test",
+      "ACTIVE": "Aktiv",
+      "ARCHIVED": "Archiviert",
+      "API": {
+        "SUCCESS_MESSAGE": "Status des Ablaufs aktualisiert"
+      }
+    },
+    "ACTIONS": {
+      "EDIT": "Bearbeiten",
+      "ACTIVATE": "Aktivieren",
+      "RETURN_TO_TESTING": "Zurück in den Test",
+      "ARCHIVE": "Archivieren",
+      "REPLAY": "Probelauf"
+    },
+    "UNCONFIGURED": {
+      "DESCRIPTION": "Abläufe sind in diesem Helpdesk nicht konfiguriert. Setzen Sie Folgendes auf dem Gateway und starten Sie es neu, um sie einzuschalten:"
+    },
     "ERRORS": {
+      "UNCONFIGURED": "Abläufe sind in diesem Helpdesk nicht konfiguriert, daher wurde nichts gesendet.",
+      "UNAVAILABLE": "Es konnte nicht bestätigt werden, dass die Anfrage Gotchu erreicht hat. Prüfen Sie das Gateway, bevor Sie es erneut versuchen.",
+      "INVALID": "Gotchu hat diesen Ablauf abgelehnt. Prüfen Sie das Format des Kurznamens, die Längenbegrenzungen und dass Titel, Text und Auslöseformulierungen keinen bestimmten Kunden und keine bestimmte Bestellung nennen.",
+      "DUPLICATE_SLUG": "Für diesen Shop gibt es bereits einen Ablauf mit diesem Kurznamen.",
+      "NOT_FOUND": "Dieser Ablauf existiert nicht mehr. Laden Sie die Liste neu.",
       "STALE_VERSION": "Die Prozedur hat sich geändert, seit du sie geöffnet hast. Lade die Seite neu und versuche es erneut.",
       "NOT_ACTIVE_FOR_AUTO": "Nur eine aktive Prozedur kann auf Auto gesetzt werden. Aktiviere sie zuerst.",
       "VERSION_REQUIRED": "Für die Änderung eines Kanals ist eine Prozedurversion erforderlich. Lade die Seite neu und versuche es erneut."
+    },
+    "FORM": {
+      "SLUG": {
+        "LABEL": "Kurzname",
+        "PLACEHOLDER": "rueckgabefrist",
+        "HINT": "Nur Kleinbuchstaben, Ziffern und Unterstriche, 3–40 Zeichen.",
+        "IMMUTABLE": "Der Kurzname wird beim Anlegen festgelegt und kann nicht geändert werden.",
+        "REQUIRED_ERROR": "Ein Kurzname ist erforderlich.",
+        "PATTERN_ERROR": "Muss ^[a-z0-9_]{3,40}$ entsprechen -- nur Kleinbuchstaben, Ziffern und Unterstriche, 3–40 Zeichen."
+      },
+      "TITLE": {
+        "LABEL": "Titel",
+        "PLACEHOLDER": "Rückgabefrist",
+        "REQUIRED_ERROR": "Ein Titel ist erforderlich.",
+        "LENGTH_ERROR": "Der Titel darf höchstens 100 Zeichen lang sein."
+      },
+      "BODY": {
+        "LABEL": "Text",
+        "PLACEHOLDER": "Was das Team in diesem Fall tun soll...",
+        "REQUIRED_ERROR": "Ein Text ist erforderlich.",
+        "LENGTH_ERROR": "Der Text darf höchstens 4000 Zeichen lang sein."
+      },
+      "PHRASES": {
+        "LABEL": "Auslöseformulierungen",
+        "PLACEHOLDER": "Formulierung eingeben und Enter drücken",
+        "HINT": "Wie ein Kunde mit eigenen Worten danach fragen könnte. Bis zu {max} Formulierungen.",
+        "COUNT": "{count} von {max} Formulierungen",
+        "MIN_ERROR": "Mindestens eine Auslöseformulierung ist erforderlich.",
+        "MAX_ERROR": "Höchstens 12 Auslöseformulierungen sind erlaubt."
+      },
+      "STORE": {
+        "LABEL": "Shop",
+        "GLOBAL_DESCRIPTION": "Dieser Ablauf gilt für Konversationen aus allen Shops.",
+        "SCOPED_DESCRIPTION": "Dieser Ablauf gilt nur für Konversationen von {store}."
+      },
+      "CANCEL": "Abbrechen"
+    },
+    "CREATE": {
+      "DESCRIPTION": "Ein neuer Ablauf beginnt im Status Test. Er fließt erst in Entwürfe ein, wenn Sie ihn aktivieren.",
+      "SUBMIT": "Ablauf erstellen",
+      "API": {
+        "SUCCESS_MESSAGE": "Ablauf erstellt, im Status Test"
+      }
+    },
+    "EDIT": {
+      "VERSION_LABEL": "Version {version}",
+      "STORE_SCOPE": "Shop: {store}",
+      "SUBMIT": "Neue Version speichern",
+      "NOT_FOUND": "Dieser Ablauf existiert nicht mehr.",
+      "API": {
+        "SUCCESS_MESSAGE": "Ablauf aktualisiert"
+      }
+    },
+    "REPLAY": {
+      "TITLE": "Ergebnisse des Probelaufs",
+      "MATCH_COUNT": "{count} Konversation hätte zu diesem Ablauf gepasst. | {count} Konversationen hätten zu diesem Ablauf gepasst.",
+      "SCOPE": "Die letzten {days} Tage durchsucht ({considered} Konversationen).",
+      "SCOPE_CAPPED": "Die letzten {considered} Konversationen durchsucht – im Zeitraum gibt es mehr, als dieser Durchlauf abdeckt.",
+      "TIMED_OUT": "Der Durchlauf wurde nicht rechtzeitig fertig. Diese Zahlen sind unvollständig.",
+      "CLOSE": "Schließen"
     },
     "CHANNEL_TIERS": {
       "TITLE": "Kanäle",

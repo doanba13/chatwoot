@@ -76,58 +76,133 @@
     "CANCEL": "Abbrechen"
   },
   "GOTCHU": {
+    "CONFIDENCE": {
+      "SURE": "sicher",
+      "PROBABLY": "wahrscheinlich",
+      "CHECK": "bitte prüfen"
+    },
     "TRACE": {
-      "PROCEDURE_V": "Procedure {title} v{version}",
-      "MATCH": "match {score}, next best {next}",
-      "MATCH_ONLY": "match {score}",
+      "HOW_IT_GOT_HERE": "Wie es dazu kam",
+      "STEPS": "{count} Schritt | {count} Schritte",
+      "ORDER": "{name} nachgeschlagen",
+      "DAYS_OLD": "{n} Tag alt | {n} Tage alt",
+      "TRACKING": "Sendungsverfolgung geprüft",
+      "POLICY": "Shop-Richtlinie gelesen",
+      "PROCEDURE": "Ablauf „{title}“ befolgt",
+      "MEMOS": "{n} Memo angewendet | {n} Memos angewendet",
+      "PRECEDENTS": "{n} ähnliche Antwort gefunden | {n} ähnliche Antworten gefunden",
+      "PROCEDURE_V": "Ablauf {title} v{version}",
+      "MATCH": "Übereinstimmung {score}, nächstbeste {next}",
+      "MATCH_ONLY": "Übereinstimmung {score}",
       "FOUND_BY": {
-        "CONTACT_EMAIL": "found by the sender’s email",
-        "ORDER_NUMBER": "found by the order number they wrote",
-        "THREAD_ROOT": "found from the email thread",
-        "PERSISTED_ATTRIBUTES": "found on the conversation"
+        "CONTACT_EMAIL": "über die E-Mail-Adresse des Absenders gefunden",
+        "ORDER_NUMBER": "über die vom Kunden geschriebene Bestellnummer gefunden",
+        "THREAD_ROOT": "über den E-Mail-Verlauf gefunden",
+        "PERSISTED_ATTRIBUTES": "in den Daten der Konversation gefunden"
       },
-      "CHECKED_AGO": "checked {ago}",
-      "MEMOS_NONE": "Memos none",
-      "RULES": "Rules {n} applied",
-      "RULE_HOLDS": "holds sending",
-      "RULE_HANDS_OVER": "hands over",
-      "RULE_MISSING": "could not check {facts}, so it holds sending",
-      "RULE_MISSING_TEXT_ONLY": "could not check {facts}, so its text was left out",
-      "RULE_INBOX_UNKNOWN": "inbox unknown",
-      "RULE_RENDER_CAP": "not shown: too many rules matched",
-      "RULE_UNREADABLE": "could not be read by this version",
-      "RULE_SKIPPED": "not shown",
-      "RULE_STILL_HOLDS": "; it still holds sending",
-      "RULE_ADDS_TEXT": "added to the reply",
-      "RULE_TESTING": "testing, would have applied, changed nothing",
-      "READ": "Read {lang}",
+      "CHECKED_AGO": "{ago} geprüft",
+      "MEMOS_NONE": "Memos keine",
+      "RULES": "Regeln {n} angewendet",
+      "RULE_HOLDS": "hält das Senden zurück",
+      "RULE_HANDS_OVER": "übergibt",
+      "RULE_MISSING": "konnte {facts} nicht prüfen und hält das Senden daher zurück",
+      "RULE_MISSING_TEXT_ONLY": "konnte {facts} nicht prüfen, daher wurde ihr Text weggelassen",
+      "RULE_INBOX_UNKNOWN": "Posteingang unbekannt",
+      "RULE_RENDER_CAP": "nicht angezeigt: zu viele Regeln haben gepasst",
+      "RULE_UNREADABLE": "konnte von dieser Version nicht gelesen werden",
+      "RULE_SKIPPED": "nicht angezeigt",
+      "RULE_STILL_HOLDS": "; sie hält das Senden weiterhin zurück",
+      "RULE_ADDS_TEXT": "zur Antwort hinzugefügt",
+      "RULE_TESTING": "Test, hätte gegriffen, hat nichts geändert",
+      "READ": "{lang} gelesen",
       "LANG": {
-        "DE": "German",
-        "FR": "French",
-        "EN": "English",
-        "NONE": "an undetected language"
+        "DE": "Deutsch",
+        "FR": "Französisch",
+        "EN": "Englisch",
+        "NONE": "eine nicht erkannte Sprache"
       },
-      "THREAD": "Thread {n} earlier message in context | Thread {n} earlier messages in context",
-      "TIER": "Tier {tier} on {channel}",
-      "TIER_NONE": "No procedure matched",
-      "TIER_CHANNEL_UNKNOWN": "No tier: channel unknown",
-      "CHANNEL_UNKNOWN": "channel unknown",
+      "THREAD": "Verlauf {n} frühere Nachricht im Kontext | Verlauf {n} frühere Nachrichten im Kontext",
+      "TIER": "Stufe {tier} für {channel}",
+      "TIER_NONE": "Kein Ablauf passte",
+      "TIER_CHANNEL_UNKNOWN": "Keine Stufe: Kanal unbekannt",
+      "CHANNEL_UNKNOWN": "Kanal unbekannt",
       "TIERS": {
-        "OFF": "off",
-        "HAND_OVER": "hand over",
-        "DRAFT": "draft",
+        "OFF": "aus",
+        "HAND_OVER": "übergeben",
+        "DRAFT": "Entwurf",
         "AUTO": "auto"
       },
-      "TIER_WAIT": "waits for a person",
-      "TIER_AUTO": "may send on its own; that is decided when the hold ends, not here",
-      "TIER_RULE_HOLD": "a rule holds sending, so it waits for a person",
-      "TIER_HANDOVER": "the procedure hands this over to a person"
+      "TIER_WAIT": "wartet auf eine Person",
+      "TIER_AUTO": "darf selbst senden; das wird am Ende der Wartezeit entschieden, nicht hier",
+      "TIER_RULE_HOLD": "eine Regel hält das Senden zurück, daher wartet der Entwurf auf eine Person",
+      "TIER_HANDOVER": "der Ablauf übergibt dies an eine Person"
     },
     "DRAFT": {
-      "HEADER": "Draft v{version} · from {procedure} · tier: {tier}",
-      "HEADER_NO_PROCEDURE": "Draft v{version} · no procedure matched",
-      "HEADER_NO_TIER": "Draft v{version} · from {procedure}",
-      "INSTRUCT_HINT": "Plain words are enough. Gotchu keeps the format."
+      "TITLE": "Entwurf von Gotchu",
+      "INSERT": "Einfügen",
+      "SEND": "Entwurf senden",
+      "DISCARD": "Verwerfen",
+      "ADJUST": "Anpassen:",
+      "STOP": "stoppen und bearbeiten",
+      "INSTRUCT_PLACEHOLDER": "Sagen Sie Gotchu, was geändert werden soll…",
+      "INSTRUCT_SUBMIT": "Anweisung an Gotchu senden",
+      "INSTRUCT_REFUSED": "Gotchu hat diese Anweisung nicht angenommen – der Entwurf ist womöglich schon weiter. Laden Sie die Konversation neu.",
+      "INSTRUCT_UNAVAILABLE": "Es konnte nicht bestätigt werden, dass die Anweisung Gotchu erreicht hat. Prüfen Sie die privaten Notizen in dieser Konversation, bevor Sie sie erneut senden.",
+      "INSTRUCT_UNCONFIGURED": "Anweisungen sind in diesem Helpdesk nicht konfiguriert, daher wurde nichts gesendet.",
+      "INSTRUCT_INVALID": "Diese Anweisung ist leer oder länger als 2000 Zeichen.",
+      "REVIEW_MINUTES": "{count} Min. zum Prüfen",
+      "REVIEW_HOURS": "{count} Std. zum Prüfen",
+      "REVIEW_SOON": "weniger als eine Minute zum Prüfen",
+      "REVIEW_EXPIRED": "Prüfzeit abgelaufen",
+      "REDRAFTING": "Neuer Entwurf wird geschrieben…",
+      "NOTICE_UNAVAILABLE": "Gotchu antwortet nicht, daher ist unklar, ob es hier einen Entwurf gibt.",
+      "NOTICE_UNCONFIGURED": "Gotchu ist in diesem Helpdesk nicht konfiguriert, daher kann kein Entwurf gelesen werden.",
+      "NOTICE_FAILED": "Der Entwurf für diese Konversation konnte nicht gelesen werden.",
+      "WORKING": "Gotchu arbeitet an Ihrer Anweisung… {seconds}s",
+      "FROM_INSTRUCTION": "v{version} · aus Ihrer Anweisung",
+      "OUTCOME_FAILED": "Gotchu konnte das nicht abschließen. Versuchen Sie es erneut.",
+      "DISMISS": "Ausblenden",
+      "REFUSED": {
+        "GENERIC": "Gotchu hat den Entwurf nicht geändert.",
+        "TERMINAL": "Dieser Entwurf ist abgeschlossen – hier gibt es nichts mehr zu ändern.",
+        "REDRAFT_CAP": "Das Limit für Neuentwürfe ist für diesen Entwurf erreicht.",
+        "NOT_A_REDRAFT": "Das ist keine Änderung an der Antwort. Sagen Sie, was darin geändert werden soll."
+      },
+      "HEADER": "Entwurf v{version} · aus {procedure} · Stufe: {tier}",
+      "HEADER_NO_PROCEDURE": "Entwurf v{version} · kein Ablauf passte",
+      "HEADER_NO_TIER": "Entwurf v{version} · aus {procedure}",
+      "INSTRUCT_HINT": "Einfache Worte genügen. Gotchu behält das Format bei."
+    },
+    "HANDLED": {
+      "BY": "Bearbeitet von {name}",
+      "BY_IN": "Bearbeitet von {name} · {count} Min."
+    },
+    "APPROVAL": {
+      "TITLE": "Braucht Ihre Freigabe",
+      "PLANNED": "Geplante Aktionen",
+      "APPROVE": "Freigeben",
+      "ADJUST": "Anpassen",
+      "HAND_OVER": "Übergeben"
+    },
+    "ESCALATION": {
+      "HANDED_TO": "An {name} übergeben",
+      "NOTE": "Gotchu hat nichts entworfen. Dem Kunden wurde gesagt, dass sich eine Person darum kümmert."
+    },
+    "STORES": {
+      "OPEN": "{count} offen",
+      "OPEN_PERSONA": "{count} offen · Persona: {persona}",
+      "ALL": "Alle Shops · Offen"
+    },
+    "AUTONOMY": {
+      "DRAFT_TITLE": "Nur Entwurf",
+      "DRAFT_DESCRIPTION": "Kunden hören von Ihrem Team. Gotchu schreibt, Sie senden.",
+      "APPROVE_TITLE": "Erst freigeben",
+      "APPROVE_DESCRIPTION": "Kunden warten ein paar Minuten. Jede Antwort und jede Aktion braucht einen Klick von Ihnen.",
+      "HANDLE_TITLE": "Ausgewählte Themen übernehmen",
+      "HANDLE_DESCRIPTION": "Sofortige Antworten zu den Themen, die Sie einschalten. Alles andere wartet auf Sie."
+    },
+    "TOPICS": {
+      "ALWAYS_HANDS_OVER": "Übergibt immer"
     }
   }
 }

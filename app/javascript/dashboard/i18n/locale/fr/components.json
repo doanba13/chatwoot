@@ -76,58 +76,133 @@
     "CANCEL": "Annuler"
   },
   "GOTCHU": {
+    "CONFIDENCE": {
+      "SURE": "sûr",
+      "PROBABLY": "probable",
+      "CHECK": "à vérifier"
+    },
     "TRACE": {
-      "PROCEDURE_V": "Procedure {title} v{version}",
-      "MATCH": "match {score}, next best {next}",
-      "MATCH_ONLY": "match {score}",
+      "HOW_IT_GOT_HERE": "Comment on en est arrivé là",
+      "STEPS": "{count} étape | {count} étapes",
+      "ORDER": "Commande {name} consultée",
+      "DAYS_OLD": "passée il y a {n} jour | passée il y a {n} jours",
+      "TRACKING": "Suivi vérifié",
+      "POLICY": "Politique de la boutique consultée",
+      "PROCEDURE": "Procédure « {title} » suivie",
+      "MEMOS": "{n} note d’équipe appliquée | {n} notes d’équipe appliquées",
+      "PRECEDENTS": "{n} réponse similaire trouvée | {n} réponses similaires trouvées",
+      "PROCEDURE_V": "Procédure {title} v{version}",
+      "MATCH": "correspondance {score}, suivante {next}",
+      "MATCH_ONLY": "correspondance {score}",
       "FOUND_BY": {
-        "CONTACT_EMAIL": "found by the sender’s email",
-        "ORDER_NUMBER": "found by the order number they wrote",
-        "THREAD_ROOT": "found from the email thread",
-        "PERSISTED_ATTRIBUTES": "found on the conversation"
+        "CONTACT_EMAIL": "trouvée grâce à l’e-mail de l’expéditeur",
+        "ORDER_NUMBER": "trouvée grâce au numéro de commande indiqué par le client",
+        "THREAD_ROOT": "trouvée à partir du fil d’e-mails",
+        "PERSISTED_ATTRIBUTES": "trouvée sur la conversation"
       },
-      "CHECKED_AGO": "checked {ago}",
-      "MEMOS_NONE": "Memos none",
-      "RULES": "Rules {n} applied",
-      "RULE_HOLDS": "holds sending",
-      "RULE_HANDS_OVER": "hands over",
-      "RULE_MISSING": "could not check {facts}, so it holds sending",
-      "RULE_MISSING_TEXT_ONLY": "could not check {facts}, so its text was left out",
-      "RULE_INBOX_UNKNOWN": "inbox unknown",
-      "RULE_RENDER_CAP": "not shown: too many rules matched",
-      "RULE_UNREADABLE": "could not be read by this version",
-      "RULE_SKIPPED": "not shown",
-      "RULE_STILL_HOLDS": "; it still holds sending",
-      "RULE_ADDS_TEXT": "added to the reply",
-      "RULE_TESTING": "testing, would have applied, changed nothing",
-      "READ": "Read {lang}",
+      "CHECKED_AGO": "vérifié {ago}",
+      "MEMOS_NONE": "Mémos : aucun",
+      "RULES": "Règles appliquées : {n}",
+      "RULE_HOLDS": "retient l’envoi",
+      "RULE_HANDS_OVER": "transfère",
+      "RULE_MISSING": "impossible de vérifier {facts}, elle retient donc l’envoi",
+      "RULE_MISSING_TEXT_ONLY": "impossible de vérifier {facts}, son texte a donc été omis",
+      "RULE_INBOX_UNKNOWN": "boîte de réception inconnue",
+      "RULE_RENDER_CAP": "non affichée : trop de règles correspondaient",
+      "RULE_UNREADABLE": "n’a pas pu être lue par cette version",
+      "RULE_SKIPPED": "non affichée",
+      "RULE_STILL_HOLDS": " ; elle retient toujours l’envoi",
+      "RULE_ADDS_TEXT": "ajoutée à la réponse",
+      "RULE_TESTING": "en test : se serait appliquée, n’a rien changé",
+      "READ": "Message lu en {lang}",
       "LANG": {
-        "DE": "German",
-        "FR": "French",
-        "EN": "English",
-        "NONE": "an undetected language"
+        "DE": "allemand",
+        "FR": "français",
+        "EN": "anglais",
+        "NONE": "langue non détectée"
       },
-      "THREAD": "Thread {n} earlier message in context | Thread {n} earlier messages in context",
-      "TIER": "Tier {tier} on {channel}",
-      "TIER_NONE": "No procedure matched",
-      "TIER_CHANNEL_UNKNOWN": "No tier: channel unknown",
-      "CHANNEL_UNKNOWN": "channel unknown",
+      "THREAD": "Fil : {n} message antérieur pris en compte | Fil : {n} messages antérieurs pris en compte",
+      "TIER": "Niveau {tier} sur {channel}",
+      "TIER_NONE": "Aucune procédure correspondante",
+      "TIER_CHANNEL_UNKNOWN": "Aucun niveau : canal inconnu",
+      "CHANNEL_UNKNOWN": "canal inconnu",
       "TIERS": {
-        "OFF": "off",
-        "HAND_OVER": "hand over",
-        "DRAFT": "draft",
+        "OFF": "désactivé",
+        "HAND_OVER": "transférer",
+        "DRAFT": "brouillon",
         "AUTO": "auto"
       },
-      "TIER_WAIT": "waits for a person",
-      "TIER_AUTO": "may send on its own; that is decided when the hold ends, not here",
-      "TIER_RULE_HOLD": "a rule holds sending, so it waits for a person",
-      "TIER_HANDOVER": "the procedure hands this over to a person"
+      "TIER_WAIT": "attend l’intervention d’une personne",
+      "TIER_AUTO": "peut envoyer seul ; cela se décide à la fin du délai d’attente, pas ici",
+      "TIER_RULE_HOLD": "une règle retient l’envoi, il attend donc l’intervention d’une personne",
+      "TIER_HANDOVER": "la procédure transfère ce cas à une personne"
     },
     "DRAFT": {
-      "HEADER": "Draft v{version} · from {procedure} · tier: {tier}",
-      "HEADER_NO_PROCEDURE": "Draft v{version} · no procedure matched",
-      "HEADER_NO_TIER": "Draft v{version} · from {procedure}",
-      "INSTRUCT_HINT": "Plain words are enough. Gotchu keeps the format."
+      "TITLE": "Brouillon de Gotchu",
+      "INSERT": "Insérer",
+      "SEND": "Envoyer le brouillon",
+      "DISCARD": "Rejeter",
+      "ADJUST": "Ajuster :",
+      "STOP": "arrêter et modifier",
+      "INSTRUCT_PLACEHOLDER": "Dites à Gotchu ce qu’il faut modifier…",
+      "INSTRUCT_SUBMIT": "Envoyer l’instruction à Gotchu",
+      "INSTRUCT_REFUSED": "Gotchu n’a pas pris en compte cette instruction — le brouillon a peut-être évolué. Rechargez la conversation.",
+      "INSTRUCT_UNAVAILABLE": "Impossible de confirmer que l’instruction est parvenue à Gotchu. Consultez les notes privées de cette conversation avant de la renvoyer.",
+      "INSTRUCT_UNCONFIGURED": "Les instructions ne sont pas configurées sur ce service d’assistance, donc rien n’a été envoyé.",
+      "INSTRUCT_INVALID": "Cette instruction est vide ou dépasse 2 000 caractères.",
+      "REVIEW_MINUTES": "{count} min pour relire",
+      "REVIEW_HOURS": "{count} h pour relire",
+      "REVIEW_SOON": "moins d’une minute pour relire",
+      "REVIEW_EXPIRED": "délai de relecture écoulé",
+      "REDRAFTING": "Rédaction d’un nouveau brouillon…",
+      "NOTICE_UNAVAILABLE": "Gotchu ne répond pas : impossible de savoir si un brouillon existe ici.",
+      "NOTICE_UNCONFIGURED": "Gotchu n’est pas configuré sur ce service d’assistance, donc aucun brouillon ne peut être lu.",
+      "NOTICE_FAILED": "Le brouillon de cette conversation n’a pas pu être lu.",
+      "WORKING": "Gotchu traite votre instruction… {seconds} s",
+      "FROM_INSTRUCTION": "v{version} · d’après votre instruction",
+      "OUTCOME_FAILED": "Gotchu n’a pas pu aller au bout. Réessayez.",
+      "DISMISS": "Fermer",
+      "REFUSED": {
+        "GENERIC": "Gotchu n’a pas modifié le brouillon.",
+        "TERMINAL": "Ce brouillon est finalisé — plus rien à modifier.",
+        "REDRAFT_CAP": "Limite de réécritures atteinte pour ce brouillon.",
+        "NOT_A_REDRAFT": "Ce n’est pas une modification de la réponse. Indiquez ce qu’il faut y changer."
+      },
+      "HEADER": "Brouillon v{version} · d’après {procedure} · niveau : {tier}",
+      "HEADER_NO_PROCEDURE": "Brouillon v{version} · aucune procédure correspondante",
+      "HEADER_NO_TIER": "Brouillon v{version} · d’après {procedure}",
+      "INSTRUCT_HINT": "Des mots simples suffisent. Gotchu conserve la mise en forme."
+    },
+    "HANDLED": {
+      "BY": "Traitée par {name}",
+      "BY_IN": "Traitée par {name} · {count} min"
+    },
+    "APPROVAL": {
+      "TITLE": "Votre approbation est requise",
+      "PLANNED": "Actions prévues",
+      "APPROVE": "Approuver",
+      "ADJUST": "Ajuster",
+      "HAND_OVER": "Transférer"
+    },
+    "ESCALATION": {
+      "HANDED_TO": "Transférée à {name}",
+      "NOTE": "Gotchu n’a rien rédigé. Le client a été informé qu’une personne s’en occupe."
+    },
+    "STORES": {
+      "OPEN": "Ouvertes : {count}",
+      "OPEN_PERSONA": "Ouvertes : {count} · persona : {persona}",
+      "ALL": "Toutes les boutiques · Ouvertes"
+    },
+    "AUTONOMY": {
+      "DRAFT_TITLE": "Brouillon uniquement",
+      "DRAFT_DESCRIPTION": "Les clients reçoivent les réponses de votre équipe. Gotchu rédige, vous envoyez.",
+      "APPROVE_TITLE": "Approuver d’abord",
+      "APPROVE_DESCRIPTION": "Les clients attendent quelques minutes. Chaque réponse et chaque action demandent un clic de votre part.",
+      "HANDLE_TITLE": "Gérer certains sujets",
+      "HANDLE_DESCRIPTION": "Réponses instantanées sur les sujets que vous activez. Tout le reste vous attend."
+    },
+    "TOPICS": {
+      "ALWAYS_HANDS_OVER": "Transfère toujours"
     }
   }
 }

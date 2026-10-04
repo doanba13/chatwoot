@@ -1,13 +1,13 @@
 {
   "GOTCHU_SHOPIFY": {
-    "SHOP_LABEL": "Dein Shopify-Shop",
-    "SHOP_PLACEHOLDER": "dein-shop.myshopify.com",
+    "SHOP_LABEL": "Ihr Shopify-Shop",
+    "SHOP_PLACEHOLDER": "ihr-shop.myshopify.com",
     "CONNECT": "Shopify-Shop verbinden",
     "RECONNECT": "Erneut verbinden",
     "EMPTY": "Noch kein Shop verbunden.",
     "COMPLETING": "Verbindung mit Shopify wird abgeschlossen",
     "CONNECTED": "{key} verbunden.",
-    "PREFIX_REVIEW": "Prüfe unten das Bestellpräfix: Wir konnten es nicht aus deinen Bestellungen lesen.",
+    "PREFIX_REVIEW": "Prüfen Sie unten das Bestellpräfix: Wir konnten es nicht aus Ihren Bestellungen lesen.",
     "PREFIX_LABEL": "Bestellpräfix",
     "PREFIX_SAVE": "Speichern",
     "PREFIX_SAVED": "Bestellpräfix gespeichert.",
@@ -18,11 +18,11 @@
     "ERRORS": {
       "UNCONFIGURED": "Gotchu ist auf diesem Desk nicht eingerichtet. Ein Operator muss GOTCHU_GATEWAY_URL, ein Gateway-Secret für dieses Konto und GOTCHU_GESTURE_SECRET setzen.",
       "UNAVAILABLE": "Gotchu hat die Anfrage nicht bestätigt. Bitte gleich erneut versuchen.",
-      "INVALID_SHOP": "Gib die myshopify.com-Adresse deines Shops ein, z. B. dein-shop.myshopify.com.",
+      "INVALID_SHOP": "Geben Sie die myshopify.com-Adresse Ihres Shops ein, z. B. ihr-shop.myshopify.com.",
       "INVALID_PREFIX": "1 bis 10 Buchstaben oder Ziffern, mindestens ein Buchstabe.",
       "INVALID_QUERY": "Die Antwort von Shopify konnte nicht gelesen werden. Starte die Verbindung erneut.",
-      "NOT_FOUND": "Dieser Shop wurde nicht gefunden. Lade die Seite neu und versuche es erneut.",
-      "PREFIX_UNAVAILABLE": "Dieses Bestellpräfix ist bereits vergeben. Wähle ein anderes.",
+      "NOT_FOUND": "Dieser Shop wurde nicht gefunden. Laden Sie die Seite neu und versuchen Sie es erneut.",
+      "PREFIX_UNAVAILABLE": "Dieses Bestellpräfix ist bereits vergeben. Wählen Sie ein anderes.",
       "TOO_MANY_SAVES": "Zu viele Anfragen in kurzer Zeit. Warte eine Minute und versuche es erneut.",
       "INSTALL_FAILED": "Der Shop konnte nicht verbunden werden. Starte die Verbindung erneut.",
       "INSTALL_FAILED_REFERENCE": "Der Shop konnte nicht verbunden werden. Starte die Verbindung erneut. Falls es weiter scheitert, nenne die Referenz {reference}."

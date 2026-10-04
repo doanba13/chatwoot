@@ -286,7 +286,7 @@
         "COLLAPSE": "Vorschau ausblenden",
         "EXPAND": "Vorschau erweitern"
       },
-      "INSTRUCT": "Instruct",
+      "INSTRUCT": "Anweisen",
       "MEMO": "Memo"
     },
     "VISIBLE_TO_AGENTS": "Privater Hinweis: Nur für Sie und Ihr Team sichtbar",
@@ -367,10 +367,14 @@
       "GO_TO_CONVERSATION": "Zur Unterhaltung wechseln"
     },
     "GOTCHU_QUEUE": {
-      "NO_PROCEDURE": "no procedure",
-      "TAB_ALL": "All",
-      "TAB_DRAFTS": "Drafts",
-      "TAB_HANDED_OVER": "Handed over"
+      "DRAFTED": "Entwurf bereit",
+      "AUTO_HOLDING": "Sendet selbst",
+      "HANDED_OVER": "Übergeben",
+      "SENT": "Gesendet",
+      "NO_PROCEDURE": "kein Ablauf",
+      "TAB_ALL": "Alle",
+      "TAB_DRAFTS": "Entwürfe",
+      "TAB_HANDED_OVER": "Übergeben"
     }
   },
   "EMAIL_TRANSCRIPT": {

@@ -34,8 +34,8 @@
       "DESCRIPTION": "Adresses qui transfèrent vers une boîte mail partagée. Gotchu lit l'adresse de transfert du premier message d'une conversation et la classe sous cette boutique.",
       "PLACEHOLDER": "contact{'@'}votreboutique.fr",
       "LIMIT": "Jusqu'à 20 adresses par boutique.",
-      "TO_STORE": "files under {store}",
-      "FALLBACK": "Mail from an address not listed here is filed by the order number in the thread, when there is one."
+      "TO_STORE": "classé dans {store}",
+      "FALLBACK": "Le courrier envoyé depuis une adresse absente de cette liste est classé selon le numéro de commande figurant dans le fil, s’il y en a un."
     },
     "SHARED_WARNING": {
       "TITLE": "Cette boîte mail est-elle partagée ?",
@@ -62,7 +62,7 @@
       "UNLISTED_INBOX_DROPPED": "La boîte de réception {ids} n'est plus visible et n'a pas été confirmée pour suppression. Rechargez la page et décidez à nouveau.",
       "TOO_MANY_SAVES": "Trop d'enregistrements en peu de temps. Attendez une minute, puis enregistrez à nouveau."
     },
-    "EMAIL_VIA_SHARED": "Email, via {name} · shared",
-    "CONNECT_INBOX": "+ Connect an inbox"
+    "EMAIL_VIA_SHARED": "E-mail, via {name} · boîte partagée",
+    "CONNECT_INBOX": "+ Connecter une boîte de réception"
   }
 }

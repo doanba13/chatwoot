@@ -1,9 +1,111 @@
 {
   "PROCEDURES_MGMT": {
+    "HEADER": "Procédures",
+    "HEADER_BTN_TXT": "Nouvelle procédure",
+    "DESCRIPTION": "Les procédures sont des instructions rédigées par le marchand que Gotchu suit lorsqu’un message client correspond à une phrase déclencheuse que vous avez écrite. Rédigez-en une, testez-la sur des conversations récentes avec Rejouer, puis activez-la.",
+    "LOADING": "Chargement des procédures",
+    "SEARCH_PLACEHOLDER": "Rechercher des procédures…",
+    "NO_RESULTS": "Aucune procédure ne correspond à votre recherche",
+    "COUNT": "{n} procédure | {n} procédures",
+    "LIST": {
+      "404": "Il n’y a pas encore de procédure.",
+      "GLOBAL": "Toutes les boutiques",
+      "TABLE_HEADER": {
+        "SLUG": "Identifiant",
+        "TITLE": "Titre",
+        "STORE": "Boutique",
+        "STATUS": "Statut",
+        "TRIGGERS": "Déclencheurs",
+        "ACTIONS": "Actions"
+      }
+    },
+    "STATUS": {
+      "TESTING": "En test",
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archivée",
+      "API": {
+        "SUCCESS_MESSAGE": "Statut de la procédure mis à jour"
+      }
+    },
+    "ACTIONS": {
+      "EDIT": "Modifier",
+      "ACTIVATE": "Activer",
+      "RETURN_TO_TESTING": "Repasser en test",
+      "ARCHIVE": "Archiver",
+      "REPLAY": "Rejouer"
+    },
+    "UNCONFIGURED": {
+      "DESCRIPTION": "Les procédures ne sont pas configurées sur ce service d’assistance. Pour les activer, définissez les éléments suivants sur la passerelle, puis redémarrez-la :"
+    },
     "ERRORS": {
+      "UNCONFIGURED": "Les procédures ne sont pas configurées sur ce service d’assistance, donc rien n’a été envoyé.",
+      "UNAVAILABLE": "Impossible de confirmer que la demande est parvenue à Gotchu. Vérifiez la passerelle avant de réessayer.",
+      "INVALID": "Gotchu a refusé cette procédure. Vérifiez le format de l’identifiant et les limites de longueur, et assurez-vous que le titre, le contenu et les phrases déclencheuses ne désignent pas un client ou une commande en particulier.",
+      "DUPLICATE_SLUG": "Une procédure avec cet identifiant existe déjà pour cette boutique.",
+      "NOT_FOUND": "Cette procédure n’existe plus. Rechargez la liste.",
       "STALE_VERSION": "La procédure a changé depuis que vous l'avez ouverte. Rechargez la page et réessayez.",
       "NOT_ACTIVE_FOR_AUTO": "Seule une procédure active peut passer en mode Auto. Activez-la d'abord.",
       "VERSION_REQUIRED": "Une version de procédure est requise pour modifier un canal. Rechargez la page et réessayez."
+    },
+    "FORM": {
+      "SLUG": {
+        "LABEL": "Identifiant",
+        "PLACEHOLDER": "delai_retour",
+        "HINT": "Lettres minuscules, chiffres et tirets bas uniquement, de 3 à 40 caractères.",
+        "IMMUTABLE": "L’identifiant est défini à la création et ne peut plus être modifié.",
+        "REQUIRED_ERROR": "Un identifiant est requis.",
+        "PATTERN_ERROR": "Doit correspondre à ^[a-z0-9_]{3,40}$ — lettres minuscules, chiffres et tirets bas uniquement, de 3 à 40 caractères."
+      },
+      "TITLE": {
+        "LABEL": "Titre",
+        "PLACEHOLDER": "Délai de retour",
+        "REQUIRED_ERROR": "Un titre est requis.",
+        "LENGTH_ERROR": "Le titre ne doit pas dépasser 100 caractères."
+      },
+      "BODY": {
+        "LABEL": "Contenu",
+        "PLACEHOLDER": "Ce que l’équipe doit faire dans ce cas…",
+        "REQUIRED_ERROR": "Un contenu est requis.",
+        "LENGTH_ERROR": "Le contenu ne doit pas dépasser 4 000 caractères."
+      },
+      "PHRASES": {
+        "LABEL": "Phrases déclencheuses",
+        "PLACEHOLDER": "Saisissez une phrase et appuyez sur Entrée",
+        "HINT": "Comment un client pourrait le demander, avec ses propres mots. Jusqu’à {max} phrases.",
+        "COUNT": "{count} sur {max} phrases",
+        "MIN_ERROR": "Au moins une phrase déclencheuse est requise.",
+        "MAX_ERROR": "12 phrases déclencheuses au maximum sont autorisées."
+      },
+      "STORE": {
+        "LABEL": "Boutique",
+        "GLOBAL_DESCRIPTION": "Cette procédure s’applique aux conversations de toutes les boutiques.",
+        "SCOPED_DESCRIPTION": "Cette procédure s’applique uniquement aux conversations de {store}."
+      },
+      "CANCEL": "Annuler"
+    },
+    "CREATE": {
+      "DESCRIPTION": "Une nouvelle procédure démarre au statut En test. Elle n’est utilisée dans les brouillons qu’une fois que vous l’avez activée.",
+      "SUBMIT": "Créer la procédure",
+      "API": {
+        "SUCCESS_MESSAGE": "Procédure créée, au statut En test"
+      }
+    },
+    "EDIT": {
+      "VERSION_LABEL": "Version {version}",
+      "STORE_SCOPE": "Boutique : {store}",
+      "SUBMIT": "Enregistrer une nouvelle version",
+      "NOT_FOUND": "Cette procédure n’existe plus.",
+      "API": {
+        "SUCCESS_MESSAGE": "Procédure mise à jour"
+      }
+    },
+    "REPLAY": {
+      "TITLE": "Résultats de l’essai sur l’historique",
+      "MATCH_COUNT": "{count} conversation aurait correspondu à cette procédure. | {count} conversations auraient correspondu à cette procédure.",
+      "SCOPE": "Analyse des {days} derniers jours ({considered} conversations).",
+      "SCOPE_CAPPED": "Analyse des {considered} dernières conversations — la période en contient davantage que cette analyse n’en couvre.",
+      "TIMED_OUT": "L’analyse ne s’est pas terminée à temps. Ces chiffres sont partiels.",
+      "CLOSE": "Fermer"
     },
     "CHANNEL_TIERS": {
       "TITLE": "Canaux",
