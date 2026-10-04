@@ -1,8 +1,13 @@
 class Api::V1::Accounts::Gotchu::AgentController < Api::V1::Accounts::BaseController
   # No admin check: every agent reads the overview, and every agent may stop
-  # an auto send, because stopping is the safe direction (agent-screens plan
-  # decision 1). Nothing here decides anything about sending; the Stop is a
-  # gesture forwarded with the session's actor.
+  # an auto send they can see, because stopping is the safe direction
+  # (agent-screens plan decision 1). Nothing here decides anything about
+  # sending; the Stop is a gesture forwarded with the session's actor.
+  #
+  # The gateway answers account-wide and has no idea which user asked, so the
+  # conversation ids it returns are narrowed here to the ones this user may
+  # open (Gotchu::VisibleConversations), and a Stop names its conversation and
+  # is refused unless this user may open it (the fix-wave contract).
 
   rescue_from Gotchu::GatewayClient::ConfigurationError, with: :render_unconfigured
   rescue_from Gotchu::GatewayClient::UnavailableError, with: :render_unavailable
@@ -15,14 +20,39 @@ class Api::V1::Accounts::Gotchu::AgentController < Api::V1::Accounts::BaseContro
   def overview
     return render(json: UNCONFIGURED) unless Gotchu::AgentService.available?(account_id: Current.account.id)
 
-    render json: service.overview(days: params[:days].presence&.to_i).merge('capabilities' => { 'overview' => true })
+    render json: visible(service.overview(days: params[:days].presence&.to_i)).merge('capabilities' => { 'overview' => true })
   rescue Gotchu::GatewayClient::NotFoundError
     render json: UNCONFIGURED
   end
 
-  def stop_auto = render(json: service.stop_auto(cycle_id: params[:id].to_i))
+  # The same lookup MemosController makes: a conversation outside the account
+  # is a 404 (RecordNotFound), one this user cannot open a 401
+  # (ConversationPolicy#show?), and neither reaches the gateway. The gateway
+  # then refuses a cycle that is not this conversation's.
+  def stop_auto
+    if params[:conversation_id].blank?
+      return render json: { error: 'A Stop names its conversation', reason: 'invalid' }, status: :unprocessable_entity
+    end
+
+    conversation = Current.account.conversations.find_by!(display_id: params[:conversation_id])
+    authorize conversation, :show?
+    render json: service.stop_auto(cycle_id: params[:id].to_i, conversation_id: conversation.display_id)
+  end
 
   private
+
+  # Holds and unmatched conversations this user may not open are dropped;
+  # every count stays the gateway's.
+  def visible(overview)
+    holds = Array(overview['holding'])
+    no_match = overview['noMatch']
+    ids = holds.pluck('conversationId') + Array(no_match&.dig('conversationIds'))
+    open = Gotchu::VisibleConversations.new(user: Current.user, account: Current.account).call(ids)
+    narrowed = overview.merge('holding' => holds.select { |hold| open.include?(hold['conversationId']) })
+    return narrowed unless no_match.is_a?(Hash)
+
+    narrowed.merge('noMatch' => no_match.merge('conversationIds' => Array(no_match['conversationIds']).select { |id| open.include?(id) }))
+  end
 
   def service
     @service ||= Gotchu::AgentService.new(actor_id: Current.user.id, account_id: Current.account.id)

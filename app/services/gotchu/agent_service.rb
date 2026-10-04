@@ -20,9 +20,12 @@ class Gotchu::AgentService
 
   # A compare-and-set at the gateway: exactly one of this Stop and the
   # release wins. A 409 means the release, or another person's Stop, got
-  # there first, and nothing here can say which.
-  def stop_auto(cycle_id:)
-    @client.request(verb: :post, path: "/api/cycles/#{cycle_id}/auto/stop", body: { actor: @actor },
+  # there first, and nothing here can say which. `conversation_id` is the
+  # display id the controller authorised; the gateway answers a cycle of
+  # another conversation as missing.
+  def stop_auto(cycle_id:, conversation_id:)
+    @client.request(verb: :post, path: "/api/cycles/#{cycle_id}/auto/stop",
+                    body: { actor: @actor, conversationId: conversation_id },
                     refusals: { NF => [404], CF => [409] })
   end
 end

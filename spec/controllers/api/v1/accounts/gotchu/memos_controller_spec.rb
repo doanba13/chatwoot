@@ -54,6 +54,17 @@ RSpec.describe 'Gotchu Memos API', type: :request do
 
   # Spec §11: on the screen path the scope is required, and the gateway says
   # so. An absent scope must reach it absent, never as all stores.
+  # Strong parameters: only text, kind, until and the scope's two fields
+  # reach the gateway; anything else, or a non-scalar in their place, is dropped.
+  it 'never forwards a field the memo does not have' do
+    stub_write(memos_endpoint, body: { id: 11 })
+    post memos_url, params: { text: { nested: 'x' }, kind: 'standing_fact', until: ['2026-12-16'], source: 'proposal',
+                              author: 'chatwoot:1', scope: { store_key: 'giftera', inbox_id: 3, extra: 1 } },
+                    headers: agent.create_new_auth_token, as: :json
+    expect(sent.last.keys).to match_array(%w[kind scope actor])
+    expect(sent.last['scope']).to eq('storeKey' => 'giftera', 'inboxId' => 3)
+  end
+
   it 'never invents a scope the caller did not send' do
     stub_write(memos_endpoint, body: { id: 9 })
     post memos_url, params: { text: 'Orders ship from Shenzhen.', kind: 'standing_fact' },
@@ -93,6 +104,43 @@ RSpec.describe 'Gotchu Memos API', type: :request do
                     headers: admin.create_new_auth_token, as: :json
     expect(response).to have_http_status(:not_found)
     expect(a_request(:post, memos_endpoint)).not_to have_been_made
+  end
+
+  describe 'the conversation a memo came from' do
+    let(:theirs) { create(:conversation, account: account) }
+
+    def memo_view(id, conversation)
+      { id: id, kind: 'standing_fact', text: 'Engraved items ship later.', scope: { storeKey: 'persoliebe', inboxId: nil },
+        expiresAt: nil, origin: { source: 'composer', author: 'chatwoot:4', conversationId: conversation.display_id },
+        editedBy: nil, targetMissing: false }
+    end
+
+    before do
+      create(:inbox_member, user: agent, inbox: conversation.inbox)
+      stub_request(:get, memos_endpoint).with(query: hash_including(secret: gateway_secret))
+                                        .to_return(status: 200, body: { memos: [memo_view(1, conversation), memo_view(2, theirs)],
+                                                                        proposalsPending: 0 }.to_json)
+    end
+
+    it 'drops the conversation of a memo the agent may not open, and keeps the memo' do
+      get memos_url, headers: agent.create_new_auth_token, as: :json
+      memos = response.parsed_body['memos']
+      expect(memos.pluck('id')).to eq([1, 2])
+      expect(memos.map { |m| m['origin']['conversationId'] }).to eq([conversation.display_id, nil])
+      expect(memos.last['origin']).to include('source' => 'composer', 'author' => 'chatwoot:4')
+    end
+
+    it 'keeps every conversation for an administrator' do
+      get memos_url, headers: admin.create_new_auth_token, as: :json
+      expect(response.parsed_body['memos'].map { |m| m['origin']['conversationId'] }).to eq([conversation.display_id, theirs.display_id])
+    end
+
+    it 'drops it from the memo an edit answers with too' do
+      stub_put("#{memos_endpoint}/2", body: memo_view(3, theirs))
+      put "#{memos_url}/2", params: { text: 'Engraved items ship three days later.', kind: 'standing_fact' },
+                            headers: agent.create_new_auth_token, as: :json
+      expect(response.parsed_body['origin']).to include('conversationId' => nil, 'source' => 'composer')
+    end
   end
 
   it 'passes scope_required through, so the Memo tab can say why' do

@@ -67,6 +67,25 @@ RSpec.describe 'Gotchu Rules API', type: :request do
     expect(sent.last).not_to have_key('status')
   end
 
+  # Strong parameters: only the rule's own scalar fields and the condition
+  # document's shape ({ v, all: [{ fact, op, value }] }) reach the gateway.
+  it 'never forwards a field the rule does not have' do
+    stub_write(rules_endpoint, status: 201, body: { id: 1, status: 'testing' })
+    conditions = { v: 1, any: [{ fact: 'conversation_label' }],
+                   all: [{ fact: 'line_item_text', op: 'any', value: ['gravur'], weight: 9 },
+                         { fact: 'customer_order_count', op: 'gte', value: 2 },
+                         { fact: 'tracking_present', op: 'is', value: false }] }
+    post rules_url, params: rule_params.merge(status: 'active', authorisedVersion: 3, title: { nested: 'x' }, conditions: conditions),
+                    headers: admin.create_new_auth_token, as: :json
+    expect(sent.last.keys).to match_array(%w[title say sending conditions scope actor])
+    expect(sent.last['title']).to be_nil
+    expect(sent.last['conditions']).to eq(
+      'v' => 1, 'all' => [{ 'fact' => 'line_item_text', 'op' => 'any', 'value' => ['gravur'] },
+                          { 'fact' => 'customer_order_count', 'op' => 'gte', 'value' => 2 },
+                          { 'fact' => 'tracking_present', 'op' => 'is', 'value' => false }]
+    )
+  end
+
   it 'passes the checks through on a refusal' do
     checks = [{ id: 'promise', ok: false, message: 'Promises a discount.' }]
     stub_write(rules_endpoint, status: 400, body: { error: 'invalid', checks: checks })
@@ -88,6 +107,14 @@ RSpec.describe 'Gotchu Rules API', type: :request do
     stub_write("#{rules_endpoint}/1/revisions", body: answer)
     put "#{rules_url}/1", params: rule_params.merge(expected_version: 2), headers: admin.create_new_auth_token, as: :json
     expect(response.parsed_body).to eq(answer.deep_stringify_keys)
+  end
+
+  it 'returns a replay with only the conversations the administrator may open, which is all of them' do
+    conversations = create_list(:conversation, 2, account: account)
+    ids = conversations.map(&:display_id)
+    stub_write("#{rules_endpoint}/replay", body: { considered: 40, matched: 3, conversationIds: ids + [ids.max + 50] })
+    post "#{rules_url}/replay", params: rule_params.merge(days: 30), headers: admin.create_new_auth_token, as: :json
+    expect(response.parsed_body).to include('matched' => 3, 'conversationIds' => ids)
   end
 
   # Spec §11's replay body is { conditions, scope, days, ruleId?, actor }:

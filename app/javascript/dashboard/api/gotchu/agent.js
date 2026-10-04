@@ -8,9 +8,11 @@ import ApiClient from '../ApiClient';
  *
  *   GET  /api/v1/accounts/:account_id/gotchu/agent/overview?days=7
  *   POST /api/v1/accounts/:account_id/gotchu/cycles/:id/stop_auto
+ *        { conversation_id }
  *
- * A 409 on the Stop is `not_holding`: the release or another person's Stop
- * won, and the page must not say "stopped".
+ * A Stop names its conversation (the display id): the controller refuses a
+ * user who cannot open it. A 409 on the Stop is `not_holding`: the release or
+ * another person's Stop won, and the page must not say "stopped".
  */
 class AgentAPI extends ApiClient {
   constructor() {
@@ -21,8 +23,10 @@ class AgentAPI extends ApiClient {
     return axios.get(`${this.url}/agent/overview`, { params: { days } });
   }
 
-  stopAuto(cycleId) {
-    return axios.post(`${this.url}/cycles/${cycleId}/stop_auto`);
+  stopAuto(cycleId, conversationId) {
+    return axios.post(`${this.url}/cycles/${cycleId}/stop_auto`, {
+      conversation_id: conversationId,
+    });
   }
 }
 

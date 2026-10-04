@@ -99,8 +99,10 @@ describe('AgentOverview', () => {
     await flushPromises();
     await wrapper.find('[data-testid="holding-stop-31"]').trigger('click');
     await flushPromises();
-    expect(AgentAPI.stopAuto).toHaveBeenCalledWith(31);
+    // The Stop names its conversation; the fork authorises it (fix wave FS1).
+    expect(AgentAPI.stopAuto).toHaveBeenCalledWith(31, 4471);
     expect(wrapper.text()).toContain('Stopped. It stays a draft.');
+    expect(wrapper.text()).not.toContain('Sending on its own in');
   });
 
   it('says it is no longer waiting, never stopped, on a 409', async () => {
@@ -130,9 +132,10 @@ describe('AgentOverview', () => {
     await flushPromises();
     await wrapper.find('[data-testid="holding-stop-31"]').trigger('click');
     await flushPromises();
-    expect(wrapper.text()).toContain(
-      'No longer waiting to send. It was sent, or someone already stopped it.'
-    );
-    expect(wrapper.text()).not.toContain('Stopped.');
+    // Spec §14 row 2: it says it is already sending, and the card's header
+    // no longer counts down to a send that has happened.
+    expect(wrapper.text()).toContain('Already sending — too late to stop.');
+    expect(wrapper.text()).not.toContain('Stopped');
+    expect(wrapper.text()).not.toContain('Sending on its own in');
   });
 });

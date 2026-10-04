@@ -84,12 +84,13 @@ const loadProposals = async () => {
   }
 };
 
-const stop = async cycleId => {
+const stop = async hold => {
+  const { cycleId } = hold;
   if (stopping[cycleId]) return;
   stopping[cycleId] = true;
-  pressed[cycleId] = holding.value.find(hold => hold.cycleId === cycleId);
+  pressed[cycleId] = hold;
   try {
-    await AgentAPI.stopAuto(cycleId);
+    await AgentAPI.stopAuto(cycleId, hold.conversationId);
     outcome[cycleId] = { key: `${O}STOPPED` };
   } catch (error) {
     if (error?.response?.status === 409) {
@@ -101,6 +102,16 @@ const stop = async cycleId => {
   } finally {
     stopping[cycleId] = false;
   }
+};
+
+// The card's header follows what the Stop came to: a 409 means the send is
+// already going out (spec §14 row 2), so it never keeps counting down.
+const holdTitle = hold => {
+  const answer = outcome[hold.cycleId]?.key;
+  if (answer === `${O}STOPPED`) return t(`${O}HOLDING_STOPPED`);
+  if (answer === `${O}NOT_HOLDING`) return t(`${O}HOLDING_NOW`);
+  const s = secondsLeft(hold.firesAt, now.value);
+  return s > 0 ? t(`${O}HOLDING_TITLE`, { s }) : t(`${O}HOLDING_NOW`);
 };
 
 const onProposalDecided = id => {
@@ -273,7 +284,7 @@ onMounted(() => {
         :data-testid="`holding-${hold.cycleId}`"
       >
         <p class="mb-0 text-sm font-semibold text-[var(--g-text)]">
-          {{ t(`${O}HOLDING_TITLE`, { s: secondsLeft(hold.firesAt, now) }) }}
+          {{ holdTitle(hold) }}
         </p>
         <p class="mb-0 text-sm text-[var(--g-text-muted)]">
           {{ hold.procedureTitle }}
@@ -306,7 +317,7 @@ onMounted(() => {
             color="ruby"
             :is-loading="stopping[hold.cycleId]"
             :data-testid="`holding-stop-${hold.cycleId}`"
-            @click="stop(hold.cycleId)"
+            @click="stop(hold)"
           />
         </div>
       </div>

@@ -15,6 +15,9 @@ class Api::V1::Accounts::Gotchu::MemosController < Api::V1::Accounts::BaseContro
   rescue_from Gotchu::MemoService::InvalidError, with: :render_invalid
 
   UNCONFIGURED_INDEX = { 'memos' => [], 'proposalsPending' => 0, 'capabilities' => { 'memos' => false } }.freeze
+  # Strong parameters: text, kind and until as scalars, and the scope's two
+  # fields (scope_body); anything else the caller sends never reaches the gateway.
+  MEMO_FIELDS = %i[text kind until].freeze
 
   # Dark (a 404 on the list) and unconfigured read the same: "not switched on
   # here", never "you have no memos".
@@ -22,13 +25,13 @@ class Api::V1::Accounts::Gotchu::MemosController < Api::V1::Accounts::BaseContro
     return render(json: UNCONFIGURED_INDEX) unless Gotchu::MemoService.available?(account_id: Current.account.id)
 
     memos = service.list(store: params[:store], inbox: params[:inbox], include_expired: params[:include] == 'expired')
-    render json: memos.merge('capabilities' => { 'memos' => true })
+    render json: memos.merge('memos' => visible_origins(Array(memos['memos'])), 'capabilities' => { 'memos' => true })
   rescue Gotchu::GatewayClient::NotFoundError
     render json: UNCONFIGURED_INDEX
   end
 
-  def create = render(json: service.create(memo: memo_body))
-  def update = render(json: service.update(id: params[:id].to_i, memo: memo_body))
+  def create = render(json: visible_origins([service.create(memo: memo_body)]).first)
+  def update = render(json: visible_origins([service.update(id: params[:id].to_i, memo: memo_body)]).first)
 
   def destroy
     service.destroy(id: params[:id].to_i)
@@ -36,6 +39,23 @@ class Api::V1::Accounts::Gotchu::MemosController < Api::V1::Accounts::BaseContro
   end
 
   private
+
+  # A memo's origin keeps its source and author; the conversation it came
+  # from is dropped when this user may not open it
+  # (Gotchu::VisibleConversations).
+  def visible_origins(memos)
+    open = Gotchu::VisibleConversations.new(user: Current.user, account: Current.account)
+                                       .call(memos.filter_map { |memo| origin_conversation(memo) })
+    memos.map do |memo|
+      id = origin_conversation(memo)
+      id.nil? || open.include?(id) ? memo : memo.merge('origin' => memo['origin'].merge('conversationId' => nil))
+    end
+  end
+
+  def origin_conversation(memo)
+    origin = memo.is_a?(Hash) ? memo['origin'] : nil
+    origin.is_a?(Hash) ? origin['conversationId'] : nil
+  end
 
   # The same lookup Conversations::BaseController#conversation makes: a
   # conversation outside the account is a 404 (RecordNotFound), one this agent
@@ -55,8 +75,9 @@ class Api::V1::Accounts::Gotchu::MemosController < Api::V1::Accounts::BaseContro
   # absent, never as all stores. The conversation id is the one authorised
   # above, never read raw from params.
   def memo_body
+    fields = params.slice(*MEMO_FIELDS).permit(*MEMO_FIELDS)
     {
-      text: params[:text], kind: params[:kind], until: params[:until].presence,
+      text: fields[:text], kind: fields[:kind], until: fields[:until].presence,
       conversationId: @conversation&.display_id,
       scope: scope_body
     }.compact
