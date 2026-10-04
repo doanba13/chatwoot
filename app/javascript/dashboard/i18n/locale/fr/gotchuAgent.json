@@ -156,7 +156,36 @@
         "ALL": "All"
       },
       "WHAT_THEY_COVER": "What they cover",
-      "EMPTY": "No rules here yet."
-    }
+      "EMPTY": "No rules here yet.",
+      "NAME": "Name",
+      "ONE_STORE": "One store",
+      "REMOVE_EXCEPT": "Switch this inbox back on",
+      "PICK_FACT": "Choose what to check",
+      "OPERATOR": "How to compare",
+      "WORDS_PLACEHOLDER": "Type a word and press Enter",
+      "REMOVE_CONDITION": "Remove this condition",
+      "YES": "Yes",
+      "NO": "No",
+      "OPS": {
+        "IN": "is",
+        "NOT_IN": "is not",
+        "ANY": "contains any of",
+        "ALL": "contains all of",
+        "EQ": "is",
+        "GT": "more than",
+        "LT": "less than",
+        "GTE": "at least",
+        "LTE": "at most"
+      },
+      "VALUES": {
+        "EMAIL": "Email",
+        "MESSENGER": "Messenger",
+        "WEB": "Web chat",
+        "DE": "German",
+        "FR": "French",
+        "EN": "English"
+      }
+    },
+    "CANCEL": "Cancel"
   }
 }
