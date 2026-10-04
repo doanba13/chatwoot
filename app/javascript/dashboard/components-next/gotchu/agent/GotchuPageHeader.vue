@@ -45,7 +45,12 @@ defineProps({
         {{ lede }}
       </p>
     </div>
-    <div class="flex flex-wrap items-center flex-none gap-2">
+    <!-- Never wider than the header: on a phone, in German or French, the
+         actions wrap onto as many rows as they need instead of pushing the
+         page sideways. -->
+    <div
+      class="flex flex-wrap items-center flex-initial min-w-0 max-w-full gap-2"
+    >
       <slot name="actions" />
     </div>
   </header>

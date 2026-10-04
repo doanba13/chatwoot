@@ -258,13 +258,16 @@ watch(
       >
         {{ mailSubject }}
       </p>
+      <!-- The chip leaves the unread badge its room like every other line
+        under the name, and ends in an ellipsis rather than a hard cut. -->
       <p
         v-if="gotchuChip"
         data-testid="card-gotchu-queue"
-        class="my-0 mx-2 flex items-center gap-1.5 text-xs leading-5 text-n-slate-11 truncate"
+        class="my-0 mx-2 min-w-0 text-xs leading-5 text-n-slate-11"
+        :class="unreadBadgeClearanceClass"
       >
         <span
-          class="inline-flex items-center gap-1 rounded-md px-1.5"
+          class="inline-block max-w-full truncate align-top rounded-md px-1.5"
           :class="
             gotchuChip.agent
               ? 'bg-[var(--g-agent-tint)] ring-1 ring-inset ring-[var(--g-agent-border)]'

@@ -222,7 +222,7 @@ const copyConversationId = async () => {
           but inline and muted, after the subject rather than beneath it. The id
           is mono, as every identifier in this design is. -->
         <div
-          class="flex items-center flex-shrink-0 gap-1 overflow-hidden text-xs conversation--header--actions text-[var(--g-text-muted)] text-ellipsis whitespace-nowrap"
+          class="flex items-center min-w-0 gap-1 overflow-hidden text-xs conversation--header--actions text-[var(--g-text-muted)] text-ellipsis whitespace-nowrap"
         >
           <button
             type="button"
