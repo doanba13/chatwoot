@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch, onMounted, ref } from 'vue';
+import { computed, watch, onMounted } from 'vue';
 import {
   useMapGetter,
   useFunctionGetter,
@@ -9,7 +9,10 @@ import { useAccount } from 'dashboard/composables/useAccount';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 
-import AccordionItem from 'dashboard/components/Accordion/AccordionItem.vue';
+import OrderDrawer from 'dashboard/components-next/gotchu/drawer/OrderDrawer.vue';
+import DrawerCard from 'dashboard/components-next/gotchu/drawer/DrawerCard.vue';
+import { useDraftMeta } from 'dashboard/components-next/gotchu/helpers/draftMeta';
+import LabelBox from './labels/LabelBox.vue';
 import ContactConversations from './ContactConversations.vue';
 import ConversationAction from './ConversationAction.vue';
 import ConversationParticipant from './ConversationParticipant.vue';
@@ -18,7 +21,6 @@ import ContactNotes from './contact/ContactNotes.vue';
 import ConversationInfo from './ConversationInfo.vue';
 import CustomAttributes from './customAttributes/CustomAttributes.vue';
 import SharedFiles from './SharedFiles.vue';
-import Draggable from 'vuedraggable';
 import MacrosList from './Macros/List.vue';
 import ShopifyOrdersList from 'dashboard/components/widgets/conversation/ShopifyOrdersList.vue';
 import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader.vue';
@@ -36,15 +38,8 @@ const props = defineProps({
   },
 });
 
-const {
-  updateUISettings,
-  isContactSidebarItemOpen,
-  conversationSidebarItemsOrder,
-  toggleSidebarUIState,
-} = useUISettings();
-
-const dragging = ref(false);
-const conversationSidebarItems = ref([]);
+const { updateUISettings, isContactSidebarItemOpen, toggleSidebarUIState } =
+  useUISettings();
 
 const shopifyIntegration = useFunctionGetter(
   'integrations/getIntegration',
@@ -87,6 +82,8 @@ const conversationAdditionalAttributes = computed(
   () => currentConversationMetaData.value.additional_attributes || {}
 );
 
+const draftMeta = useDraftMeta(conversationId);
+
 const channelType = computed(() => currentChat.value.meta?.channel);
 
 const contactGetter = useMapGetter('contacts/getContact');
@@ -108,13 +105,6 @@ watch(contactId, (newContactId, prevContactId) => {
   }
 });
 
-const onDragEnd = () => {
-  dragging.value = false;
-  updateUISettings({
-    conversation_sidebar_items_order: conversationSidebarItems.value,
-  });
-};
-
 const closeContactPanel = () => {
   updateUISettings({
     is_contact_sidebar_open: false,
@@ -123,7 +113,6 @@ const closeContactPanel = () => {
 };
 
 onMounted(() => {
-  conversationSidebarItems.value = conversationSidebarItemsOrder.value;
   getContactDetails();
   store.dispatch('attributes/get', 0);
   // Load integrations to ensure linear integration state is available
@@ -137,197 +126,129 @@ onMounted(() => {
       :title="$t('CONVERSATION.SIDEBAR.CONTACT')"
       @close="closeContactPanel"
     />
-    <ContactInfo :contact="contact" :channel-type="channelType" />
-    <div class="pb-8 list-group">
-      <Draggable
-        :list="conversationSidebarItems"
-        animation="200"
-        ghost-class="ghost"
-        handle=".drag-handle"
-        item-key="name"
-        class="flex flex-col"
-        @start="dragging = true"
-        @end="onDragEnd"
+    <OrderDrawer
+      :conversation-id="conversationId"
+      :contact="contact"
+      :lang="draftMeta?.lang"
+    />
+    <div class="cwh" />
+    <div class="px-4 pb-8 list-group">
+      <DrawerCard
+        :title="$t('GOTCHU.DRAWER.CONVERSATION')"
+        :open="isContactSidebarItemOpen('is_conv_actions_open')"
+        @toggle="toggleSidebarUIState('is_conv_actions_open')"
       >
-        <template #item="{ element }">
-          <div
-            v-if="element.name === 'conversation_actions'"
-            class="conversation--actions"
-          >
-            <AccordionItem
-              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONVERSATION_ACTIONS')"
-              icon="flash-on"
-              :is-open="isContactSidebarItemOpen('is_conv_actions_open')"
-              @toggle="
-                value => toggleSidebarUIState('is_conv_actions_open', value)
-              "
-            >
-              <ConversationAction
-                :conversation-id="conversationId"
-                :inbox-id="inboxId"
-              />
-            </AccordionItem>
-          </div>
-          <div
-            v-else-if="element.name === 'conversation_participants'"
-            class="conversation--actions"
-          >
-            <AccordionItem
-              :title="$t('CONVERSATION_PARTICIPANTS.SIDEBAR_TITLE')"
-              icon="people"
-              :is-open="isContactSidebarItemOpen('is_conv_participants_open')"
-              @toggle="
-                value =>
-                  toggleSidebarUIState('is_conv_participants_open', value)
-              "
-            >
-              <ConversationParticipant
-                :conversation-id="conversationId"
-                :inbox-id="inboxId"
-              />
-            </AccordionItem>
-          </div>
-          <div v-else-if="element.name === 'conversation_info'">
-            <AccordionItem
-              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONVERSATION_INFO')"
-              icon="info"
-              :is-open="isContactSidebarItemOpen('is_conv_details_open')"
-              compact
-              @toggle="
-                value => toggleSidebarUIState('is_conv_details_open', value)
-              "
-            >
-              <ConversationInfo
-                :conversation-attributes="conversationAdditionalAttributes"
-                :contact-attributes="contactAdditionalAttributes"
-              />
-            </AccordionItem>
-          </div>
-          <div v-else-if="element.name === 'contact_attributes'">
-            <AccordionItem
-              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONTACT_ATTRIBUTES')"
-              icon="list"
-              :is-open="isContactSidebarItemOpen('is_contact_attributes_open')"
-              compact
-              @toggle="
-                value =>
-                  toggleSidebarUIState('is_contact_attributes_open', value)
-              "
-            >
-              <CustomAttributes
-                attribute-type="contact_attribute"
-                attribute-from="conversation_contact_panel"
-                :contact-id="contact.id"
-                :empty-state-message="
-                  $t('CONVERSATION_CUSTOM_ATTRIBUTES.NO_RECORDS_FOUND')
-                "
-              />
-            </AccordionItem>
-          </div>
-          <div v-else-if="element.name === 'previous_conversation'">
-            <AccordionItem
-              v-if="contact.id"
-              :title="
-                $t('CONVERSATION_SIDEBAR.ACCORDION.PREVIOUS_CONVERSATION')
-              "
-              icon="chat-multiple"
-              :is-open="isContactSidebarItemOpen('is_previous_conv_open')"
-              compact
-              @toggle="
-                value => toggleSidebarUIState('is_previous_conv_open', value)
-              "
-            >
-              <ContactConversations
-                :contact-id="contact.id"
-                :conversation-id="conversationId"
-              />
-            </AccordionItem>
-          </div>
-          <woot-feature-toggle
-            v-else-if="element.name === 'macros'"
-            feature-key="macros"
-          >
-            <AccordionItem
-              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.MACROS')"
-              icon="wand"
-              :is-open="isContactSidebarItemOpen('is_macro_open')"
-              compact
-              @toggle="value => toggleSidebarUIState('is_macro_open', value)"
-            >
-              <MacrosList :conversation-id="conversationId" />
-            </AccordionItem>
-          </woot-feature-toggle>
-          <div
-            v-else-if="
-              element.name === 'linear_issues' &&
-              isLinearFeatureEnabled &&
-              isLinearClientIdConfigured
-            "
-          >
-            <AccordionItem
-              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.LINEAR_ISSUES')"
-              icon="linear"
-              :is-open="isContactSidebarItemOpen('is_linear_issues_open')"
-              compact
-              @toggle="
-                value => toggleSidebarUIState('is_linear_issues_open', value)
-              "
-            >
-              <LinearSetupCTA v-if="!isLinearConnected" />
-              <LinearIssuesList v-else :conversation-id="conversationId" />
-            </AccordionItem>
-          </div>
-          <div
-            v-else-if="
-              element.name === 'shopify_orders' && isShopifyFeatureEnabled
-            "
-          >
-            <AccordionItem
-              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.SHOPIFY_ORDERS')"
-              icon="briefcase"
-              :is-open="isContactSidebarItemOpen('is_shopify_orders_open')"
-              compact
-              @toggle="
-                value => toggleSidebarUIState('is_shopify_orders_open', value)
-              "
-            >
-              <ShopifyOrdersList :contact-id="contactId" />
-            </AccordionItem>
-          </div>
-          <div v-else-if="element.name === 'contact_notes'">
-            <AccordionItem
-              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONTACT_NOTES')"
-              icon="draft"
-              :is-open="isContactSidebarItemOpen('is_contact_notes_open')"
-              compact
-              @toggle="
-                value => toggleSidebarUIState('is_contact_notes_open', value)
-              "
-            >
-              <ContactNotes :contact-id="contactId" />
-            </AccordionItem>
-          </div>
-          <div v-else-if="element.name === 'shared_files'">
-            <AccordionItem
-              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.SHARED_FILES')"
-              icon="attach"
-              :is-open="isContactSidebarItemOpen('is_shared_files_open')"
-              compact
-              @toggle="
-                value => toggleSidebarUIState('is_shared_files_open', value)
-              "
-            >
-              <SharedFiles />
-            </AccordionItem>
-          </div>
-        </template>
-      </Draggable>
+        <ConversationAction :inbox-id="inboxId" />
+      </DrawerCard>
+      <DrawerCard
+        :title="$t('GOTCHU.DRAWER.LABELS')"
+        :open="isContactSidebarItemOpen('is_labels_open')"
+        @toggle="toggleSidebarUIState('is_labels_open')"
+      >
+        <LabelBox :conversation-id="conversationId" />
+      </DrawerCard>
+      <DrawerCard
+        v-if="contact.id"
+        :title="$t('GOTCHU.DRAWER.PREVIOUS')"
+        :open="isContactSidebarItemOpen('is_previous_conv_open')"
+        @toggle="toggleSidebarUIState('is_previous_conv_open')"
+      >
+        <ContactConversations
+          :contact-id="contact.id"
+          :conversation-id="conversationId"
+        />
+      </DrawerCard>
+      <woot-feature-toggle feature-key="macros">
+        <DrawerCard
+          :title="$t('GOTCHU.DRAWER.MACROS')"
+          :open="isContactSidebarItemOpen('is_macro_open')"
+          @toggle="toggleSidebarUIState('is_macro_open')"
+        >
+          <MacrosList :conversation-id="conversationId" />
+        </DrawerCard>
+      </woot-feature-toggle>
+
+      <!-- Everything below stays reachable but collapsed: ContactInfo is the
+           only place that edits, merges, deletes or calls a contact. -->
+      <DrawerCard
+        :title="$t('GOTCHU.DRAWER.CONTACT')"
+        :open="isContactSidebarItemOpen('is_contact_info_open')"
+        @toggle="toggleSidebarUIState('is_contact_info_open')"
+      >
+        <ContactInfo :contact="contact" :channel-type="channelType" />
+      </DrawerCard>
+      <DrawerCard
+        :title="$t('CONVERSATION_PARTICIPANTS.SIDEBAR_TITLE')"
+        :open="isContactSidebarItemOpen('is_conv_participants_open')"
+        @toggle="toggleSidebarUIState('is_conv_participants_open')"
+      >
+        <ConversationParticipant
+          :conversation-id="conversationId"
+          :inbox-id="inboxId"
+        />
+      </DrawerCard>
+      <DrawerCard
+        :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONVERSATION_INFO')"
+        :open="isContactSidebarItemOpen('is_conv_details_open')"
+        @toggle="toggleSidebarUIState('is_conv_details_open')"
+      >
+        <ConversationInfo
+          :conversation-attributes="conversationAdditionalAttributes"
+          :contact-attributes="contactAdditionalAttributes"
+        />
+      </DrawerCard>
+      <DrawerCard
+        :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONTACT_ATTRIBUTES')"
+        :open="isContactSidebarItemOpen('is_contact_attributes_open')"
+        @toggle="toggleSidebarUIState('is_contact_attributes_open')"
+      >
+        <CustomAttributes
+          attribute-type="contact_attribute"
+          attribute-from="conversation_contact_panel"
+          :contact-id="contact.id"
+          :empty-state-message="
+            $t('CONVERSATION_CUSTOM_ATTRIBUTES.NO_RECORDS_FOUND')
+          "
+        />
+      </DrawerCard>
+      <DrawerCard
+        :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONTACT_NOTES')"
+        :open="isContactSidebarItemOpen('is_contact_notes_open')"
+        @toggle="toggleSidebarUIState('is_contact_notes_open')"
+      >
+        <ContactNotes :contact-id="contactId" />
+      </DrawerCard>
+      <DrawerCard
+        v-if="isLinearFeatureEnabled && isLinearClientIdConfigured"
+        :title="$t('CONVERSATION_SIDEBAR.ACCORDION.LINEAR_ISSUES')"
+        :open="isContactSidebarItemOpen('is_linear_issues_open')"
+        @toggle="toggleSidebarUIState('is_linear_issues_open')"
+      >
+        <LinearSetupCTA v-if="!isLinearConnected" />
+        <LinearIssuesList v-else :conversation-id="conversationId" />
+      </DrawerCard>
+      <DrawerCard
+        v-if="isShopifyFeatureEnabled"
+        :title="$t('CONVERSATION_SIDEBAR.ACCORDION.SHOPIFY_ORDERS')"
+        :open="isContactSidebarItemOpen('is_shopify_orders_open')"
+        @toggle="toggleSidebarUIState('is_shopify_orders_open')"
+      >
+        <ShopifyOrdersList :contact-id="contactId" />
+      </DrawerCard>
+      <DrawerCard
+        :title="$t('CONVERSATION_SIDEBAR.ACCORDION.SHARED_FILES')"
+        :open="isContactSidebarItemOpen('is_shared_files_open')"
+        @toggle="toggleSidebarUIState('is_shared_files_open')"
+      >
+        <SharedFiles />
+      </DrawerCard>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
-:deep(.contact--profile) {
-  @apply pb-3 border-b border-solid border-n-weak;
+.cwh {
+  @apply mx-4 mb-3 border-t border-solid;
+  border-color: var(--g-border);
 }
 </style>

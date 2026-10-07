@@ -252,4 +252,14 @@ describe('Gotchu preview gallery', () => {
     // 5 colours x 5 variants, plus 4 sizes, loading, disabled and the theme toggle.
     expect(mountGallery().findAll('button').length).toBeGreaterThanOrEqual(25);
   });
+
+  it('draws the drawer: a full order, a store that hides customers, an ambiguous match, a failed lookup', () => {
+    const text = mountGallery().text();
+    expect(text).toContain('Order PL-5713');
+    expect(text).toContain('hides customer details');
+    expect(text).toContain('Several orders match, so none was picked');
+    expect(text).toContain(
+      'Order details are not available: the order lookup did not answer.'
+    );
+  });
 });

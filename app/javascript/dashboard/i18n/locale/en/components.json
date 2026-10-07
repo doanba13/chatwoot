@@ -287,6 +287,13 @@
       "UNAVAILABLE": "The order lookup is not available right now.",
       "REFRESH": "Refresh",
       "REFRESH_LABEL": "Refresh order",
+      "NOT_AVAILABLE": "Order details are not available: {reason}",
+      "REASON": {
+        "UNCONFIGURED": "the order lookup is not set up on this desk.",
+        "UNAVAILABLE": "the order lookup did not answer."
+      },
+      "CONTACT": "Contact",
+      "LOADING": "Loading order details…",
       "CUSTOMER": "Customer",
       "OPEN_CONTACT": "Open contact",
       "EMAIL": "Email",

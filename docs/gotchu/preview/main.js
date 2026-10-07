@@ -3,6 +3,7 @@ import { createI18n } from 'vue-i18n';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import Gallery from './Gallery.vue';
 import ThreadPreview from './ThreadPreview.vue';
+import DrawerPreview from './DrawerPreview.vue';
 import { threadStubs } from './threadStubs';
 
 import components from 'dashboard/i18n/locale/en/components.json';
@@ -47,9 +48,10 @@ const router = createRouter({
   ],
 });
 
-// `?only=thread` mounts the thread alone, so a screenshot is not a crop.
+// `?only=thread` or `?only=drawer` mounts that alone, so a screenshot is not a crop.
 const only = new URLSearchParams(window.location.search).get('only');
-createApp(only === 'thread' ? ThreadPreview : Gallery)
+const pages = { thread: ThreadPreview, drawer: DrawerPreview };
+createApp(pages[only] ?? Gallery)
   .use(i18n)
   .use(router)
   .use(threadStubs)

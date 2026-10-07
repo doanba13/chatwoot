@@ -282,6 +282,13 @@
       "UNAVAILABLE": "Die Bestellabfrage ist gerade nicht verfügbar.",
       "REFRESH": "Aktualisieren",
       "REFRESH_LABEL": "Bestellung aktualisieren",
+      "NOT_AVAILABLE": "Bestelldaten sind nicht verfügbar: {reason}",
+      "REASON": {
+        "UNCONFIGURED": "die Bestellabfrage ist hier nicht eingerichtet.",
+        "UNAVAILABLE": "die Bestellabfrage hat nicht geantwortet."
+      },
+      "CONTACT": "Kontakt",
+      "LOADING": "Bestelldaten werden geladen …",
       "CUSTOMER": "Kunde",
       "OPEN_CONTACT": "Kontakt öffnen",
       "EMAIL": "E-Mail",

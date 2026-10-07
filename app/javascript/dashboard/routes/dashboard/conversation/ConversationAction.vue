@@ -5,7 +5,6 @@ import { useAlert } from 'dashboard/composables';
 import { useAgentsList } from 'dashboard/composables/useAgentsList';
 import ContactDetailsItem from './ContactDetailsItem.vue';
 import MultiselectDropdown from 'shared/components/ui/MultiselectDropdown.vue';
-import ConversationLabels from './labels/LabelBox.vue';
 import { CONVERSATION_PRIORITY } from '../../../../shared/constants/messages';
 import { CONVERSATION_EVENTS } from '../../../helper/AnalyticsHelper/events';
 import { useTrack } from 'dashboard/composables';
@@ -15,14 +14,7 @@ export default {
   components: {
     ContactDetailsItem,
     MultiselectDropdown,
-    ConversationLabels,
     NextButton,
-  },
-  props: {
-    conversationId: {
-      type: [Number, String],
-      required: true,
-    },
   },
   setup() {
     const { agentsList } = useAgentsList(true, { includeAgentBots: true });
@@ -298,10 +290,5 @@ export default {
         @select="onClickAssignPriority"
       />
     </div>
-    <ContactDetailsItem
-      compact
-      :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONVERSATION_LABELS')"
-    />
-    <ConversationLabels :conversation-id="conversationId" />
   </div>
 </template>

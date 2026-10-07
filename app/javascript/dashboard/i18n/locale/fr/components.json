@@ -282,6 +282,13 @@
       "UNAVAILABLE": "La recherche de commande est indisponible pour le moment.",
       "REFRESH": "Actualiser",
       "REFRESH_LABEL": "Actualiser la commande",
+      "NOT_AVAILABLE": "Les détails de la commande ne sont pas disponibles : {reason}",
+      "REASON": {
+        "UNCONFIGURED": "la recherche de commande n’est pas configurée ici.",
+        "UNAVAILABLE": "la recherche de commande n’a pas répondu."
+      },
+      "CONTACT": "Contact",
+      "LOADING": "Chargement des détails de la commande…",
       "CUSTOMER": "Client",
       "OPEN_CONTACT": "Ouvrir le contact",
       "EMAIL": "E-mail",

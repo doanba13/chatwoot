@@ -1846,7 +1846,10 @@ describe('the composer placement', () => {
       'utf-8'
     );
 
-    expect(panel).not.toContain('gotchu');
+    // The panel now imports the order drawer from components-next/gotchu, so
+    // the guard names the draft, not the directory.
+    expect(panel).not.toContain('DraftDock');
+    expect(panel).not.toContain('gotchu_draft');
     expect(panel).not.toContain('is_gotchu_draft_open');
     expect(
       DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER.map(item => item.name)
