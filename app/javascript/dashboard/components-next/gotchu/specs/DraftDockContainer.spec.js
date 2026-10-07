@@ -7,8 +7,13 @@ import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import { DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER } from 'dashboard/composables/useUISettings';
 import AiDraftAPI from 'dashboard/api/gotchu/aiDraft';
-import { clearDraftMeta, useDraftMeta } from '../helpers/draftMeta';
+import {
+  clearDraftMeta,
+  setDraftMeta,
+  useDraftMeta,
+} from '../helpers/draftMeta';
 import DraftDockContainer from '../DraftDockContainer.vue';
+import DraftDock from '../DraftDock.vue';
 import DraftInstruct from '../DraftInstruct.vue';
 import AITrace from '../AITrace.vue';
 import {
@@ -22,7 +27,11 @@ import {
 withFullI18n();
 
 vi.mock('dashboard/api/gotchu/aiDraft', () => ({
-  default: { getDraft: vi.fn(), instruct: vi.fn() },
+  default: {
+    getDraft: vi.fn(),
+    instruct: vi.fn(),
+    cancelInstruction: vi.fn(),
+  },
 }));
 
 const body = 'Ihre Sendung ist unterwegs und sollte in wenigen Tagen ankommen.';
@@ -1261,7 +1270,7 @@ describe('DraftDockContainer instruct', () => {
     // The new conversation's field is empty and says nothing: the answer was
     // about the previous customer's draft.
     expect(input(wrapper).element.value).toBe('');
-    expect(wrapper.text()).not.toContain('working on your instruction');
+    expect(wrapper.text()).not.toContain('Instruction received');
   });
 
   it('forgets a half-typed instruction when the agent switches conversation', async () => {
@@ -1305,18 +1314,17 @@ describe('DraftDockContainer instruction outcome', () => {
   it('shows Gotchu working and polls every 2 s with the request id', async () => {
     const { wrapper, requestId } = await inFlightFor();
 
-    expect(dock(wrapper).text()).toContain(
-      'Gotchu is working on your instruction… 0s'
-    );
-    // The draft body is not on screen while the dock is working.
-    expect(dock(wrapper).text()).not.toContain(body);
+    expect(dock(wrapper).text()).toContain('Instruction received');
+    // The draft body stays on screen while the dock is working, dimmed.
+    expect(wrapper.find('.draft-dock__body').text()).toContain(body);
+    expect(wrapper.find('.draft-dock__body').classes()).toContain('is-dimmed');
 
     const before = AiDraftAPI.getDraft.mock.calls.length;
     await vi.advanceTimersByTimeAsync(2_000);
 
     expect(readsSince(before)).toEqual([[3580, { requestId }]]);
-    expect(dock(wrapper).text()).toContain(
-      'Gotchu is working on your instruction… 2s'
+    expect(wrapper.find('[data-step="writing"]').attributes('data-state')).toBe(
+      'now'
     );
   });
 
@@ -1372,15 +1380,17 @@ describe('DraftDockContainer instruction outcome', () => {
     await vi.advanceTimersByTimeAsync(2_000);
 
     expect(dock(wrapper).text()).toContain('v2 · from your instruction');
-    expect(dock(wrapper).text()).toContain(redrafted);
-    expect(dock(wrapper).text()).not.toContain('working on your instruction');
+    // The body swaps under a keyed transition the test DOM never finishes, so
+    // the new body is asserted on what the dock is handed.
+    expect(wrapper.findComponent(DraftDock).props('text')).toBe(redrafted);
+    expect(dock(wrapper).text()).not.toContain('Instruction received');
   });
 
   it('gives up after 180 s of working and hands the typed text back', async () => {
     const { wrapper } = await inFlightFor('Bitte die Sendungsnummer nennen.');
 
     await vi.advanceTimersByTimeAsync(178_000);
-    expect(dock(wrapper).text()).toContain('working on your instruction');
+    expect(dock(wrapper).text()).toContain('Instruction received');
 
     await vi.advanceTimersByTimeAsync(4_000);
 
@@ -1409,7 +1419,7 @@ describe('DraftDockContainer instruction outcome', () => {
     expect(wrapper.text()).toContain("Gotchu couldn't finish that. Try again.");
     // The field is back with the text, and the dock is no longer working.
     expect(input(wrapper).element.value).toBe('kürzer bitte');
-    expect(dock(wrapper).text()).not.toContain('working on your instruction');
+    expect(dock(wrapper).text()).not.toContain('Instruction received');
 
     // Resting pace from here, and still asking about the instruction.
     const before = AiDraftAPI.getDraft.mock.calls.length;
@@ -1473,7 +1483,7 @@ describe('DraftDockContainer instruction outcome', () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain('Antwort auf A.');
-    expect(dock(wrapper).text()).toContain('working on your instruction');
+    expect(dock(wrapper).text()).toContain('Instruction received');
     const before = AiDraftAPI.getDraft.mock.calls.length;
     await vi.advanceTimersByTimeAsync(2_000);
     expect(readsSince(before)).toEqual([[3580, { requestId: second }]]);
@@ -1515,7 +1525,7 @@ describe('DraftDockContainer instruction outcome', () => {
     const next = AiDraftAPI.instruct.mock.calls.at(-1)[1].requestId;
     expect(AiDraftAPI.instruct).toHaveBeenCalledTimes(2);
     expect(next).not.toBe(requestId);
-    expect(dock(wrapper).text()).toContain('working on your instruction');
+    expect(dock(wrapper).text()).toContain('Instruction received');
     expect(AiDraftAPI.getDraft).toHaveBeenLastCalledWith(3580, {
       requestId: next,
     });
@@ -1586,7 +1596,7 @@ describe('DraftDockContainer instruction outcome', () => {
     await wrapper.setProps({ conversationId: 4471 });
     await flushPromises();
 
-    expect(dock(wrapper).text()).not.toContain('working on your instruction');
+    expect(dock(wrapper).text()).not.toContain('Instruction received');
     expect(dock(wrapper).text()).toContain(body);
 
     await vi.advanceTimersByTimeAsync(15_000);
@@ -1841,5 +1851,268 @@ describe('the composer placement', () => {
     expect(
       DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER.map(item => item.name)
     ).not.toContain('gotchu_draft');
+  });
+});
+
+describe('DraftDockContainer stop', () => {
+  const withRoutes = (extra = {}) => ({
+    ...answer(reviewing(), { version: 1, body }).data,
+    conversation: { channel: 'email' },
+    ...extra,
+  });
+  const readable = (extra = {}) => ({
+    data: { ...withRoutes(extra), capabilities: { instruct: true } },
+  });
+  const stop = wrapper => wrapper.find('[data-testid="composer-stop"]');
+  const startRedraft = async wrapper => {
+    await wrapper
+      .find('textarea')
+      .setValue('mention Saturday is not guaranteed');
+    await wrapper.find('[data-testid="composer-redraft"]').trigger('click');
+    await flushPromises();
+  };
+  const mounted = async () => {
+    vi.useFakeTimers();
+    return mountContainer({ instructMode: true });
+  };
+
+  beforeEach(() => {
+    AiDraftAPI.getDraft.mockResolvedValue(readable());
+    AiDraftAPI.instruct.mockResolvedValue({ data: {} });
+    AiDraftAPI.cancelInstruction.mockReset();
+  });
+
+  afterEach(() => {
+    clearDraftMeta(3580);
+  });
+
+  it('shows the three steps and keeps v1 readable while working', async () => {
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    expect(wrapper.text()).toContain('Gotchu is redrafting');
+    expect(wrapper.text()).toContain('Instruction received');
+    expect(wrapper.text()).toContain('Re-read the thread');
+    expect(wrapper.text()).toContain('Writing v2…');
+    expect(wrapper.text()).toContain('“mention Saturday is not guaranteed”');
+    expect(wrapper.find('.draft-dock__body').classes()).toContain('is-dimmed');
+    expect(wrapper.find('.draft-dock__body').text()).toContain(body);
+  });
+
+  it('moves the re-read to done after two seconds, and never finishes writing on its own', async () => {
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    const step = key => wrapper.find(`[data-step="${key}"]`);
+    expect(step('reread').attributes('data-state')).toBe('now');
+    expect(step('writing').attributes('data-state')).toBe('todo');
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(step('reread').attributes('data-state')).toBe('done');
+    expect(step('writing').attributes('data-state')).toBe('now');
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(step('writing').attributes('data-state')).toBe('now');
+  });
+
+  it('keeps v1 on screen while the cycle reads as redrafting', async () => {
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    AiDraftAPI.getDraft.mockResolvedValue(
+      readable({
+        cycle: reviewing({ state: 'redrafting' }),
+        instruction: { state: 'working' },
+      })
+    );
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(wrapper.text()).toContain('Instruction received');
+    expect(wrapper.text()).not.toContain('Writing a new draft…');
+    expect(wrapper.find('.draft-dock__body').text()).toContain(body);
+  });
+
+  it('disables Redraft, Insert to edit and Send draft while working', async () => {
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    ['composer-redraft', 'composer-insert', 'composer-send-draft'].forEach(
+      id => {
+        expect(
+          wrapper.find(`[data-testid="${id}"]`).attributes('disabled')
+        ).toBeDefined();
+      }
+    );
+  });
+
+  it('cancels the instruction it is waiting on, and v1 stays', async () => {
+    AiDraftAPI.cancelInstruction.mockResolvedValue({
+      data: { instruction: { state: 'cancelled' } },
+    });
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    const { requestId } = AiDraftAPI.instruct.mock.calls[0][1];
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    expect(AiDraftAPI.cancelInstruction).toHaveBeenCalledWith(3580, requestId);
+    expect(wrapper.text()).toContain('Stopped. v1 stays.');
+    expect(wrapper.text()).not.toContain('Instruction received');
+    expect(wrapper.find('.draft-dock__body').classes()).not.toContain(
+      'is-dimmed'
+    );
+  });
+
+  it('disables Stop while the cancel is in flight', async () => {
+    AiDraftAPI.cancelInstruction.mockReturnValue(new Promise(() => {}));
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    expect(stop(wrapper).attributes('disabled')).toBeDefined();
+    expect(AiDraftAPI.cancelInstruction).toHaveBeenCalledTimes(1);
+  });
+
+  it('never says stopped when v2 won the race', async () => {
+    AiDraftAPI.cancelInstruction.mockResolvedValue({
+      data: { instruction: { state: 'redrafted', version: 2 } },
+    });
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain(
+      'Too late to stop: v2 was already written.'
+    );
+    expect(wrapper.text()).not.toContain('Stopped');
+  });
+
+  it('keeps the too-late line when the re-read reports the redraft', async () => {
+    // The re-read that brings v2 on screen also reports the instruction as
+    // redrafted; that must not erase the line saying the Stop came too late.
+    AiDraftAPI.cancelInstruction.mockResolvedValue({
+      data: { instruction: { state: 'redrafted', version: 2 } },
+    });
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    AiDraftAPI.getDraft.mockResolvedValue({
+      data: {
+        ...withRoutes({ draft: { version: 2, body: 'Neue Fassung.' } }),
+        capabilities: { instruct: true },
+        instruction: { state: 'redrafted', version: 2 },
+      },
+    });
+    const before = AiDraftAPI.getDraft.mock.calls.length;
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    // Re-read at once, no longer asking about the instruction.
+    expect(AiDraftAPI.getDraft.mock.calls.slice(before)).toEqual([
+      [3580, { requestId: undefined }],
+    ]);
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(wrapper.text()).toContain(
+      'Too late to stop: v2 was already written.'
+    );
+    expect(dock(wrapper).text()).toContain('v2 · from your instruction');
+    expect(wrapper.text()).not.toContain('Instruction received');
+  });
+
+  it.each(['answered', 'refused', 'failed'])(
+    'says the instruction had already finished when the cancel answers %s',
+    async state => {
+      AiDraftAPI.cancelInstruction.mockResolvedValue({
+        data: { instruction: { state } },
+      });
+      const wrapper = await mounted();
+      await startRedraft(wrapper);
+      await stop(wrapper).trigger('click');
+      await flushPromises();
+      expect(wrapper.text()).toContain(
+        'Too late to stop: the instruction had already finished.'
+      );
+      expect(wrapper.text()).not.toContain('Instruction received');
+    }
+  );
+
+  it('keeps waiting and says it may still finish when the cancel fails', async () => {
+    AiDraftAPI.cancelInstruction.mockRejectedValue(
+      Object.assign(new Error('x'), { response: { status: 404 } })
+    );
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Could not stop it. It may still finish.');
+    expect(wrapper.text()).toContain('Instruction received');
+    // A 404 may be a mismatch, so Stop goes for this instruction only.
+    expect(stop(wrapper).exists()).toBe(false);
+  });
+
+  it('keeps Stop after a cancel that failed for another reason', async () => {
+    AiDraftAPI.cancelInstruction.mockRejectedValue(
+      Object.assign(new Error('x'), { response: { status: 502 } })
+    );
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Could not stop it. It may still finish.');
+    expect(stop(wrapper).exists()).toBe(true);
+  });
+
+  it('offers Stop again on the next instruction after a cancel 404', async () => {
+    AiDraftAPI.cancelInstruction.mockRejectedValue(
+      Object.assign(new Error('x'), { response: { status: 404 } })
+    );
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    // The first instruction ends (the poll reads it redrafted), then a second starts.
+    AiDraftAPI.getDraft.mockResolvedValue(
+      readable({ instruction: { state: 'redrafted', version: 2 } })
+    );
+    await vi.advanceTimersByTimeAsync(2_000);
+    AiDraftAPI.getDraft.mockResolvedValue(readable());
+    await startRedraft(wrapper);
+    expect(stop(wrapper).exists()).toBe(true);
+  });
+
+  it('keeps waiting when the cancel answers working, and says it may still finish', async () => {
+    AiDraftAPI.cancelInstruction.mockResolvedValue({
+      data: { instruction: { state: 'working' } },
+    });
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Could not stop it. It may still finish.');
+    expect(wrapper.text()).toContain('Instruction received');
+    expect(wrapper.text()).not.toContain('Stopped');
+    expect(stop(wrapper).exists()).toBe(false);
+  });
+
+  it('offers no Stop when the thread read reported the feature absent', async () => {
+    setDraftMeta(3580, { threadAvailable: false });
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    expect(wrapper.text()).toContain('Instruction received');
+    expect(stop(wrapper).exists()).toBe(false);
+  });
+
+  it('settles a cancelled status read from the poll as stopped', async () => {
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    AiDraftAPI.getDraft.mockResolvedValue(
+      readable({ instruction: { state: 'cancelled' } })
+    );
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(wrapper.text()).toContain('Stopped. v1 stays.');
+    expect(wrapper.text()).not.toContain('Instruction received');
+  });
+
+  it('offers no Stop when the gateway does not serve cancel', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue({
+      data: {
+        ...answer(reviewing(), { version: 1, body }).data,
+        capabilities: { instruct: true },
+      },
+    });
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    expect(stop(wrapper).exists()).toBe(false);
+    expect(wrapper.text()).toContain('Instruction received');
   });
 });

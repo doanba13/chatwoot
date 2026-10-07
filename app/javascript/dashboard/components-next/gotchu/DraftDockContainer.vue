@@ -13,7 +13,8 @@ import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import AiDraftAPI from 'dashboard/api/gotchu/aiDraft';
-import { setDraftMeta } from './helpers/draftMeta';
+import { setDraftMeta, useDraftMeta } from './helpers/draftMeta';
+import { redraftSteps } from './helpers/redraftSteps';
 import DraftDock from './DraftDock.vue';
 import DraftInstruct from './DraftInstruct.vue';
 import {
@@ -162,7 +163,8 @@ const waiting = computed(() =>
   Boolean(inFlight.value && !inFlight.value.expired)
 );
 // What the last instruction came to, when that is a sentence rather than a new
-// draft: `{ kind: 'answered' | 'refused' | 'failed', text }`, or null.
+// draft: `{ kind: 'answered' | 'refused' | 'failed' | 'stopped', text }`, or
+// null. A Stop's own lines ride here too.
 const outcome = ref(null);
 // The draft a redraft landed as, `{ cycleId, version }`, or null. Kept as the
 // draft's identity rather than as a sentence, because the label is only true of
@@ -170,9 +172,19 @@ const outcome = ref(null);
 // draft on screen the instruction never touched, and "v2 · from your
 // instruction" above it would tell the supporter their change is in it.
 const redraftedTo = ref(null);
-// Whole seconds since the instruction in flight was accepted, for the working
-// line. Ticked by its own interval, which runs only while something is in flight.
-const workingSeconds = ref(0);
+/**
+ * `stopping` while the cancel is in flight. `stopRefusedFor` is the request id
+ * a cancel 404'd or answered `working` for: Stop goes away for THAT instruction
+ * only. A 404 is as likely a request-id mismatch as an absent feature, so it
+ * must not cost the supporter Stop for the next instruction, which carries a
+ * new id.
+ */
+const stopping = ref(false);
+const stopRefusedFor = ref(null);
+
+// Milliseconds since the instruction in flight was accepted, for the redraft
+// steps. Ticked by its own interval, which runs only while something is in flight.
+const workingMs = ref(0);
 let workingTicker = null;
 
 /**
@@ -281,7 +293,16 @@ const settle = (status, readFor, requestId) => {
     inFlight.value = { ...flight, expired: true };
     return;
   }
-  if (status.state === 'redrafted') {
+  if (status.state === 'cancelled') {
+    // A Stop won: the draft the instruction was typed against stays, and no
+    // later version will arrive for it.
+    outcome.value = {
+      kind: 'stopped',
+      text: t('GOTCHU.COMPOSER.STOPPED', {
+        version: flight.draftVersion ?? draftVersion.value,
+      }),
+    };
+  } else if (status.state === 'redrafted') {
     // The new draft on screen is the outcome; a failed line the backstop put up
     // is no longer true.
     outcome.value = null;
@@ -438,10 +459,10 @@ const stopWorkingTicker = () => {
 watch(inFlight, flight => {
   if (timer) startPolling();
   stopWorkingTicker();
-  workingSeconds.value = 0;
+  workingMs.value = 0;
   if (!flight || flight.expired) return;
   workingTicker = window.setInterval(() => {
-    workingSeconds.value = Math.floor((Date.now() - flight.startedAt) / 1000);
+    workingMs.value = Date.now() - flight.startedAt;
   }, 1000);
 });
 
@@ -476,6 +497,7 @@ const restart = () => {
   inFlight.value = null;
   outcome.value = null;
   redraftedTo.value = null;
+  stopping.value = false;
   read();
   startPolling();
 };
@@ -631,11 +653,16 @@ const onInstruct = async () => {
     // Accepted, so the token has done its job and the next instruction is a new
     // one — but this one is now the instruction in flight, so the token moves
     // there before it is dropped. The field is cleared here and nowhere else.
+    // The draft it was typed against travels with it: the dock keeps that
+    // text readable, dimmed, while the cycle reads as redrafting underneath,
+    // and a Stop that wins names its version.
     inFlight.value = {
       requestId: pendingRequestId,
       conversationId: submitFor,
       startedAt: Date.now(),
       text,
+      draftText: view.value.text,
+      draftVersion: draftVersion.value,
     };
     outcome.value = null;
     redraftedTo.value = null;
@@ -767,17 +794,120 @@ const dockHeading = computed(() => {
   });
 });
 
-// While an instruction is in flight the dock says so, whatever the cycle is
-// doing underneath: the worker may not have picked the job up yet, and a ready
-// draft shown as ready reads as the press having done nothing.
-const dockState = computed(() =>
-  waiting.value ? 'streaming' : view.value.state
+// While an instruction of ours is in flight the card stays `ready` with the
+// draft it was typed against still readable, dimmed under the working strip,
+// whatever the cycle reads as underneath (the worker moves it to redrafting
+// while it writes). The strip is the signal; the footer is locked by it. The
+// old streaming header is left for a redrafting cycle with nothing of ours in
+// flight.
+const dockState = computed(() => (waiting.value ? 'ready' : view.value.state));
+const dockText = computed(() =>
+  waiting.value && view.value.state !== 'ready'
+    ? (inFlight.value.draftText ?? '')
+    : view.value.text
 );
-const dockStreamingText = computed(() =>
-  waiting.value
-    ? t('GOTCHU.DRAFT.WORKING', { seconds: workingSeconds.value })
-    : t('GOTCHU.DRAFT.REDRAFTING')
+
+const draftMeta = useDraftMeta(computed(() => props.conversationId));
+
+// Absent only when the thread read said so. `undefined`, before any thread
+// read has answered, does not hide it.
+const canStop = computed(
+  () =>
+    waiting.value &&
+    view.value.threadRoutes &&
+    draftMeta.value?.threadAvailable !== false &&
+    stopRefusedFor.value !== inFlight.value.requestId
 );
+
+const STOP_TERMINAL = ['redrafted', 'answered', 'refused', 'failed'];
+
+const stopFailed = () => {
+  outcome.value = { kind: 'failed', text: t('GOTCHU.COMPOSER.STOP_FAILED') };
+};
+
+/**
+ * What the cancel answered, mapped:
+ * - `cancelled`: the Stop won; settles exactly as a polled `cancelled` does.
+ * - `redrafted`, `answered`, `refused`, `failed`: too late. Settled HERE, before
+ *   the line goes up and before the re-read: a re-read still asking about the
+ *   instruction would settle it again, and `settle`'s `redrafted` branch clears
+ *   the outcome, which would erase the line saying the Stop lost.
+ * - `working` (the cancel lost the compare-and-set) or anything else: the job
+ *   may still finish, so keep waiting and say so. Never "stopped".
+ * - an error: the same, and a 404 hides Stop for this instruction.
+ */
+const onStop = async () => {
+  const flight = inFlight.value;
+  if (!flight || !canStop.value || stopping.value) return;
+  const { conversationId, requestId } = flight;
+  // Only while the instruction pressed on is still the one in flight: an
+  // answer that lands after a conversation switch, or after the poll settled
+  // it, is about something no longer on screen.
+  const stillWaiting = () =>
+    inFlight.value?.requestId === requestId &&
+    props.conversationId === conversationId;
+  stopping.value = true;
+  try {
+    const { data } = await AiDraftAPI.cancelInstruction(
+      conversationId,
+      requestId
+    );
+    if (!stillWaiting()) return;
+    const status = data?.instruction;
+    const state = status?.state;
+    if (state === 'cancelled') {
+      settle(status, conversationId, requestId);
+      return;
+    }
+    if (!STOP_TERMINAL.includes(state)) {
+      stopFailed();
+      if (state === 'working') stopRefusedFor.value = requestId;
+      return;
+    }
+    inFlight.value = null;
+    const version = Number.isInteger(status.version) ? status.version : null;
+    if (state === 'redrafted') {
+      redraftedTo.value = { cycleId: view.value.cycleId, version };
+    }
+    if (state === 'failed' && instruction.value === '') {
+      instruction.value = flight.text;
+    }
+    outcome.value = {
+      kind: 'stopped',
+      text:
+        state === 'redrafted' && version !== null
+          ? t('GOTCHU.COMPOSER.STOP_TOO_LATE', { version })
+          : t('GOTCHU.COMPOSER.STOP_TOO_LATE_OTHER'),
+    };
+    // At once, so the version that won is on screen now rather than in 15 s.
+    read();
+  } catch (error) {
+    if (!stillWaiting()) return;
+    stopFailed();
+    if (error?.response?.status === 404) stopRefusedFor.value = requestId;
+  } finally {
+    stopping.value = false;
+  }
+};
+
+// The working strip: non-null only while waiting.
+const working = computed(() => {
+  if (!waiting.value) return null;
+  const flight = inFlight.value;
+  const orderName =
+    (view.value.trace ?? []).find(step => step?.kind === 'order')?.orderName ??
+    null;
+  const steps = redraftSteps({
+    elapsedMs: workingMs.value,
+    orderName,
+    nextVersion: (flight.draftVersion ?? draftVersion.value ?? 0) + 1,
+  }).map(step => ({
+    ...step,
+    // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys
+    text: t(`GOTCHU.COMPOSER.${step.label}`, step.params),
+  }));
+  return { instruction: flight.text, steps, canStop: canStop.value };
+});
 </script>
 
 <template>
@@ -793,9 +923,9 @@ const dockStreamingText = computed(() =>
   </p>
   <DraftDock
     :state="dockState"
-    :text="view.text"
+    :text="dockText"
     :expires-at="view.expiresAt"
-    :streaming-text="dockStreamingText"
+    :streaming-text="$t('GOTCHU.DRAFT.REDRAFTING')"
     :trace="traceSteps"
     :outcome="outcome"
     :version-label="versionLabel"
@@ -805,7 +935,10 @@ const dockStreamingText = computed(() =>
     :redraft-disabled="redraftDisabled"
     :send-blocked-reason="sendBlockedReason"
     :actions-locked="submitting || sentShown"
+    :working="working"
+    :stopping="stopping"
     @insert="onInsert"
+    @stop="onStop"
     @send="onSendDraft"
     @instruct="onInstruct"
     @dismiss-outcome="outcome = null"

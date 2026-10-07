@@ -92,9 +92,22 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  // An instruction of ours being redrafted: `{ instruction, steps, canStop }`,
+  // each step `{ key, state: 'done' | 'now' | 'todo', text }`. Set, it draws
+  // the working strip, dims the body (still readable, not removed) and locks
+  // the footer. The steps are client timings; only the draft read ends them.
+  working: {
+    type: Object,
+    default: null,
+  },
+  // A Stop is in flight: the button stays, disabled.
+  stopping: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-defineEmits(['insert', 'send', 'instruct', 'dismissOutcome']);
+defineEmits(['insert', 'send', 'instruct', 'dismissOutcome', 'stop']);
 
 // Insert and Send act on the draft on screen, so neither while it is still
 // being written or rewritten (invariant 6: the dock reads `streaming` while an
@@ -105,6 +118,16 @@ const isReady = computed(() => props.state === 'ready');
 // position — so becoming ready reveals a body under a header that has not
 // moved, rather than swapping one band for a differently shaped one.
 const isStreaming = computed(() => props.state === 'streaming');
+
+// Insert to edit and Send draft act on the draft on screen, and while a redraft
+// is being written that draft is about to change.
+const locked = computed(() => props.actionsLocked || Boolean(props.working));
+
+// The instruction as asked, in curly quotes: what the supporter typed, never
+// the agent's words.
+const quotedInstruction = computed(() =>
+  props.working ? `“${props.working.instruction}”` : ''
+);
 
 const { t } = useI18n();
 
@@ -183,6 +206,68 @@ const reviewLabel = computed(() => {
     v-if="state !== 'none'"
     class="draft-dock flex flex-col gap-2 px-3 py-2.5 border-b bg-[var(--g-surface-tank)] border-[var(--g-agent-border)]"
   >
+    <!-- The redraft in progress, first in the card: what was asked, the three
+      steps, and Stop. The draft below stays readable, dimmed. -->
+    <div
+      v-if="working"
+      class="draft-dock__cook flex flex-col gap-1.5 p-2.5 rounded-lg bg-[var(--g-surface-tank)] border border-[var(--g-agent-border)]"
+      role="status"
+    >
+      <div class="flex items-center gap-2">
+        <span
+          class="draft-dock__spinner size-3.5 flex-shrink-0 rounded-full border-2 border-[var(--g-agent)] border-t-transparent"
+          aria-hidden="true"
+        />
+        <span class="flex-1 min-w-0 text-sm">
+          <strong class="font-semibold text-[var(--g-text)]">
+            {{ $t('GOTCHU.COMPOSER.WORKING_TITLE') }}
+          </strong>
+          <span class="text-[var(--g-text-muted)]">
+            {{ quotedInstruction }}
+          </span>
+        </span>
+        <Button
+          v-if="working.canStop"
+          data-testid="composer-stop"
+          color="slate"
+          variant="ghost"
+          size="sm"
+          :label="$t('GOTCHU.COMPOSER.STOP')"
+          :disabled="stopping"
+          @click="$emit('stop')"
+        />
+      </div>
+      <ol class="flex flex-col gap-0.5 m-0 ps-0 list-none text-xs">
+        <li
+          v-for="step in working.steps"
+          :key="step.key"
+          :data-step="step.key"
+          :data-state="step.state"
+          class="flex items-center gap-1.5"
+          :class="{
+            'text-[var(--g-text)] font-semibold': step.state === 'now',
+            'text-[var(--g-text-muted)]': step.state !== 'now',
+          }"
+        >
+          <span class="inline-flex w-3 flex-shrink-0" aria-hidden="true">
+            <Icon
+              v-if="step.state === 'done'"
+              icon="i-lucide-check"
+              class="size-3 text-[var(--g-agent)]"
+            />
+          </span>
+          {{ step.text }}
+        </li>
+      </ol>
+      <div
+        class="draft-dock__bar relative h-[3px] overflow-hidden rounded-full bg-[var(--g-agent-border)]"
+        aria-hidden="true"
+      >
+        <span
+          class="draft-dock__bar-fill absolute inset-y-0 start-0 w-2/5 rounded-full bg-[var(--g-agent)]"
+        />
+      </div>
+    </div>
     <div class="flex items-center justify-between gap-3">
       <span
         class="inline-flex items-center gap-2 text-sm font-medium text-[var(--g-agent)]"
@@ -275,6 +360,7 @@ const reviewLabel = computed(() => {
         with neither is text a keyboard user cannot read to the end. -->
       <div
         class="draft-dock__body max-h-[170px] overflow-y-auto text-sm text-pretty text-[var(--g-text)]"
+        :class="{ 'is-dimmed': working }"
         role="region"
         tabindex="0"
         :aria-label="$t('GOTCHU.DRAFT.TITLE')"
@@ -327,7 +413,7 @@ const reviewLabel = computed(() => {
       variant="outline"
       size="sm"
       :label="$t('GOTCHU.COMPOSER.INSERT_TO_EDIT')"
-      :disabled="!isReady || actionsLocked"
+      :disabled="!isReady || locked"
       @click="$emit('insert')"
     />
     <Button
@@ -338,7 +424,7 @@ const reviewLabel = computed(() => {
       :class="BRAND_BUTTON_CLASS"
       :label="$t('GOTCHU.DRAFT.SEND')"
       :title="sendBlockedReason || undefined"
-      :disabled="!isReady || actionsLocked || !!sendBlockedReason"
+      :disabled="!isReady || locked || !!sendBlockedReason"
       @click="$emit('send')"
     />
   </div>
@@ -352,6 +438,32 @@ const reviewLabel = computed(() => {
 /* The capped body is focusable so it can be scrolled from the keyboard, and
    anything focusable has to show where the focus is. `focus-visible` rather than
    `focus`, so clicking into the draft text does not draw a ring around it. */
+/* The draft the redraft was asked about: still there to read, plainly not
+   the thing to act on. */
+.draft-dock__body.is-dimmed {
+  opacity: 0.4;
+}
+
+.draft-dock__spinner {
+  animation: g-spin 0.8s linear infinite;
+}
+
+/* Indeterminate: a 40% fill sliding across, because the worker reports no
+   progress to measure. */
+@keyframes g-draft-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.draft-dock__bar-fill {
+  animation: g-draft-indeterminate 1.4s var(--g-ease-out) infinite;
+}
+
 .draft-dock__body:focus-visible {
   outline: 2px solid var(--g-agent);
   outline-offset: 2px;
@@ -413,6 +525,12 @@ const reviewLabel = computed(() => {
    The label beside them carries the meaning either way — the dots were never the
    only signal that a draft is being written. */
 @media (prefers-reduced-motion: reduce) {
+  .draft-dock__bar-fill,
+  .draft-dock__spinner {
+    animation: none;
+    transform: none;
+  }
+
   .draft-dock__dot {
     opacity: 0.55;
     transform: none;
