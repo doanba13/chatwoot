@@ -271,6 +271,75 @@ describe('DraftDock streaming loader', () => {
   });
 });
 
+describe('DraftDock card', () => {
+  const parts = {
+    version: 2,
+    procedure: 'Where is my order',
+    tier: 'draft',
+    procedureTo: { name: 'agent_procedure', params: { procedureId: 'p1' } },
+  };
+  const stubs = { 'router-link': { template: '<a class="link"><slot /></a>' } };
+
+  it('draws an ordinary draft whole and lets only the body scroll inside the card', () => {
+    const wrapper = mountComponent({ text: 'x'.repeat(800) });
+    const body = wrapper.find('.draft-dock__body');
+    expect(body.classes()).not.toContain('max-h-[170px]');
+    expect(body.classes()).toEqual(
+      expect.arrayContaining(['overflow-y-auto', 'min-h-0'])
+    );
+    expect(body.find('[data-testid="composer-send-draft"]').exists()).toBe(
+      false
+    );
+  });
+
+  it('splits the heading into a pill and a provenance line with a link', () => {
+    const wrapper = mount(DraftDock, {
+      props: { state: 'ready', text, mode: 'instruct', headingParts: parts },
+      global: { stubs },
+    });
+    expect(wrapper.find('.draft-dock__pill').text()).toBe('Draft v2');
+    expect(wrapper.find('.draft-dock__from').text()).toBe(
+      'from Where is my order · tier: draft'
+    );
+    expect(wrapper.find('.draft-dock__from .link').text()).toBe(
+      'Where is my order'
+    );
+  });
+
+  it('says the procedure as plain text when no id names it', () => {
+    const wrapper = mount(DraftDock, {
+      props: {
+        state: 'ready',
+        text,
+        mode: 'instruct',
+        headingParts: { ...parts, procedureTo: null },
+      },
+      global: { stubs },
+    });
+    expect(wrapper.find('.draft-dock__from .link').exists()).toBe(false);
+    expect(wrapper.find('.draft-dock__from').text()).toContain(
+      'Where is my order'
+    );
+  });
+
+  it('passes the trace summary to the trace row', () => {
+    const wrapper = mountComponent({
+      trace: [{ kind: 'memo', did: 'Used a memo', result: '' }],
+      traceSummary: '1 step · memo used',
+    });
+    expect(wrapper.findComponent(AITrace).text()).toContain(
+      'How it got here · 1 step · memo used'
+    );
+  });
+
+  it('gives instructing-off its own resting line, not a failed submission', () => {
+    const wrapper = mountComponent({ instructOff: true });
+    const line = wrapper.find('.draft-dock__off');
+    expect(line.text()).toContain('switched off');
+    expect(line.text()).not.toContain('nothing was sent');
+  });
+});
+
 describe('DraftDock trace and outcome', () => {
   const steps = [
     { kind: 'order', did: 'Looked up #PL-5563', result: 'PAID · 12 days old' },

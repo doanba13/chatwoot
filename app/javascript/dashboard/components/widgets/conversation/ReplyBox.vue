@@ -1717,8 +1717,14 @@ export default {
   @apply mb-0;
 }
 
+// The board's dock: one card, teal-edged, lifted by the design's single
+// elevation, centred in the thread column and capped (plan Decision 2) so a
+// long draft scrolls its own body instead of pushing the conversation off the
+// screen. The only child that gives way is the draft body.
 .reply-box {
-  @apply relative mb-2 mx-2 border border-[var(--g-border)] rounded-[var(--g-radius-card)] bg-[var(--g-surface)];
+  @apply relative flex flex-col self-center mx-auto mb-7 w-[calc(100%-56px)] max-w-[760px] max-h-[min(70vh,100%)] border border-[var(--g-agent-border)] rounded-[16px] bg-[var(--g-surface)];
+
+  box-shadow: var(--g-shadow-pop);
 
   // A private note is signalled the way the note bubble signals it — a dashed
   // outline on the ordinary surface — not by flooding the composer. The design
@@ -1733,8 +1739,14 @@ export default {
   @apply mb-0;
 }
 
+// The editor sits in the board's `.ed` frame inside the card: inset 18px, a
+// 10px radius, a slate hairline, and the agent colour at 15% when it has focus.
 .reply-box__top {
-  @apply relative p-3 -mt-px min-h-[2.75rem];
+  @apply relative p-3 mx-[18px] mt-2.5 mb-1 min-h-[2.75rem] border border-[var(--g-border)] rounded-[10px] bg-[var(--g-surface)];
+
+  &:focus-within {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-agent) 15%, transparent);
+  }
 
   // Placeholder is muted, like every other resting hint in the system. The
   // editor itself already floors its own height well above 44px; the min-height

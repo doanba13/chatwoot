@@ -4,6 +4,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import Gallery from './Gallery.vue';
 
 import components from 'dashboard/i18n/locale/en/components.json';
+import gotchuAgent from 'dashboard/i18n/locale/en/gotchuAgent.json';
 
 // A compile is not a render. This mounts every re-themed primitive together and
 // fails on a bad prop, a missing slot contract or a runtime error — the class of
@@ -21,6 +22,7 @@ describe('Gotchu preview gallery', () => {
                 // The real catalogue, as main.js loads it: the AI surfaces
                 // carry copy, and a bare instance would render their keys.
                 ...components,
+                ...gotchuAgent,
                 SWITCH: { TOGGLE: 'Toggle' },
                 BREADCRUMB: { ARIA_LABEL: 'Breadcrumb' },
               },
@@ -29,6 +31,11 @@ describe('Gotchu preview gallery', () => {
           createRouter({
             history: createWebHashHistory(),
             routes: [
+              {
+                name: 'agent_procedure',
+                path: '/a/:accountId/procedures/:procedureId',
+                component: { render: () => null },
+              },
               { path: '/:catchAll(.*)', component: { render: () => null } },
             ],
           }),
@@ -84,28 +91,50 @@ describe('Gotchu preview gallery', () => {
     expect(text).toContain('review time ran out');
   });
 
-  it('renders the composer placement rather than a panel section', () => {
+  it('draws the composer card in its six states', () => {
     const wrapper = mountGallery();
+    const cards = wrapper.findAll('.composer-card');
+    const text = wrapper.text();
 
-    // The dock's own bottom border is its separator from the editor under it,
-    // which is the whole reason it is drawn — the panel wrapper that nulled it is
-    // gone, and so is the panel.
-    expect(wrapper.find('.draft-dock').classes()).toContain('border-b');
-    expect(wrapper.text()).toContain('The reply box goes here.');
-    expect(wrapper.text()).not.toContain('No draft for this conversation.');
+    // Pill and provenance line, with the procedure as a link.
+    expect(wrapper.find('.draft-dock__pill').text()).toBe('Draft v1');
+    expect(wrapper.find('.draft-dock__from a').text()).toBe(
+      'Where is my order'
+    );
+    expect(cards.length).toBeGreaterThanOrEqual(6);
+    // 1 instruct-ready: the box, Redraft, and the trace summary.
+    expect(text).toContain('How it got here · 3 steps · memo used');
+    expect(wrapper.find('[data-testid="composer-redraft"]').exists()).toBe(
+      true
+    );
+    // 2 instruct-working: the strip at 2.5 s, with Stop.
+    expect(wrapper.find('[data-testid="composer-stop"]').exists()).toBe(true);
+    expect(text).toContain('Re-read the thread and order PL-5713');
+    expect(wrapper.find('[data-step="writing"]').attributes('data-state')).toBe(
+      'now'
+    );
+    // 3/4 reply with and without a draft share the mode switch.
+    expect(text).toContain('Start with “/” to pick a canned reply');
+    // 5 memo.
+    expect(wrapper.find('[data-testid="memo-composer"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="memo-add"]').exists()).toBe(true);
+    // 6 instructing off: its own line, not the failed-submission sentence.
+    expect(wrapper.find('.draft-dock__off').text()).toContain('switched off');
+    expect(text).not.toContain('nothing was sent');
   });
 
-  it('shows the capped long draft and the streaming loader', () => {
-    // Both are things you can only judge by looking, so the gallery has to carry
-    // them: an 812-character draft is what the 170px cap was chosen against, and
-    // the loader is a state the replay above only passes through.
+  it('draws an ordinary draft whole and scrolls only a long one', () => {
     const wrapper = mountGallery();
 
-    const capped = wrapper
+    const long = wrapper
       .findAll('.draft-dock__body')
       .filter(body => body.text().length > 700);
-    expect(capped).toHaveLength(1);
-    expect(capped[0].classes()).toContain('max-h-[170px]');
+    expect(long).toHaveLength(1);
+    expect(long[0].classes()).not.toContain('max-h-[170px]');
+    expect(long[0].classes()).toEqual(
+      expect.arrayContaining(['overflow-y-auto', 'min-h-0'])
+    );
+    expect(wrapper.find('.composer-card').attributes('style')).toBeUndefined();
 
     // Not a total count: the replay card starts in `streaming` too, so there are
     // two loaders on the page and the second one is the point of the fixed card.

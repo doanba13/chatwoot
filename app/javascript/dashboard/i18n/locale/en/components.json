@@ -207,6 +207,11 @@
       "HEADER": "Draft v{version} · from {procedure} · tier: {tier}",
       "HEADER_NO_PROCEDURE": "Draft v{version} · no procedure matched",
       "HEADER_NO_TIER": "Draft v{version} · from {procedure}",
+      "PILL": "Draft v{version}",
+      "PART_FROM": "from",
+      "PART_NO_PROCEDURE": "no procedure matched",
+      "PART_TIER": "tier: {tier}",
+      "INSTRUCT_OFF": "Instructing is switched off on this desk. You can still insert the draft to edit it, or send it as it is.",
       "INSTRUCT_HINT": "Plain words are enough. Gotchu keeps the format."
     },
     "HANDLED": {

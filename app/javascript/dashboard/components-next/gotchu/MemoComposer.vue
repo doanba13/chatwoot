@@ -114,13 +114,14 @@ const segment = active =>
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 px-3 py-2.5" data-testid="memo-composer">
+  <div class="flex flex-col gap-2 px-[18px] py-2.5" data-testid="memo-composer">
     <TextArea
       v-model="text"
       :max-length="600"
       show-character-count
       auto-height
       min-height="4rem"
+      custom-text-area-wrapper-class="memo-box !border-dashed !border-[var(--g-border-strong)] !bg-[var(--g-surface-note)]"
       :placeholder="t(`${M}COMPOSER_HINT`)"
     />
     <ul
@@ -180,6 +181,10 @@ const segment = active =>
           </button>
         </div>
       </div>
+    </div>
+    <!-- The footer row, as in the other modes: a spacer, then the button. -->
+    <div class="flex items-center pt-0.5 pb-1">
+      <span class="flex-1" />
       <Button
         :label="t(`${M}COMPOSER_ADD`)"
         size="sm"

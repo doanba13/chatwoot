@@ -4,6 +4,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import Gallery from './Gallery.vue';
 
 import components from 'dashboard/i18n/locale/en/components.json';
+import gotchuAgent from 'dashboard/i18n/locale/en/gotchuAgent.json';
 
 // The real dashboard stylesheet, so what renders here is what renders in the
 // app — Tailwind, _next-colors and the Gotchu token sheet in their real order.
@@ -22,6 +23,7 @@ const i18n = createI18n({
   messages: {
     en: {
       ...components,
+      ...gotchuAgent,
       SWITCH: { TOGGLE: 'Toggle' },
       BREADCRUMB: { ARIA_LABEL: 'Breadcrumb' },
     },
@@ -33,7 +35,14 @@ const i18n = createI18n({
 // enough — nothing here navigates.
 const router = createRouter({
   history: createWebHashHistory(),
-  routes: [{ path: '/:catchAll(.*)', component: { render: () => null } }],
+  routes: [
+    {
+      name: 'agent_procedure',
+      path: '/a/:accountId/procedures/:procedureId',
+      component: { render: () => null },
+    },
+    { path: '/:catchAll(.*)', component: { render: () => null } },
+  ],
 });
 
 createApp(Gallery).use(i18n).use(router).mount('#app');

@@ -202,6 +202,11 @@
       "HEADER": "Brouillon v{version} · d’après {procedure} · niveau : {tier}",
       "HEADER_NO_PROCEDURE": "Brouillon v{version} · aucune procédure correspondante",
       "HEADER_NO_TIER": "Brouillon v{version} · d’après {procedure}",
+      "PILL": "Brouillon v{version}",
+      "PART_FROM": "d’après",
+      "PART_NO_PROCEDURE": "aucune procédure correspondante",
+      "PART_TIER": "niveau : {tier}",
+      "INSTRUCT_OFF": "Les instructions sont désactivées sur ce service d’assistance. Vous pouvez toujours insérer le brouillon pour le modifier, ou l’envoyer tel quel.",
       "INSTRUCT_HINT": "Des mots simples suffisent. Gotchu conserve la mise en forme."
     },
     "HANDLED": {

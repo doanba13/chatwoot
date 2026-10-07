@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
@@ -25,6 +26,10 @@ import EscalationCard from 'dashboard/components-next/gotchu/EscalationCard.vue'
 import StoreSwitcher from 'dashboard/components-next/gotchu/StoreSwitcher.vue';
 import AutonomyDial from 'dashboard/components-next/gotchu/AutonomyDial.vue';
 import TopicSwitch from 'dashboard/components-next/gotchu/TopicSwitch.vue';
+import ComposerModes from 'dashboard/components-next/gotchu/ComposerModes.vue';
+import DraftInstruct from 'dashboard/components-next/gotchu/DraftInstruct.vue';
+import MemoComposer from 'dashboard/components-next/gotchu/MemoComposer.vue';
+import { redraftSteps } from 'dashboard/components-next/gotchu/helpers/redraftSteps';
 import ComposerCard from './ComposerCard.vue';
 
 // SidebarGroupLeaf is deliberately absent. It calls useSidebarContext(), which
@@ -99,6 +104,34 @@ const longDraftText =
   'Hallo Frau Weber, vielen Dank für Ihre Nachricht und entschuldigen Sie bitte die Verzögerung. Ihre Bestellung #PL-5563 wurde am 28. August versandt und zuletzt am 4. September im Verteilzentrum Leipzig gescannt. Da unsere Manufaktur die Anhänger einzeln gravieren lässt, verschicken wir aus Fernost, und für Deutschland rechnen wir deshalb mit 14 bis 21 Werktagen ab Versand — in Einzelfällen etwas länger, wenn der Zoll eine Sendung stichprobenartig prüft. Sie können den Stand jederzeit selbst unter dem Link in Ihrer Versandbestätigung verfolgen. Sollte die Sendung bis zum 25. September nicht bei Ihnen angekommen sein, melden Sie sich bitte kurz bei uns: wir schicken den Anhänger dann kostenfrei erneut oder erstatten den Betrag vollständig, ganz wie Sie es bevorzugen. Herzliche Grüße, Ihr Persoliebe-Team';
 
 const lastDockAction = ref('—');
+
+// Board 1's fixtures: Sabine, order PL-5713, a redraft in flight at 2.5 s.
+const sabineDraft =
+  'Hallo Sabine,\n\nvielen Dank für Ihre Nachricht. Ihre Bestellung PL-5713 wurde am 28. August versandt und zuletzt am 4. September im Verteilzentrum Leipzig gescannt. Für Deutschland rechnen wir mit 14 bis 21 Werktagen ab Versand.\n\nHerzliche Grüße\nIhr Persoliebe-Team';
+const sabineParts = {
+  version: 1,
+  procedure: 'Where is my order',
+  procedureTo: {
+    name: 'agent_procedure',
+    params: { accountId: 1, procedureId: 'where-is-my-order' },
+  },
+  tier: 'draft',
+};
+const instruction = ref('');
+const { t } = useI18n();
+const working = {
+  instruction: 'Mention the 25 September date',
+  canStop: true,
+  steps: redraftSteps({
+    elapsedMs: 2500,
+    orderName: 'PL-5713',
+    nextVersion: 2,
+  }).map(step => ({
+    key: step.key,
+    state: step.state,
+    text: t(`GOTCHU.COMPOSER.${step.label}`, step.params),
+  })),
+};
 const noteDockAction = action => {
   lastDockAction.value = action;
 };
@@ -434,47 +467,165 @@ const replayDock = () => {
       <AITrace :steps="[traceSteps[0]]" default-open />
     </section>
 
-    <section class="flex flex-col gap-6 mb-10 max-w-xl">
+    <section class="flex flex-col gap-6 mb-10 max-w-[760px]">
       <h2 class="text-sm font-medium text-n-slate-11">
-        Draft dock — inside the composer, above the editor
+        Composer card — the six states board 1 draws
       </h2>
-      <!-- The only placement there is. `docs/gotchu/inbox-spec.md` §Composer:
-        one bordered container holding an optional draft dock above the editor.
-        The cards below stand in for ReplyBox — its mode toggles above, its
-        editor below — because the real one needs Vuex, the inbox store and a
-        conversation. No `overflow-hidden`, and that is the point: the dock sits
-        between two rows rather than on the card's rounded edge, so its own
-        bottom border is the line between the band and the editor. -->
+      <p class="text-xs text-n-slate-11">
+        One card: the draft (pill, provenance line, closed trace, body), the
+        mode switch, the mode's own box and its footer. The cards below stand
+        in for <code>.reply-box</code>, which needs Vuex, the inbox store and a
+        conversation. Send draft is the only brand-coloured control. Toggle
+        Dark above to check the pink button keeps its ink text, the body dims
+        while a redraft is written, and the memo box stays dashed.
+      </p>
+      <!-- 1. Instruct, a draft on screen: the box is the agent's, Redraft
+        sends an instruction, Insert to edit and Send draft act on the draft. -->
       <ComposerCard>
         <DraftDock
           state="ready"
           mode="instruct"
-          :text="draftText"
+          :text="sabineDraft"
           :expires-at="inMinutes(18.5)"
+          :heading-parts="sabineParts"
+          :trace="traceSteps"
+          trace-summary="3 steps · memo used"
           instruct-available
           @insert="noteDockAction('insert')"
           @send="noteDockAction('send')"
           @instruct="noteDockAction('redraft')"
-        />
+        >
+          <template #modes>
+            <ComposerModes mode="instruct" instruct-available has-draft />
+          </template>
+          <template #editor>
+            <DraftInstruct v-model="instruction" />
+          </template>
+        </DraftDock>
       </ComposerCard>
-      <!-- The cap, against an ordinary 812-character draft. Uncapped this dock
-        measured 349px on staging and squeezed the customer's own message to
-        216px; the body now stops at 170px — eight and a HALF 20px lines, so the
-        clip lands mid-line and reads as a draft that continues rather than as
-        the end of one. Scroll it: the header and Insert do not move, which is
-        the whole point of capping the body rather than the dock. -->
+      <!-- 2. Instruct, redraft in flight: the strip with its three steps (here
+        at 2.5 s, so the second is done and the third is running) and Stop; the
+        v1 body stays readable, dimmed; the footer is locked. -->
       <ComposerCard>
         <DraftDock
           state="ready"
-          :text="longDraftText"
-          :expires-at="inMinutes(42)"
-        />
+          mode="instruct"
+          :text="sabineDraft"
+          :heading-parts="sabineParts"
+          :working="working"
+          instruct-available
+        >
+          <template #modes>
+            <ComposerModes mode="instruct" instruct-available has-draft />
+          </template>
+          <template #editor>
+            <DraftInstruct v-model="instruction" busy />
+          </template>
+        </DraftDock>
+      </ComposerCard>
+      <!-- 3. Reply, with a draft above: Insert to edit and Send draft live in
+        the instruct footer only, so here the draft is read, and the editor is
+        the composer's own. -->
+      <ComposerCard>
+        <DraftDock
+          state="ready"
+          mode="reply"
+          :text="sabineDraft"
+          :heading-parts="sabineParts"
+          :trace="traceSteps"
+          trace-summary="3 steps · memo used"
+        >
+          <template #modes>
+            <ComposerModes mode="reply" instruct-available has-draft />
+          </template>
+          <template #editor>
+            <div class="ed mx-[18px] mt-2.5 mb-3.5 p-3 text-sm border rounded-[10px] bg-[var(--g-surface)] border-[var(--g-border)] text-[var(--g-text-muted)]">
+              Shift + Enter for a new line. Start with “/” to pick a canned reply.
+            </div>
+          </template>
+        </DraftDock>
+      </ComposerCard>
+      <!-- 4. Reply, no draft: the band is gone, the mode switch and the editor
+        are what is left. -->
+      <ComposerCard>
+        <DraftDock state="none" mode="reply">
+          <template #modes>
+            <ComposerModes mode="reply" />
+          </template>
+          <template #editor>
+            <div class="ed mx-[18px] mt-2.5 mb-3.5 p-3 text-sm border rounded-[10px] bg-[var(--g-surface)] border-[var(--g-border)] text-[var(--g-text-muted)]">
+              Shift + Enter for a new line. Start with “/” to pick a canned reply.
+            </div>
+          </template>
+        </DraftDock>
+      </ComposerCard>
+      <!-- 5. Memo: a dashed box on the note ground, the segments, and Add memo
+        in the right-hand footer row. -->
+      <ComposerCard>
+        <DraftDock
+          state="ready"
+          mode="memo"
+          :text="sabineDraft"
+          :heading-parts="sabineParts"
+        >
+          <template #modes>
+            <ComposerModes mode="memo" instruct-available has-draft />
+          </template>
+          <template #editor>
+            <MemoComposer conversation-id="1" store-key="persoliebe" :inbox-id="4" />
+          </template>
+        </DraftDock>
+      </ComposerCard>
+      <!-- 6. Instruct, instructing switched off on this desk: no box, a resting
+        line that says so (and does not read as a failed submission), and the
+        footer without Redraft. -->
+      <ComposerCard>
+        <DraftDock
+          state="ready"
+          mode="instruct"
+          :text="sabineDraft"
+          :heading-parts="sabineParts"
+          instruct-off
+        >
+          <template #modes>
+            <ComposerModes mode="instruct" instruct-available has-draft />
+          </template>
+        </DraftDock>
       </ComposerCard>
       <p class="text-xs text-n-slate-11">
-        {{ longDraftText.length }} characters, capped at 170px. The review
-        countdown and Insert stay outside the scroll container, and the body is
-        reachable by keyboard — Tab into it and use the arrow keys.
+        Last emitted: <span class="font-medium">{{ lastDockAction }}</span>
       </p>
+
+      <h2 class="text-sm font-medium text-n-slate-11">
+        An ordinary draft is drawn whole; only a long one scrolls
+      </h2>
+      <!-- The old 170px body cap is gone. The card is what is capped (here at
+        420px, standing in for 70% of the viewport), and the body gives way: it
+        scrolls once the card hits its ceiling, with the header and the footer
+        staying put. -->
+      <ComposerCard max-height="420px">
+        <DraftDock
+          state="ready"
+          mode="instruct"
+          :text="longDraftText"
+          :heading-parts="sabineParts"
+          :expires-at="inMinutes(42)"
+          instruct-available
+        >
+          <template #editor>
+            <DraftInstruct v-model="instruction" />
+          </template>
+        </DraftDock>
+      </ComposerCard>
+      <p class="text-xs text-n-slate-11">
+        {{ longDraftText.length }} characters in a card capped at 420px. Send
+        draft stays on screen; the body is reachable by keyboard — Tab into it
+        and use the arrow keys.
+      </p>
+
+      <h2 class="text-sm font-medium text-n-slate-11">
+        Streaming, and the review window
+      </h2>
       <div class="flex items-center gap-3">
         <Button
           label="Replay streaming → ready"
@@ -499,25 +650,19 @@ const replayDock = () => {
         />
       </ComposerCard>
       <!-- The loader, standing still in `streaming` so it can be looked at
-        without catching the replay above mid-flight. Three bouncing dots adapted
-        from Chatwoot's MIT-licensed CopilotLoader, in the status slot at the
-        right of the header — the slot the confidence chip takes once the draft is
-        ready. It says work is happening and nothing more: nothing streams
-        between the worker and a browser, which is why the label says a draft is
-        being WRITTEN. Under `prefers-reduced-motion` the dots stop and dim. -->
+        without catching the replay above mid-flight: three bouncing dots in
+        the status slot at the right of the header. It says work is happening
+        and nothing more. Under `prefers-reduced-motion` the dots stop and
+        dim. -->
       <ComposerCard>
         <DraftDock state="streaming" streaming-text="Writing a new draft…" />
       </ComposerCard>
       <p class="text-xs text-n-slate-11">
-        Last emitted: <span class="font-medium">{{ lastDockAction }}</span
-        >. A dock with no confidence renders no chip, and
-        <code>state="none"</code> renders nothing at all — which is what every
-        conversation with no draft shows, and most of them have none.
+        <code>state="none"</code> renders no band at all, which is what every
+        conversation with no draft shows, and most of them have none. The
+        window below is hours rather than minutes, and the one after it has run
+        out.
       </p>
-      <!-- What the fork actually ships today: Insert only. The gateway's write
-        routes are dark, and a Send that does nothing is worse than no Send. The
-        window here is hours rather than minutes, and the one below has run
-        out. -->
       <ComposerCard>
         <DraftDock
           state="ready"

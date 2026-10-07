@@ -168,16 +168,16 @@ describe('DraftDockContainer', () => {
     expect(wrapper.text()).toContain(body);
   });
 
-  it('keeps the dock separated from the editor under it', async () => {
-    // The dock draws its own bottom border and that is what it was drawn for —
-    // it is the line between the band and the editor. The panel wrapper used to
-    // null it, because AccordionItem drew one of its own; nothing does now, and
-    // nothing should.
+  it('draws the dock inside the card with no band ground or border of its own', async () => {
+    // The composer is one card now (`.reply-box`): the band is not a second
+    // bordered box inside it, and the draft body is what shrinks and scrolls.
     AiDraftAPI.getDraft.mockResolvedValue(
       answer(reviewing(), { version: 1, body })
     );
 
-    expect(dock(await mountContainer()).classes()).toContain('border-b');
+    const classes = dock(await mountContainer()).classes();
+    expect(classes).not.toContain('border-b');
+    expect(classes).toEqual(expect.arrayContaining(['flex-1', 'min-h-0']));
   });
 });
 
@@ -950,9 +950,9 @@ describe('DraftDockContainer instruct box', () => {
     expect(wrapper.find('[data-testid="composer-send-draft"]').exists()).toBe(
       true
     );
-    expect(wrapper.text()).toContain(
-      'Instructions are not configured on this desk'
-    );
+    // A resting line of its own, not the failed-submission sentence.
+    expect(wrapper.text()).toContain('Instructing is switched off');
+    expect(wrapper.text()).not.toContain('nothing was sent');
   });
 
   it('disables Send draft where a public reply is restricted, and says why', async () => {

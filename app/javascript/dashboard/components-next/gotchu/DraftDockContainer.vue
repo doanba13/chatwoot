@@ -8,6 +8,7 @@ import {
   watch,
 } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { wordStep } from './traceWords';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
@@ -144,6 +145,9 @@ const FAST_POLL_INTERVAL_MS = 2 * 1000;
 const INSTRUCTION_BACKSTOP_MS = 180 * 1000;
 
 const { t, te } = useI18n();
+// Absent where no router is installed (the specs, the preview): the procedure
+// then reads as text.
+const route = useRoute();
 
 const view = ref(loadingView());
 
@@ -803,9 +807,11 @@ const headerTier = (traced, row) => {
   return traced === 'auto' ? 'draft' : traced;
 };
 
-// "Draft v1 · from Where is my order · tier: draft". It names the tier and
-// nothing more: it never says the draft is sending (spec §8.4).
-const dockHeading = computed(() => {
+// What the header names, in one place: the version, the procedure, the tier.
+// It names the tier and nothing more: it never says the draft is sending (spec
+// §8.4). `text` is the same thing as one sentence ("Draft v1 · from Where is my
+// order · tier: draft"), for a header that cannot draw the parts.
+const headingModel = computed(() => {
   const version = draftVersion.value;
   if (version == null) return null;
   const trace = view.value.trace ?? [];
@@ -813,25 +819,70 @@ const dockHeading = computed(() => {
   const tier = trace.find(step => step?.kind === 'tier');
   const noMatch = tier && tier.tier == null && tier.channel != null;
   if (!procedure || noMatch) {
-    return t('GOTCHU.DRAFT.HEADER_NO_PROCEDURE', { version });
+    return {
+      version,
+      procedure: null,
+      procedureId: null,
+      tier: null,
+      text: t('GOTCHU.DRAFT.HEADER_NO_PROCEDURE', { version }),
+    };
   }
   const shown = tier ? headerTier(tier.tier, view.value.cycleTier) : null;
+  const named = { version, procedure: procedure.title };
+  const procedureId = procedure.procedureId ?? null;
   if (!tier || (tier.channel != null && !TIERS.includes(shown))) {
-    return t('GOTCHU.DRAFT.HEADER_NO_TIER', {
-      version,
-      procedure: procedure.title,
-    });
+    return {
+      ...named,
+      procedureId,
+      tier: null,
+      text: t('GOTCHU.DRAFT.HEADER_NO_TIER', named),
+    };
   }
   const tierWord =
     tier.channel == null
       ? t('GOTCHU.TRACE.CHANNEL_UNKNOWN')
       : // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys
         t(`GOTCHU.TRACE.TIERS.${shown.toUpperCase()}`);
-  return t('GOTCHU.DRAFT.HEADER', {
-    version,
-    procedure: procedure.title,
+  return {
+    ...named,
+    procedureId,
     tier: tierWord,
-  });
+    text: t('GOTCHU.DRAFT.HEADER', { ...named, tier: tierWord }),
+  };
+});
+
+const dockHeading = computed(() => headingModel.value?.text ?? null);
+
+// The procedure is a link only when the trace row names its id; older rows do
+// not, and say it as plain text.
+const dockHeadingParts = computed(() => {
+  const model = headingModel.value;
+  if (!model) return null;
+  const { text, ...parts } = model;
+  const accountId = route?.params?.accountId;
+  const linkable = parts.procedureId != null && accountId != null;
+  return {
+    ...parts,
+    procedureTo: linkable
+      ? {
+          name: 'agent_procedure',
+          params: { accountId, procedureId: parts.procedureId },
+        }
+      : null,
+  };
+});
+
+// "How it got here · 7 steps · memo used": the memo is the one step worth
+// saying on the closed row, because it is the one an agent did not ask for.
+const traceSummary = computed(() => {
+  const steps = view.value.trace ?? [];
+  if (!traceSteps.value.length) return null;
+  const count = traceSteps.value.length;
+  const stepWord = t('GOTCHU.TRACE.STEPS', { count }, count);
+  const memoUsed = steps.some(step => step?.kind === 'memo' && step.count > 0);
+  return memoUsed
+    ? `${stepWord} · ${t('GOTCHU.COMPOSER.TRACE_MEMO_USED')}`
+    : stepWord;
 });
 
 // While an instruction of ours is in flight the card stays `ready` with the
@@ -982,6 +1033,9 @@ const working = computed(() => {
     :outcome="outcome"
     :version-label="versionLabel"
     :heading="dockHeading"
+    :heading-parts="dockHeadingParts"
+    :trace-summary="traceSummary"
+    :instruct-off="instructMode && hasDraft && !instructAvailable"
     :mode="instructMode ? 'instruct' : 'reply'"
     :instruct-available="instructAvailable"
     :redraft-disabled="redraftDisabled"
@@ -1011,14 +1065,6 @@ const working = computed(() => {
           autofocus
           @submit="onInstruct"
         />
-        <!-- Instructing is off here, and Instruct is still offered for its
-          footer (plan Decision 7): say why there is no box. -->
-        <p
-          v-else-if="hasDraft"
-          class="mx-3 mt-2.5 mb-1 text-xs text-pretty text-[var(--g-text-muted)]"
-        >
-          {{ $t('GOTCHU.DRAFT.INSTRUCT_UNCONFIGURED') }}
-        </p>
       </template>
       <slot v-else name="editor" />
     </template>

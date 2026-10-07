@@ -92,13 +92,13 @@ const toneClass = computed(() => {
 
 <template>
   <div
-    class="ed flex flex-col mx-3 mt-2.5 mb-1 border rounded-[10px] bg-[var(--g-surface)] border-[var(--g-border)]"
+    class="ed flex flex-col mx-[18px] mt-2.5 mb-1 border rounded-[10px] bg-[var(--g-surface)] border-[var(--g-border)]"
   >
     <textarea
       ref="box"
       :value="modelValue"
       rows="3"
-      class="w-full px-3 pt-2.5 pb-1 m-0 text-[15px] leading-[22px] bg-transparent border-0 outline-none resize-none text-[var(--g-text)] placeholder:text-[var(--g-text-muted)] disabled:opacity-60"
+      class="w-full px-3 pt-2.5 pb-1 !m-0 !border-0 !shadow-none !outline-none text-[15px] leading-[22px] bg-transparent resize-none text-[var(--g-text)] placeholder:text-[var(--g-text-muted)] disabled:opacity-60"
       :disabled="busy"
       :maxlength="maxLength"
       :placeholder="$t('GOTCHU.DRAFT.INSTRUCT_PLACEHOLDER')"
@@ -115,3 +115,11 @@ const toneClass = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* The board's `.ed` focus ring: the agent colour at 15%, around the whole box
+   rather than the textarea, which draws no outline of its own. */
+.ed:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-agent) 15%, transparent);
+}
+</style>

@@ -92,6 +92,27 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  // The same heading, split so the procedure can be a link: `{ version,
+  // procedure, procedureTo, tier }`. `procedureTo` is a route location, set only
+  // when the trace row carries a procedure id (older rows do not), and the
+  // procedure is plain text without it. Null falls back to `heading`.
+  headingParts: {
+    type: Object,
+    default: null,
+  },
+  // What AITrace's summary row says after "How it got here": "7 steps · memo
+  // used". Null leaves the plain step count.
+  traceSummary: {
+    type: String,
+    default: null,
+  },
+  // Instructing is switched off on this desk. The Instruct footer is still
+  // there (Insert to edit, Send draft); the box is not, and a resting line
+  // says so.
+  instructOff: {
+    type: Boolean,
+    default: false,
+  },
   // An instruction of ours being redrafted: `{ instruction, steps, canStop }`,
   // each step `{ key, state: 'done' | 'now' | 'todo', text }`. Set, it draws
   // the working strip, dims the body (still readable, not removed) and locks
@@ -185,7 +206,7 @@ const reviewLabel = computed(() => {
     answer; a failure is muted rather than red, like the read notices. -->
   <div
     v-if="outcome"
-    class="draft-dock__outcome flex items-start gap-2 px-3 py-1.5 text-sm border-b bg-[var(--g-surface-tank)] border-[var(--g-agent-border)]"
+    class="draft-dock__outcome flex items-start gap-2 px-[18px] py-1.5 text-sm border-b bg-[var(--g-surface-tank)] border-[var(--g-agent-border)]"
     :class="
       outcome.kind === 'failed'
         ? 'text-[var(--g-text-muted)]'
@@ -204,13 +225,13 @@ const reviewLabel = computed(() => {
   </div>
   <div
     v-if="state !== 'none'"
-    class="draft-dock flex flex-col gap-2 px-3 py-2.5 border-b bg-[var(--g-surface-tank)] border-[var(--g-agent-border)]"
+    class="draft-dock flex flex-col flex-1 min-h-0 gap-2 pb-0.5"
   >
     <!-- The redraft in progress, first in the card: what was asked, the three
       steps, and Stop. The draft below stays readable, dimmed. -->
     <div
       v-if="working"
-      class="draft-dock__cook flex flex-col gap-1.5 p-2.5 rounded-lg bg-[var(--g-surface-tank)] border border-[var(--g-agent-border)]"
+      class="draft-dock__cook flex flex-col gap-1.5 p-2.5 mx-[18px] mt-3.5 rounded-lg bg-[var(--g-agent-soft)] border border-[var(--g-agent-border)]"
       role="status"
     >
       <div class="flex items-center gap-2">
@@ -223,7 +244,7 @@ const reviewLabel = computed(() => {
             {{ $t('GOTCHU.COMPOSER.WORKING_TITLE') }}
           </strong>
           <span class="text-[var(--g-text-muted)]">
-            {{ quotedInstruction }}
+            {{ ' ' }}{{ quotedInstruction }}
           </span>
         </span>
         <Button
@@ -268,17 +289,53 @@ const reviewLabel = computed(() => {
         />
       </div>
     </div>
-    <div class="flex items-center justify-between gap-3">
-      <span
-        class="inline-flex items-center gap-2 text-sm font-medium text-[var(--g-agent)]"
-      >
-        <AgentDot :streaming="isStreaming" />
-        {{ isStreaming ? streamingText : heading || $t('GOTCHU.DRAFT.TITLE') }}
+    <!-- `.dh`: the pill, then the muted provenance line, then (at the right) the
+      review window. Same row for streaming and ready, so nothing moves when the
+      body arrives. -->
+    <div
+      class="draft-dock__header flex items-center justify-between gap-3 px-[18px] pt-3.5 pb-2"
+    >
+      <span class="flex flex-wrap items-center min-w-0 gap-x-2.5 gap-y-1">
+        <span
+          class="draft-dock__pill inline-flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-semibold rounded-full bg-[var(--g-surface-tank)] text-[var(--g-agent)]"
+        >
+          <AgentDot :streaming="isStreaming" />
+          <template v-if="isStreaming">{{ streamingText }}</template>
+          <template v-else-if="headingParts">
+            {{ $t('GOTCHU.DRAFT.PILL', { version: headingParts.version }) }}
+          </template>
+          <template v-else>{{ heading || $t('GOTCHU.DRAFT.TITLE') }}</template>
+        </span>
         <span
           v-if="!isStreaming && versionLabel"
           class="text-xs font-normal text-[var(--g-text-muted)]"
         >
           {{ versionLabel }}
+        </span>
+        <!-- Said once for a screen reader and when the text is copied: the
+          sentence the header always was, "Draft v1 · from … · tier: …". -->
+        <span v-if="!isStreaming && headingParts" class="sr-only">
+          {{ ' · ' }}
+        </span>
+        <span
+          v-if="!isStreaming && headingParts"
+          class="draft-dock__from text-xs text-[var(--g-text-muted)]"
+        >
+          <template v-if="headingParts.procedure">
+            {{ $t('GOTCHU.DRAFT.PART_FROM') }}
+            <router-link
+              v-if="headingParts.procedureTo"
+              :to="headingParts.procedureTo"
+              class="underline text-[var(--g-text-muted)] hover:text-[var(--g-text)]"
+            >
+              {{ headingParts.procedure }}
+            </router-link>
+            <template v-else>{{ headingParts.procedure }}</template>
+          </template>
+          <template v-else>{{ $t('GOTCHU.DRAFT.PART_NO_PROCEDURE') }}</template>
+          <template v-if="headingParts.tier">
+            · {{ $t('GOTCHU.DRAFT.PART_TIER', { tier: headingParts.tier }) }}
+          </template>
         </span>
       </span>
       <!-- One group, so the review window and the loader share the right-hand
@@ -331,35 +388,19 @@ const reviewLabel = computed(() => {
       disabled until then, so nothing is one Tab away from sending a reply
       nobody has read. -->
     <template v-if="!isStreaming">
-      <AITrace v-if="trace.length" :steps="trace" />
-      <!-- Capped, because an uncapped draft takes the screen the customer's
-        message needs. Measured against real production drafts on staging in a
-        1000px viewport: a 774-character draft rendered the dock at 329px and an
-        815-character one at 349px, which left the reply box holding 68–70% of
-        the window and the customer's own message — the thing being answered —
-        clipped mid-sentence at 216–236px. Those are ordinary drafts; this agent
-        writes 700–850 characters routinely.
-
-        170px, and the odd number is the point. The body is `text-sm`, so its
-        line box is 20px and 170px is eight and a HALF lines. A whole multiple
-        (160, 180, 200) ends on a complete line and therefore reads as the end of
-        the draft; half a line is unmistakably a draft that continues. That
-        half-line is the whole affordance, and it is the native clip rather than
-        an overlay — so unlike a gradient it cannot obscure the last line it
-        exists to hint at. Backing the chrome out of the two measurements above
-        (329 − 12×20 = 349 − 13×20 = 89px of header, buttons, padding and border)
-        puts an 800-character draft at ~259px instead of ~349px, and hands those
-        ~90px back to the thread.
-
-        A ceiling, not a height: `max-height` alone and no `min-height`, so a
-        two-line draft is two lines tall with no scrollbar and no reserved space.
-        Only this element scrolls — the header above it and the footer below it
-        are siblings, not children, because a Send draft that can scroll out of
-        view is the failure a cap must not introduce. `tabindex="0"` with `role="region"`
-        is what makes a scroll container reachable without a mouse; a capped div
-        with neither is text a keyboard user cannot read to the end. -->
+      <div v-if="trace.length" class="draft-dock__trace mx-[18px]">
+        <AITrace :steps="trace" :summary="traceSummary" tank />
+      </div>
+      <!-- Drawn whole. The card is what is capped (`max-h-[min(70vh,100%)]` on
+        the composer), and this body is the one thing inside it that gives way:
+        `flex-1 min-h-0` lets it shrink and `overflow-y-auto` makes it scroll,
+        so an ordinary draft shows in full and only a draft that outgrows the
+        card scrolls. The header above and the footer below are siblings, not
+        children, so Send draft never scrolls out of view. `tabindex="0"` with
+        `role="region"` is what makes the scroll container reachable without a
+        mouse. -->
       <div
-        class="draft-dock__body max-h-[170px] overflow-y-auto text-sm text-pretty text-[var(--g-text)]"
+        class="draft-dock__body flex-1 min-h-0 overflow-y-auto px-[18px] py-4 text-[15px] leading-6 whitespace-pre-line text-pretty text-[var(--g-text)]"
         :class="{ 'is-dimmed': working }"
         role="region"
         tabindex="0"
@@ -379,16 +420,24 @@ const reviewLabel = computed(() => {
     stays props-only. -->
   <div
     v-if="$slots.modes"
-    class="draft-dock__modes px-3 py-2.5 border-t border-[var(--g-border)]"
+    class="draft-dock__modes px-[18px] py-2.5 border-t border-[var(--g-border)]"
   >
     <slot name="modes" />
   </div>
+  <!-- Instructing is off on this desk: a resting line, not a failed
+    submission, so nothing here says that anything was sent or not sent. -->
+  <p
+    v-if="mode === 'instruct' && state !== 'none' && instructOff"
+    class="draft-dock__off mx-[18px] mt-2.5 mb-1 text-xs text-pretty text-[var(--g-text-muted)]"
+  >
+    {{ $t('GOTCHU.DRAFT.INSTRUCT_OFF') }}
+  </p>
   <slot name="editor" />
   <!-- Instruct's footer: Redraft · Insert to edit · Send draft. Send draft is
     the one brand-coloured control on the screen (spec §2.3). -->
   <div
     v-if="mode === 'instruct' && state !== 'none'"
-    class="draft-dock__footer flex flex-wrap items-center gap-2 px-3 pt-2 pb-3"
+    class="draft-dock__footer flex flex-wrap items-center gap-2 px-[18px] pt-2.5 pb-3.5"
   >
     <Button
       v-if="instructAvailable"

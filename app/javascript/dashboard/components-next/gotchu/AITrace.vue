@@ -27,6 +27,18 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // What follows "How it got here" on the closed row, in place of the bare
+  // step count: "7 steps · memo used". Null keeps the count.
+  summary: {
+    type: String,
+    default: null,
+  },
+  // Drawn on the tank ground, the way the composer's trace row is, instead of
+  // the surface ground the thread's trace sits on.
+  tank: {
+    type: Boolean,
+    default: false,
+  },
 });
 // A kind this build does not know falls through to a check rather than dropping
 // the step: a missing line reads as "Gotchu did not check that".
@@ -70,7 +82,8 @@ const toggle = () => {
   <!-- The caller places this: in the thread it sits on the agent side, in the
     gallery it does not. Alignment is not the component's to decide. -->
   <div
-    class="overflow-hidden border rounded-[var(--g-radius-card)] border-[var(--g-agent-border)] bg-[var(--g-surface)]"
+    class="overflow-hidden border rounded-[var(--g-radius-card)] border-[var(--g-agent-border)]"
+    :class="tank ? 'bg-[var(--g-surface-tank)]' : 'bg-[var(--g-surface)]'"
   >
     <button
       type="button"
@@ -86,7 +99,9 @@ const toggle = () => {
           <span class="font-semibold">
             {{ t('GOTCHU.TRACE.HOW_IT_GOT_HERE') }}
           </span>
-          <span class="text-[var(--g-text-muted)]"> · {{ stepCount }}</span>
+          <span class="text-[var(--g-text-muted)]">
+            · {{ summary || stepCount }}
+          </span>
         </span>
         <!-- The chevron sits at the end of the row, not against the summary:
           the whole header is the hit area, so the affordance belongs at its

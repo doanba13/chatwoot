@@ -202,6 +202,11 @@
       "HEADER": "Entwurf v{version} · aus {procedure} · Stufe: {tier}",
       "HEADER_NO_PROCEDURE": "Entwurf v{version} · kein Ablauf passte",
       "HEADER_NO_TIER": "Entwurf v{version} · aus {procedure}",
+      "PILL": "Entwurf v{version}",
+      "PART_FROM": "aus",
+      "PART_NO_PROCEDURE": "kein Ablauf passte",
+      "PART_TIER": "Stufe: {tier}",
+      "INSTRUCT_OFF": "Anweisungen sind in diesem Helpdesk ausgeschaltet. Den Entwurf können Sie weiterhin zum Bearbeiten einfügen oder unverändert senden.",
       "INSTRUCT_HINT": "Einfache Worte genügen. Gotchu behält das Format bei."
     },
     "HANDLED": {
