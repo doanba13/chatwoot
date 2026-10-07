@@ -1,3 +1,5 @@
+import { toBcp47 } from '../helpers/locale';
+
 const P = 'GOTCHU.THREAD';
 const CHANNEL_KEYS = {
   email: 'EMAIL',
@@ -33,7 +35,7 @@ export const bylineFor = ({ message, sentDraft, channelWord: channel, t }) => {
   if (sentDraft) {
     const { version } = sentDraft;
     let key = 'BY_SENT_EDITED';
-    if (sentDraft.auto === true || sentDraft.sentBy === 'auto') {
+    if (sentDraft.sentBy === 'auto') {
       key = 'BY_SENT_AUTO';
     } else if (sentDraft.edited === false) {
       key = 'BY_SENT_UNEDITED';
@@ -88,7 +90,7 @@ export const dayLabel = (date, now, t, locale) => {
     now.getDate() - 1
   );
   if (sameDay(date, yesterday)) return t(`${P}.YESTERDAY`);
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(toBcp47(locale), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',

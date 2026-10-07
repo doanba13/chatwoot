@@ -25,14 +25,21 @@ describe('bylineFor', () => {
       'Gotchu · sent draft v2 on its own',
     ],
     [
-      { auto: true, edited: false, version: 2 },
-      'Gotchu · sent draft v2 on its own',
-    ],
-    [
-      { auto: false, edited: true, version: 3 },
+      { sentBy: 'agent', edited: true, version: 3, author: 'model' },
       'Anna · sent Gotchu’s draft v3, edited',
     ],
-  ])('words a sent draft from edited and auto: %j', (sentDraft, text) => {
+    // The gateway sends `sentBy`, never `auto`: a stray `auto` decides nothing.
+    [
+      {
+        sentBy: 'agent',
+        auto: true,
+        edited: false,
+        version: 2,
+        author: 'model',
+      },
+      'Anna · sent Gotchu’s draft v2 unedited',
+    ],
+  ])('words a sent draft from edited and sentBy: %j', (sentDraft, text) => {
     expect(
       bylineFor({ message: out, sentDraft, channelWord: 'Email', t }).text
     ).toBe(text);
