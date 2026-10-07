@@ -1,4 +1,5 @@
 import { formatDistance } from 'date-fns';
+import { languageWord, toBcp47 } from '../helpers/locale';
 
 // What the order drawer says, from the PanelContext the gateway's /api/context
 // returns (the same body the order panel reads). Pure: no store, no network.
@@ -19,12 +20,6 @@ const stateWord = (state, t, te) => {
   return te(key) ? t(key) : t('GOTCHU.DRAWER.STATE.UNKNOWN');
 };
 
-const LANG_WORDS = {
-  de: t => t('GOTCHU.TRACE.LANG.DE'),
-  fr: t => t('GOTCHU.TRACE.LANG.FR'),
-  en: t => t('GOTCHU.TRACE.LANG.EN'),
-};
-
 const joined = parts => parts.filter(Boolean).join(' · ');
 
 const money = (amount, currency) => {
@@ -43,7 +38,9 @@ const money = (amount, currency) => {
 const day = (iso, locale) => {
   const ms = Date.parse(iso);
   if (!iso || Number.isNaN(ms)) return null;
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(ms);
+  return new Intl.DateTimeFormat(toBcp47(locale), {
+    dateStyle: 'medium',
+  }).format(ms);
 };
 
 const maskTracking = number => {
@@ -79,7 +76,7 @@ const row = (k, v) => (v ? { k, v } : null);
 const customerCard = (ctx, order, { t, lang }) => {
   const c = ctx.customer?.status === 'ok' ? ctx.customer.data : null;
   const name = c?.name ?? order.shippingAddress?.name ?? null;
-  const language = LANG_WORDS[String(lang ?? '').toLowerCase()]?.(t) ?? null;
+  const language = languageWord(lang, t);
   const place = joined([order.displayCity, order.displayCountryCode]).replace(
     ' · ',
     ', '
@@ -267,7 +264,7 @@ const sectionNotice = section =>
 const customerOnly = (ctx, lang, t) => {
   if (ctx.customer?.status !== 'ok') return null;
   const c = ctx.customer.data;
-  const language = LANG_WORDS[String(lang ?? '').toLowerCase()]?.(t) ?? null;
+  const language = languageWord(lang, t);
   const rows = [
     row(t('GOTCHU.DRAWER.EMAIL'), c.email),
     row(t('GOTCHU.DRAWER.PHONE'), c.phone),

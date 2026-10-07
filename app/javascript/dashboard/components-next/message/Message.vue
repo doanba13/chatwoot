@@ -25,6 +25,7 @@ import {
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import AITrace from 'dashboard/components-next/gotchu/AITrace.vue';
+import { toBcp47 } from 'dashboard/components-next/gotchu/helpers/locale';
 
 import TextBubble from './bubbles/Text/Index.vue';
 import ActivityBubble from './bubbles/Activity.vue';
@@ -264,7 +265,7 @@ const flexOrientationClass = computed(() => {
 const hasByline = computed(() => Boolean(props.byline?.text));
 
 const bylineTime = computed(() =>
-  new Intl.DateTimeFormat(locale.value, {
+  new Intl.DateTimeFormat(toBcp47(locale.value), {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(props.createdAt * 1000))
