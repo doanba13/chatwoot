@@ -164,17 +164,30 @@ const meta = computed(() =>
   })
 );
 
+const isOpen = computed(
+  () => currentChat.value.status === wootConstants.STATUS_TYPE.OPEN
+);
 const isPending = computed(
   () => currentChat.value.status === wootConstants.STATUS_TYPE.PENDING
 );
 
+// toggleStatus swallows a failed request and resolves anyway, so success is
+// read off the status it commits only on success; a rejection counts as failed.
 const markPending = () =>
   store
     .dispatch('toggleStatus', {
       conversationId: props.chat.id,
       status: wootConstants.STATUS_TYPE.PENDING,
     })
-    .then(() => useAlert(t('CONVERSATION.CHANGE_STATUS')));
+    .then(() => isPending.value)
+    .catch(() => false)
+    .then(ok =>
+      useAlert(
+        ok
+          ? t('CONVERSATION.CHANGE_STATUS')
+          : t('CONVERSATION.CHANGE_STATUS_FAILED')
+      )
+    );
 
 const hasSlaPolicyId = computed(
   () => props.chat?.applied_sla?.id && !currentContact.value?.blocked
@@ -286,7 +299,7 @@ const copyConversationId = async () => {
         :assignee="chatMetadata?.assignee"
       />
       <Button
-        v-if="!isPending"
+        v-if="isOpen"
         :label="t('GOTCHU.HEADER.MARK_PENDING')"
         outline
         slate
