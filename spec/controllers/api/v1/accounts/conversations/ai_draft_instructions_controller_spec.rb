@@ -417,6 +417,13 @@ RSpec.describe 'Conversation AI Draft Instructions API', type: :request do
           expect(response).to have_http_status(:unauthorized)
           expect(stub).not_to have_been_made
         end
+
+        it 'refuses an administrator of another account, and never calls the gateway' do
+          stub = stub_cancel(status: 200, body: { instruction: { state: 'cancelled' } }.to_json)
+          cancel(user: create(:user, account: create(:account), role: :administrator))
+          expect(response).to have_http_status(:unauthorized)
+          expect(stub).not_to have_been_made
+        end
       end
     end
   end
