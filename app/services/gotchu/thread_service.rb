@@ -3,6 +3,11 @@
 # empty list and `available: false`, never as an error.
 class Gotchu::ThreadService
   NF = Gotchu::GatewayClient::NotFoundError
+  # The fields the dashboard reads; anything else the gateway adds stays there.
+  FIELDS = {
+    'sent-drafts' => %w[messageId cycleId version edited author sentBy trace],
+    'timeline' => %w[at kind version procedureTitle]
+  }.freeze
 
   def initialize(conversation:, account_id:)
     @conversation = conversation
@@ -20,7 +25,7 @@ class Gotchu::ThreadService
   def items_at(leaf)
     payload = @client.request(verb: :get, path: "/api/conversations/#{@conversation.display_id}/#{leaf}", refusals: { NF => [404] })
     items = payload['items']
-    [items.is_a?(Array) ? items.select { |i| i.is_a?(Hash) } : [], true]
+    [items.is_a?(Array) ? items.select { |i| i.is_a?(Hash) }.map { |i| i.slice(*FIELDS.fetch(leaf)) } : [], true]
   rescue NF
     [[], false]
   end

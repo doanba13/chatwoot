@@ -45,6 +45,13 @@ RSpec.describe 'Conversation Gotchu thread API', type: :request do
     expect(response.parsed_body).to eq('sentDrafts' => [sent_item], 'timeline' => [timeline_item], 'available' => true)
   end
 
+  it 'passes on only the fields the dock reads, dropping anything else the gateway adds' do
+    stub_leaf('sent-drafts', status: 200, body: { items: [sent_item.merge('body' => 'Hallo Frau M.', 'email' => 'x@y.z')] }.to_json)
+    stub_leaf('timeline', status: 200, body: { items: [timeline_item.merge('groundedIn' => ['order'], 'note' => 'n')] }.to_json)
+    show
+    expect(response.parsed_body).to eq('sentDrafts' => [sent_item], 'timeline' => [timeline_item], 'available' => true)
+  end
+
   it 'answers empty lists when the gateway predates the routes' do
     stub_leaf('sent-drafts', status: 404, body: { error: 'not found' }.to_json)
     stub_leaf('timeline', status: 404, body: { error: 'not found' }.to_json)
