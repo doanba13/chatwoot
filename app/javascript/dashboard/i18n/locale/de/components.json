@@ -101,6 +101,7 @@
       "STEP_WRITING": "Schreibe v{version}…",
       "STOP": "Stopp",
       "STOPPED": "Gestoppt. v{version} bleibt.",
+      "STOPPED_PLAIN": "Gestoppt. Der Entwurf bleibt.",
       "STOP_TOO_LATE": "Zu spät zum Stoppen: v{version} war schon geschrieben.",
       "STOP_TOO_LATE_OTHER": "Zu spät zum Stoppen: Die Anweisung war schon abgeschlossen.",
       "STOP_FAILED": "Konnte nicht gestoppt werden. Es kann noch fertig werden.",

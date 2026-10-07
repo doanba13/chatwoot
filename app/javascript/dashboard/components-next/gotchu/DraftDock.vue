@@ -438,6 +438,11 @@ const reviewLabel = computed(() => {
 /* The capped body is focusable so it can be scrolled from the keyboard, and
    anything focusable has to show where the focus is. `focus-visible` rather than
    `focus`, so clicking into the draft text does not draw a ring around it. */
+.draft-dock__body:focus-visible {
+  outline: 2px solid var(--g-agent);
+  outline-offset: 2px;
+}
+
 /* The draft the redraft was asked about: still there to read, plainly not
    the thing to act on. */
 .draft-dock__body.is-dimmed {
@@ -462,11 +467,6 @@ const reviewLabel = computed(() => {
 
 .draft-dock__bar-fill {
   animation: g-draft-indeterminate 1.4s var(--g-ease-out) infinite;
-}
-
-.draft-dock__body:focus-visible {
-  outline: 2px solid var(--g-agent);
-  outline-offset: 2px;
 }
 
 /* The same tokens AITrace reveals its steps with, so the two read as one motion. */

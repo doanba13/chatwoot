@@ -101,6 +101,7 @@
       "STEP_WRITING": "Rédaction de la v{version}…",
       "STOP": "Arrêter",
       "STOPPED": "Arrêté. La v{version} reste.",
+      "STOPPED_PLAIN": "Arrêté. Le brouillon reste.",
       "STOP_TOO_LATE": "Trop tard pour arrêter : la v{version} était déjà écrite.",
       "STOP_TOO_LATE_OTHER": "Trop tard pour arrêter : l’instruction était déjà traitée.",
       "STOP_FAILED": "Impossible d’arrêter. Elle peut encore aboutir.",

@@ -106,6 +106,7 @@
       "STEP_WRITING": "Writing v{version}…",
       "STOP": "Stop",
       "STOPPED": "Stopped. v{version} stays.",
+      "STOPPED_PLAIN": "Stopped. The draft stays.",
       "STOP_TOO_LATE": "Too late to stop: v{version} was already written.",
       "STOP_TOO_LATE_OTHER": "Too late to stop: the instruction had already finished.",
       "STOP_FAILED": "Could not stop it. It may still finish.",

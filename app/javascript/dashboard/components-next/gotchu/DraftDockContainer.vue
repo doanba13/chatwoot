@@ -173,14 +173,38 @@ const outcome = ref(null);
 // instruction" above it would tell the supporter their change is in it.
 const redraftedTo = ref(null);
 /**
- * `stopping` while the cancel is in flight. `stopRefusedFor` is the request id
+ * `stoppingFor` is the request id a cancel is in flight for, so a cancel that
+ * lands after a switch or a newer instruction cannot release another's Stop.
+ * `stopRefusedFor` is the request id
  * a cancel 404'd or answered `working` for: Stop goes away for THAT instruction
  * only. A 404 is as likely a request-id mismatch as an absent feature, so it
  * must not cost the supporter Stop for the next instruction, which carries a
  * new id.
  */
-const stopping = ref(false);
+const stoppingFor = ref(null);
+const stopping = computed(
+  () =>
+    stoppingFor.value !== null &&
+    stoppingFor.value === inFlight.value?.requestId
+);
 const stopRefusedFor = ref(null);
+
+// The draft a Stop kept, `{ conversationId, cycleId, text }`, or null. The
+// cancel claims the instruction, not the cycle: the worker can hold the cycle
+// in `redrafting` until its model call returns, and a read in that window has
+// no body. Without this the dock would say "Stopped. v1 stays." beside an
+// empty, redrafting card. Shown (locked) only while the read is not ready and
+// still about the same cycle; a ready read or another cycle lets it go.
+const stoppedHold = ref(null);
+const holdShown = computed(() => {
+  const hold = stoppedHold.value;
+  return Boolean(
+    hold &&
+      hold.conversationId === props.conversationId &&
+      view.value.state !== 'ready' &&
+      view.value.cycleId === hold.cycleId
+  );
+});
 
 // Milliseconds since the instruction in flight was accepted, for the redraft
 // steps. Ticked by its own interval, which runs only while something is in flight.
@@ -296,11 +320,17 @@ const settle = (status, readFor, requestId) => {
   if (status.state === 'cancelled') {
     // A Stop won: the draft the instruction was typed against stays, and no
     // later version will arrive for it.
+    const version = flight.draftVersion ?? draftVersion.value;
     outcome.value = {
       kind: 'stopped',
-      text: t('GOTCHU.COMPOSER.STOPPED', {
-        version: flight.draftVersion ?? draftVersion.value,
-      }),
+      text: Number.isInteger(version)
+        ? t('GOTCHU.COMPOSER.STOPPED', { version })
+        : t('GOTCHU.COMPOSER.STOPPED_PLAIN'),
+    };
+    stoppedHold.value = {
+      conversationId: flight.conversationId,
+      cycleId: flight.cycleId,
+      text: flight.draftText,
     };
   } else if (status.state === 'redrafted') {
     // The new draft on screen is the outcome; a failed line the backstop put up
@@ -407,6 +437,13 @@ const read = async () => {
     ) {
       forgetInsertedDraft(readFor);
     }
+    const hold = stoppedHold.value;
+    if (
+      hold &&
+      (view.value.state === 'ready' || view.value.cycleId !== hold.cycleId)
+    ) {
+      stoppedHold.value = null;
+    }
     settle(data?.instruction, readFor, requestId);
   } catch (error) {
     if (readFor !== props.conversationId) return;
@@ -444,7 +481,7 @@ const startPolling = () => {
   stopPolling();
   timer = window.setInterval(
     tick,
-    waiting.value ? FAST_POLL_INTERVAL_MS : POLL_INTERVAL_MS
+    waiting.value || holdShown.value ? FAST_POLL_INTERVAL_MS : POLL_INTERVAL_MS
   );
 };
 
@@ -497,7 +534,8 @@ const restart = () => {
   inFlight.value = null;
   outcome.value = null;
   redraftedTo.value = null;
-  stopping.value = false;
+  stoppingFor.value = null;
+  stoppedHold.value = null;
   read();
   startPolling();
 };
@@ -661,9 +699,11 @@ const onInstruct = async () => {
       conversationId: submitFor,
       startedAt: Date.now(),
       text,
+      cycleId,
       draftText: view.value.text,
       draftVersion: draftVersion.value,
     };
+    stoppedHold.value = null;
     outcome.value = null;
     redraftedTo.value = null;
     pendingRequestId = null;
@@ -800,12 +840,22 @@ const dockHeading = computed(() => {
 // while it writes). The strip is the signal; the footer is locked by it. The
 // old streaming header is left for a redrafting cycle with nothing of ours in
 // flight.
-const dockState = computed(() => (waiting.value ? 'ready' : view.value.state));
-const dockText = computed(() =>
-  waiting.value && view.value.state !== 'ready'
-    ? (inFlight.value.draftText ?? '')
-    : view.value.text
+const dockState = computed(() =>
+  waiting.value || holdShown.value ? 'ready' : view.value.state
 );
+const dockText = computed(() => {
+  if (waiting.value && view.value.state !== 'ready') {
+    return inFlight.value.draftText ?? '';
+  }
+  if (holdShown.value) return stoppedHold.value.text ?? '';
+  return view.value.text;
+});
+
+// Until the cycle leaves redrafting, read at the fast pace: the Stop is the
+// moment the supporter is watching.
+watch(holdShown, () => {
+  if (timer) startPolling();
+});
 
 const draftMeta = useDraftMeta(computed(() => props.conversationId));
 
@@ -846,7 +896,7 @@ const onStop = async () => {
   const stillWaiting = () =>
     inFlight.value?.requestId === requestId &&
     props.conversationId === conversationId;
-  stopping.value = true;
+  stoppingFor.value = requestId;
   try {
     const { data } = await AiDraftAPI.cancelInstruction(
       conversationId,
@@ -857,6 +907,8 @@ const onStop = async () => {
     const state = status?.state;
     if (state === 'cancelled') {
       settle(status, conversationId, requestId);
+      // At once: the worker may already have put the cycle back.
+      read();
       return;
     }
     if (!STOP_TERMINAL.includes(state)) {
@@ -886,7 +938,7 @@ const onStop = async () => {
     stopFailed();
     if (error?.response?.status === 404) stopRefusedFor.value = requestId;
   } finally {
-    stopping.value = false;
+    if (stoppingFor.value === requestId) stoppingFor.value = null;
   }
 };
 
@@ -934,7 +986,7 @@ const working = computed(() => {
     :instruct-available="instructAvailable"
     :redraft-disabled="redraftDisabled"
     :send-blocked-reason="sendBlockedReason"
-    :actions-locked="submitting || sentShown"
+    :actions-locked="submitting || sentShown || holdShown"
     :working="working"
     :stopping="stopping"
     @insert="onInsert"

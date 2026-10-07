@@ -1955,6 +1955,84 @@ describe('DraftDockContainer stop', () => {
     );
   });
 
+  it('keeps v1 on screen after a Stop wins while the cycle still reads as redrafting', async () => {
+    // The cancel claims the instruction, not the cycle: the worker may still
+    // hold the cycle in redrafting until its model call returns.
+    AiDraftAPI.cancelInstruction.mockResolvedValue({
+      data: { instruction: { state: 'cancelled' } },
+    });
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    AiDraftAPI.getDraft.mockResolvedValue(
+      readable({ cycle: reviewing({ state: 'redrafting' }), draft: null })
+    );
+    const before = AiDraftAPI.getDraft.mock.calls.length;
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    // Re-read at once after the Stop won.
+    expect(AiDraftAPI.getDraft.mock.calls.slice(before)).toEqual([
+      [3580, { requestId: undefined }],
+    ]);
+    expect(wrapper.text()).toContain('Stopped. v1 stays.');
+    expect(wrapper.text()).not.toContain('Writing a new draft…');
+    expect(wrapper.find('.draft-dock__body').text()).toContain(body);
+    ['composer-redraft', 'composer-insert', 'composer-send-draft'].forEach(
+      id => {
+        expect(
+          wrapper.find(`[data-testid="${id}"]`).attributes('disabled')
+        ).toBeDefined();
+      }
+    );
+
+    // The worker restores the cycle: the hold lets go, the read is the truth.
+    const restored = 'Ihre Sendung ist unterwegs.';
+    AiDraftAPI.getDraft.mockResolvedValue(
+      readable({ draft: { version: 1, body: restored } })
+    );
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(wrapper.findComponent(DraftDock).props('text')).toBe(restored);
+    expect(
+      wrapper.find('[data-testid="composer-insert"]').attributes('disabled')
+    ).toBeUndefined();
+  });
+
+  it('says stopped without a version when it has none to name', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue(readable({ draft: { body } }));
+    AiDraftAPI.cancelInstruction.mockResolvedValue({
+      data: { instruction: { state: 'cancelled' } },
+    });
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('Stopped. The draft stays.');
+    expect(wrapper.text()).not.toContain('vnull');
+  });
+
+  it('leaves the next conversation alone when a cancel lands after a switch', async () => {
+    let land;
+    AiDraftAPI.cancelInstruction
+      .mockReturnValueOnce(
+        new Promise(resolve => {
+          land = resolve;
+        })
+      )
+      .mockReturnValue(new Promise(() => {}));
+    const wrapper = await mounted();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await wrapper.setProps({ conversationId: 4471 });
+    await flushPromises();
+    await startRedraft(wrapper);
+    await stop(wrapper).trigger('click');
+    await flushPromises();
+    expect(stop(wrapper).attributes('disabled')).toBeDefined();
+    land({ data: { instruction: { state: 'cancelled' } } });
+    await flushPromises();
+    // B's cancel is still in flight; A's answer must not re-enable Stop.
+    expect(stop(wrapper).attributes('disabled')).toBeDefined();
+  });
+
   it('disables Stop while the cancel is in flight', async () => {
     AiDraftAPI.cancelInstruction.mockReturnValue(new Promise(() => {}));
     const wrapper = await mounted();
