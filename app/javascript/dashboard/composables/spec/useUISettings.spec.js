@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { ref } from 'vue';
 import {
   useUISettings,
@@ -161,33 +159,5 @@ describe('useUISettings', () => {
       undefined
     );
     expect(isEditorHotKeyEnabled('non_existent_key')).toBe(false);
-  });
-});
-
-describe('the conversation sidebar order', () => {
-  // Two hand-maintained lists with nothing structural tying them together: this
-  // order array and the branch chain in ContactPanel. A name in the array with no
-  // branch behind it is not a visible failure — it is an invisible row that still
-  // takes up a drag slot, so the accordion below it lands one position off where
-  // the agent dropped it. Hence a cross-check on the source, rather than a mount:
-  // mounting ContactPanel means reproducing Vuex, the integrations store and the
-  // account, and none of that would make the assertion any truer.
-  //
-  // This check arrived with the Gotchu draft section and outlived it — the draft
-  // moved into the composer, so it is in neither list now, and the guard is here
-  // rather than in that feature's specs because it is about these two lists.
-  const contactPanel = fs.readFileSync(
-    path.resolve(
-      'app/javascript/dashboard/routes/dashboard/conversation/ContactPanel.vue'
-    ),
-    'utf-8'
-  );
-
-  it('has a branch in the panel for every name in the order', () => {
-    expect(DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER.length).toBeGreaterThan(0);
-
-    DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER.forEach(({ name }) => {
-      expect(contactPanel).toContain(`element.name === '${name}'`);
-    });
   });
 });

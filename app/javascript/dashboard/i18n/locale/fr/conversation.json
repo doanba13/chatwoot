@@ -285,9 +285,7 @@
         "REMOVE_PREVIEW": "Supprimer le fil d'e-mail cité",
         "COLLAPSE": "Réduire l'aperçu",
         "EXPAND": "Agrandir l'aperçu"
-      },
-      "INSTRUCT": "Instruction",
-      "MEMO": "Mémo"
+      }
     },
     "VISIBLE_TO_AGENTS": "Note privée : uniquement visible par vous et votre équipe",
     "CHANGE_STATUS": "Statut de la conversation modifié",

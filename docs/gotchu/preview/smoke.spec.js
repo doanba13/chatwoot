@@ -87,8 +87,8 @@ describe('Gotchu preview gallery', () => {
 
     // The trace summary is a plural assembled from the catalogue; a bare i18n
     // instance renders the keypath instead, which is the failure this catches.
-    expect(text).toContain('Gotchu checked 3 things');
-    expect(text).toContain('Gotchu checked 1 thing');
+    expect(text).toContain('How it got here · 3 steps');
+    expect(text).toContain('How it got here · 1 step');
     expect(text).toContain('Draft from Gotchu');
     expect(text).toContain('check this');
   });
@@ -163,7 +163,7 @@ describe('Gotchu preview gallery', () => {
     const text = mountGallery().text();
 
     expect(text).toContain('Gotchu is not answering');
-    expect(text).toContain('not configured on this Chatwoot');
+    expect(text).toContain('not configured on this desk');
   });
 
   it('renders the six transcribed-but-unwired surfaces', () => {
