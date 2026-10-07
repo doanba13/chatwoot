@@ -344,7 +344,11 @@
         "PAYPAL_AHEAD": "PayPal a remboursé {paypal}, Shopify indique {shopify}",
         "SHOPIFY_AHEAD": "Shopify indique {shopify} remboursé, PayPal {paypal}",
         "NO_PAYPAL": "{amount} remboursé dans Shopify"
-      }
+      },
+      "DEGRADED_REGISTERING": "Le suivi en direct enregistre encore ce colis",
+      "DEGRADED_NOT_RECOGNISED": "Les numéros de ce transporteur ne peuvent pas être suivis en direct",
+      "DEGRADED_QUOTA": "Le suivi en direct est en pause (quota atteint)",
+      "DEGRADED_NO_DATA": "Le transporteur n’a pas encore de scan pour ce colis"
     }
   }
 }

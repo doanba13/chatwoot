@@ -4,7 +4,8 @@ import { persoliebe, cadeauniq } from './fixtures';
 
 const { t, te } = withFullI18n().global;
 const now = Date.parse('2026-10-06T10:06:00Z');
-const view = (ctx, lang = 'de') => drawerView(ctx, { t, te, lang, now });
+const view = (ctx, lang = 'de') =>
+  drawerView(ctx, { t, te, lang, locale: 'en', now });
 
 describe('drawerView', () => {
   it('shows the order, its shipping steps and the refund state', () => {
@@ -73,10 +74,14 @@ describe('drawerView', () => {
     expect(v.customer).toBeNull();
     expect(v.notice).toContain('Several orders match');
     expect(v.candidates.map(c => c.orderName)).toEqual(['PL-5713', 'PL-5714']);
-    expect(v.title).toBe('No order found');
+    expect(v.title).toBe('Order');
+    expect(v.title).not.toBe('No order found');
   });
 
-  it('says a third of shipments carry no tracking, rather than showing a blank', () => {
+  // NOTE: the gateway does not produce shipped:true with a null trackingNumber
+  // today (tracking-less fulfillments arrive as shipped:false, see the next
+  // test). This pins the NO_TRACKING branch for when it does.
+  it('says a shipped parcel has no tracking number, rather than showing a blank', () => {
     const ctx = {
       ...persoliebe,
       shipping: {
@@ -101,6 +106,47 @@ describe('drawerView', () => {
     ]);
   });
 
+  it('shows the real tracking-less shape as not shipped yet', () => {
+    const ctx = {
+      ...persoliebe,
+      shipping: {
+        status: 'ok',
+        data: {
+          ...persoliebe.shipping.data,
+          shipped: false,
+          state: 'preparing',
+          trackingNumber: null,
+          source: 'shopify',
+          lastScanAt: null,
+          shippedAt: null,
+          carrier: null,
+        },
+      },
+    };
+    const v = view(ctx);
+    expect(v.shipping.stateWord).toBe('Preparing');
+    expect(v.shipping.notice).toBe('Not shipped yet');
+    expect(v.shipping.steps.find(s => s.key === 'shipped').done).toBe(false);
+  });
+
+  it('words each fixed live-tracking reason, with a generic fallback', () => {
+    const notice = reason =>
+      view({
+        ...persoliebe,
+        shipping: {
+          status: 'ok',
+          data: { ...persoliebe.shipping.data, degradedReason: reason },
+        },
+      }).shipping.notice;
+    expect(notice('number not recognised')).toBe(
+      'This carrier’s numbers cannot be tracked live'
+    );
+    expect(notice('quota')).toContain('quota');
+    expect(notice('registering')).toContain('registering');
+    expect(notice('no carrier data')).toContain('no scans');
+    expect(notice('token')).toBe('Live tracking unavailable');
+  });
+
   it('says when it is not shipped, and when live tracking is degraded', () => {
     const base = persoliebe.shipping.data;
     const notShipped = view({
@@ -113,7 +159,7 @@ describe('drawerView', () => {
     expect(notShipped.shipping.notice).toBe('Not shipped yet');
     const degraded = view({
       ...persoliebe,
-      shipping: { status: 'ok', data: { ...base, degradedReason: 'quota' } },
+      shipping: { status: 'ok', data: { ...base, degradedReason: 'token' } },
     });
     expect(degraded.shipping.notice).toBe('Live tracking unavailable');
   });
@@ -178,15 +224,27 @@ describe('drawerView', () => {
     expect(view(failed).order.rows.find(r => r.k === 'Paid').v).toBe('paid');
   });
 
-  it('says the lookup is unavailable when the order section errored', () => {
+  it('shows the gateway error, and keeps the customer card when only the order failed', () => {
     const v = view({
       ...persoliebe,
       order: { status: 'error', message: 'Shopify did not answer' },
     });
     expect(v.notice).toBe('Shopify did not answer');
     expect(v.order).toBeNull();
-    expect(
-      view({ ...persoliebe, order: { status: 'unavailable' } }).notice
-    ).toBe('The order lookup is not available right now.');
+    expect(v.customer.name).toBe('Anna Becker');
+  });
+
+  it('adds no notice when the search found nothing, and says unavailable only without a context', () => {
+    const none = view({
+      ...persoliebe,
+      order: { status: 'unavailable' },
+      customer: { status: 'unavailable' },
+    });
+    expect(none.title).toBe('No order found');
+    expect(none.notice).toBeNull();
+    expect(none.customer).toBeNull();
+    expect(view(null).notice).toBe(
+      'The order lookup is not available right now.'
+    );
   });
 });

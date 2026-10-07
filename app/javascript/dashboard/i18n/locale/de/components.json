@@ -344,7 +344,11 @@
         "PAYPAL_AHEAD": "PayPal hat {paypal} erstattet, Shopify zeigt {shopify}",
         "SHOPIFY_AHEAD": "Shopify zeigt {shopify} erstattet, PayPal {paypal}",
         "NO_PAYPAL": "{amount} in Shopify erstattet"
-      }
+      },
+      "DEGRADED_REGISTERING": "Die Live-Sendungsverfolgung registriert dieses Paket noch",
+      "DEGRADED_NOT_RECOGNISED": "Sendungsnummern dieses Versanddienstes können nicht live verfolgt werden",
+      "DEGRADED_QUOTA": "Live-Sendungsverfolgung pausiert (Kontingent erreicht)",
+      "DEGRADED_NO_DATA": "Der Versanddienst hat noch keine Scans zu diesem Paket"
     }
   }
 }

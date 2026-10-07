@@ -349,7 +349,11 @@
         "PAYPAL_AHEAD": "PayPal refunded {paypal}, Shopify shows {shopify}",
         "SHOPIFY_AHEAD": "Shopify shows {shopify} refunded, PayPal {paypal}",
         "NO_PAYPAL": "refunded {amount} in Shopify"
-      }
+      },
+      "DEGRADED_REGISTERING": "Live tracking is still registering this parcel",
+      "DEGRADED_NOT_RECOGNISED": "This carrier’s numbers cannot be tracked live",
+      "DEGRADED_QUOTA": "Live tracking is paused (quota reached)",
+      "DEGRADED_NO_DATA": "The carrier has no scans for this parcel yet"
     }
   }
 }

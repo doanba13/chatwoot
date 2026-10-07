@@ -40,13 +40,10 @@ const money = (amount, currency) => {
   }
 };
 
-const day = iso => {
+const day = (iso, locale) => {
   const ms = Date.parse(iso);
   if (!iso || Number.isNaN(ms)) return null;
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeZone: 'UTC',
-  }).format(ms);
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(ms);
 };
 
 const maskTracking = number => {
@@ -113,19 +110,37 @@ const customerCard = (ctx, order, { t, lang }) => {
   };
 };
 
+// The fixed reasons the 17track provider renders (DEGRADED_REASON in
+// seventeentrack/types.ts, plus 'no carrier data'); anything else, including
+// token and error, gets the generic phrase.
+const degradedWord = (reason, t) => {
+  switch (reason) {
+    case 'registering':
+      return t('GOTCHU.DRAWER.DEGRADED_REGISTERING');
+    case 'number not recognised':
+      return t('GOTCHU.DRAWER.DEGRADED_NOT_RECOGNISED');
+    case 'quota':
+      return t('GOTCHU.DRAWER.DEGRADED_QUOTA');
+    case 'no carrier data':
+      return t('GOTCHU.DRAWER.DEGRADED_NO_DATA');
+    default:
+      return t('GOTCHU.DRAWER.DEGRADED');
+  }
+};
+
 const shippingNotice = (s, t) => {
-  if (s.degradedReason) return t('GOTCHU.DRAWER.DEGRADED');
+  if (s.degradedReason) return degradedWord(s.degradedReason, t);
   if (!s.shipped) return t('GOTCHU.DRAWER.NOT_SHIPPED');
   if (!s.trackingNumber) return t('GOTCHU.DRAWER.NO_TRACKING');
   return null;
 };
 
-const shippingCard = (s, order, { t, te, now }) => {
+const shippingCard = (s, order, { t, te, now, locale }) => {
   const steps = [
     {
       key: 'ordered',
       label: t('GOTCHU.DRAWER.ORDERED'),
-      detail: day(order.createdAt),
+      detail: day(order.createdAt, locale),
       done: true,
     },
     {
@@ -134,7 +149,8 @@ const shippingCard = (s, order, { t, te, now }) => {
         ? t('GOTCHU.DRAWER.SHIPPED_WITH', { carrier: s.carrier })
         : t('GOTCHU.DRAWER.SHIPPED'),
       detail:
-        joined([day(s.shippedAt), maskTracking(s.trackingNumber)]) || null,
+        joined([day(s.shippedAt, locale), maskTracking(s.trackingNumber)]) ||
+        null,
       done: !!s.shipped,
     },
     s.lastScanAt && {
@@ -142,13 +158,13 @@ const shippingCard = (s, order, { t, te, now }) => {
       label: s.lastScanLocation
         ? t('GOTCHU.DRAWER.LAST_SCAN_AT', { place: s.lastScanLocation })
         : t('GOTCHU.DRAWER.LAST_SCAN'),
-      detail: day(s.lastScanAt),
+      detail: day(s.lastScanAt, locale),
       done: true,
     },
     {
       key: 'delivered',
       label: t('GOTCHU.DRAWER.DELIVERED'),
-      detail: day(s.deliveredAt),
+      detail: day(s.deliveredAt, locale),
       done: !!s.deliveredAt,
     },
   ].filter(Boolean);
@@ -241,25 +257,56 @@ const orderCard = (ctx, order, { t, te }) => {
   };
 };
 
-const EMPTY = { order: null, shipping: null, customer: null };
+const NO_CARDS = { order: null, shipping: null, customer: null };
 
-const sectionNotice = (section, t) =>
-  section?.status === 'error' && section.message
-    ? section.message
-    : t('GOTCHU.DRAWER.UNAVAILABLE');
+const sectionNotice = section =>
+  section?.status === 'error' && section.message ? section.message : null;
 
-export const drawerView = (context, { t, te, lang, now = Date.now() }) => {
-  const base = { ...EMPTY, ambiguous: false, candidates: [], notice: null };
-  if (!context)
+// A customer section that is ok can still say who this is when the order
+// section found nothing.
+const customerOnly = (ctx, lang, t) => {
+  if (ctx.customer?.status !== 'ok') return null;
+  const c = ctx.customer.data;
+  const language = LANG_WORDS[String(lang ?? '').toLowerCase()]?.(t) ?? null;
+  const rows = [
+    row(t('GOTCHU.DRAWER.EMAIL'), c.email),
+    row(t('GOTCHU.DRAWER.PHONE'), c.phone),
+    row(
+      t('GOTCHU.DRAWER.ORDERS'),
+      t('GOTCHU.DRAWER.ORDERS_VALUE', {
+        count: c.ordersCount,
+        total: money(c.totalSpent, c.currency) ?? c.totalSpent,
+      })
+    ),
+  ].filter(Boolean);
+  return {
+    name: c.name ?? null,
+    initials: initialsOf(c.name),
+    subline: language ?? '',
+    rows,
+    piiNotice: null,
+  };
+};
+
+export const drawerView = (
+  context,
+  { t, te, lang, locale, now = Date.now() }
+) => {
+  const base = { ...NO_CARDS, ambiguous: false, candidates: [], notice: null };
+  // No context at all: the fetch failed.
+  if (!context) {
     return {
       ...base,
       title: t('GOTCHU.DRAWER.NO_ORDER'),
       notice: t('GOTCHU.DRAWER.UNAVAILABLE'),
     };
+  }
   if (context.ambiguous) {
+    // Neutral title: "No order found" beside "Several orders match" would
+    // contradict itself.
     return {
       ...base,
-      title: t('GOTCHU.DRAWER.NO_ORDER'),
+      title: t('GOTCHU.DRAWER.ORDER'),
       ambiguous: true,
       candidates: (context.candidates ?? []).map(c => ({
         orderName: c.orderName,
@@ -269,20 +316,17 @@ export const drawerView = (context, { t, te, lang, now = Date.now() }) => {
     };
   }
   if (context.order?.status !== 'ok') {
-    const missing =
-      context.order == null || context.order.status === 'unavailable'
-        ? null
-        : context.order;
+    // 'unavailable' is the gateway's "searched, nothing matched": the title
+    // says so and no notice is added. Only a gateway-authored error is shown.
     return {
       ...base,
       title: t('GOTCHU.DRAWER.NO_ORDER'),
-      notice: missing
-        ? sectionNotice(missing, t)
-        : t('GOTCHU.DRAWER.UNAVAILABLE'),
+      customer: customerOnly(context, lang, t),
+      notice: sectionNotice(context.order),
     };
   }
   const order = context.order.data;
-  const deps = { t, te, lang, now };
+  const deps = { t, te, lang, locale, now };
   return {
     ...base,
     title: t('GOTCHU.DRAWER.ORDER_TITLE', { name: order.orderName }),
@@ -292,9 +336,6 @@ export const drawerView = (context, { t, te, lang, now = Date.now() }) => {
         ? shippingCard(context.shipping.data, order, deps)
         : null,
     order: orderCard(context, order, deps),
-    notice:
-      context.shipping?.status === 'error'
-        ? sectionNotice(context.shipping, t)
-        : null,
+    notice: sectionNotice(context.shipping),
   };
 };
