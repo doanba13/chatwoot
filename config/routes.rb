@@ -178,6 +178,10 @@ Rails.application.routes.draw do
               resource :draft_messages, only: [:show, :update, :destroy]
               resource :ai_draft, only: [:show]
               resource :ai_draft_instruction, only: [:create]
+              # The thread's Gotchu annotations (conversation-screen spec §3.2, §3.3):
+              # which sent messages came from which draft, and the agent's own
+              # events. One Rails read for two gateway reads.
+              resource :gotchu_thread, only: [:show]
             end
             member do
               post :mute
