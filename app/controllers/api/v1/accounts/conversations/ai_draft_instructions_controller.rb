@@ -38,6 +38,29 @@ class Api::V1::Accounts::Conversations::AiDraftInstructionsController < Api::V1:
     render json: { error: 'Gotchu did not confirm the instruction', reason: 'unavailable' }, status: :bad_gateway
   end
 
+  # Stop an instruction while it is being redrafted. Same three checks as
+  # `create` (BaseController); the gateway is told the conversation and the
+  # actor, and its answer is passed on only as one of the known states.
+  def cancel
+    result = Gotchu::InstructionCancelService.new(
+      conversation: @conversation,
+      account_id: Current.account.id,
+      actor_id: Current.user.id,
+      request_id: params[:request_id]
+    ).perform
+    render json: result
+  rescue Gotchu::InstructionCancelService::InvalidError
+    render json: { error: 'Invalid request id', reason: 'invalid' }, status: :unprocessable_entity
+  rescue Gotchu::GatewayClient::ConfigurationError => e
+    Rails.logger.error("Gotchu instructions are not configured: #{e.message}")
+    render json: { error: 'Gotchu instructions are not configured', reason: 'unconfigured' }, status: :service_unavailable
+  rescue Gotchu::GatewayClient::NotFoundError
+    render json: { error: 'Instruction not found', reason: 'not_found' }, status: :not_found
+  rescue Gotchu::GatewayClient::UnavailableError => e
+    Rails.logger.warn("Gotchu did not confirm a cancel on conversation #{@conversation.display_id}: #{e.message}")
+    render json: { error: 'Gotchu did not confirm the cancel', reason: 'unavailable' }, status: :bad_gateway
+  end
+
   private
 
   def forward_instruction

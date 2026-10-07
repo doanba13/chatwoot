@@ -344,6 +344,80 @@ RSpec.describe 'Conversation AI Draft Instructions API', type: :request do
         expect(response.parsed_body['reason']).to eq('unconfigured')
         expect(a_request(:post, instruct_endpoint)).not_to have_been_made
       end
+
+      describe 'POST cancel' do
+        let(:request_id) { 'req_abc12345' }
+        let(:cancel_url) { "#{gateway_url}/api/instructions/#{request_id}/cancel" }
+
+        def cancel(id = request_id, user: agent)
+          post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/ai_draft_instruction/cancel",
+               params: { request_id: id }, headers: user.create_new_auth_token, as: :json
+        end
+
+        def stub_cancel(**response)
+          stub_request(:post, cancel_url).with(query: { secret: gateway_secret }).to_return(response)
+        end
+
+        before { configure_gateway }
+
+        it 'names the conversation and the actor, and answers the state' do
+          stub = stub_request(:post, cancel_url)
+                 .with(query: { secret: gateway_secret },
+                       body: { conversationId: conversation.display_id, actor: "chatwoot:#{agent.id}" }.to_json,
+                       headers: { 'x-gesture-secret' => gesture_secret })
+                 .to_return(status: 200, body: { instruction: { state: 'cancelled' } }.to_json)
+          cancel
+          expect(stub).to have_been_requested
+          expect(response.parsed_body).to eq('instruction' => { 'state' => 'cancelled' })
+        end
+
+        it 'passes a finished state through, so the dock can say it was too late' do
+          stub_cancel(status: 200, body: { instruction: { state: 'redrafted', version: 2 } }.to_json)
+          cancel
+          expect(response.parsed_body).to eq('instruction' => { 'state' => 'redrafted', 'version' => 2 })
+        end
+
+        it 'passes working through when the cancel lost and the redraft is still running' do
+          stub_cancel(status: 200, body: { instruction: { state: 'working' } }.to_json)
+          cancel
+          expect(response).to have_http_status(:ok)
+          expect(response.parsed_body).to eq('instruction' => { 'state' => 'working' })
+        end
+
+        it 'refuses a state it does not know rather than inventing one' do
+          stub_cancel(status: 200, body: { instruction: { state: 'paused' } }.to_json)
+          cancel
+          expect(response).to have_http_status(:bad_gateway)
+        end
+
+        it 'answers a fixed not_found on a gateway 404, whatever caused it' do
+          stub_cancel(status: 404, body: { error: 'not found' }.to_json)
+          cancel
+          expect(response).to have_http_status(:not_found)
+          expect(response.parsed_body).to eq('error' => 'Instruction not found', 'reason' => 'not_found')
+        end
+
+        it 'answers 422 invalid on a gateway 400' do
+          stub_cancel(status: 400, body: { error: 'invalid' }.to_json)
+          cancel
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.parsed_body['reason']).to eq('invalid')
+        end
+
+        it 'refuses a malformed request id without calling the gateway' do
+          cancel('../../x')
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.parsed_body['reason']).to eq('invalid')
+          expect(a_request(:post, /cancel/)).not_to have_been_made
+        end
+
+        it 'refuses an agent of the account without access to the inbox, and never calls the gateway' do
+          stub = stub_cancel(status: 200, body: { instruction: { state: 'cancelled' } }.to_json)
+          cancel(user: create(:user, account: account, role: :agent))
+          expect(response).to have_http_status(:unauthorized)
+          expect(stub).not_to have_been_made
+        end
+      end
     end
   end
 end

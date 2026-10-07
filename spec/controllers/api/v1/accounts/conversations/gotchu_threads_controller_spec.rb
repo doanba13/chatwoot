@@ -87,4 +87,14 @@ RSpec.describe 'Conversation Gotchu thread API', type: :request do
     expect(response).to have_http_status(:not_found)
     expect(a_request(:get, /sent-drafts|timeline/)).not_to have_been_made
   end
+
+  it 'refuses an agent of the account without access to the inbox, and never calls the gateway' do
+    sent = stub_leaf('sent-drafts', status: 200, body: { items: [] }.to_json)
+    timeline = stub_leaf('timeline', status: 200, body: { items: [] }.to_json)
+    get "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/gotchu_thread",
+        headers: create(:user, account: account, role: :agent).create_new_auth_token, as: :json
+    expect(response).to have_http_status(:unauthorized)
+    expect(sent).not_to have_been_made
+    expect(timeline).not_to have_been_made
+  end
 end
