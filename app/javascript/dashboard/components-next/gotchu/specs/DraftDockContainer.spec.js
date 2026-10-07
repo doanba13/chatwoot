@@ -834,7 +834,7 @@ describe('DraftDockContainer instruct box', () => {
     ]);
   });
 
-  it('stamps the version of the text it sends, from one snapshot', async () => {
+  it('sends v2 text with the v2 stamp once a poll brings v2 in', async () => {
     vi.useFakeTimers();
     const wrapper = await mountContainer({ instructMode: true });
     AiDraftAPI.getDraft.mockResolvedValue(ready(2, 'v2 text'));
@@ -844,6 +844,72 @@ describe('DraftDockContainer instruct box', () => {
     expect(wrapper.emitted('sendDraft').at(-1)).toEqual([
       { text: 'v2 text', stamp: { cycleId: 12, draftVersion: 2 } },
     ]);
+  });
+
+  it('a second press sends nothing', async () => {
+    const wrapper = await mountContainer({ instructMode: true });
+    const send = () =>
+      wrapper.find('[data-testid="composer-send-draft"]').trigger('click');
+    await send();
+    await send();
+    await flushPromises();
+    await send();
+    expect(wrapper.emitted('sendDraft')).toHaveLength(1);
+    // Insert to edit locks with it: the draft on screen has gone out.
+    expect(
+      wrapper.find('[data-testid="composer-send-draft"]').attributes('disabled')
+    ).toBeDefined();
+    expect(
+      wrapper.find('[data-testid="composer-insert"]').attributes('disabled')
+    ).toBeDefined();
+  });
+
+  it('reads again right after a send, and unlocks once a different version lands', async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountContainer({ instructMode: true });
+    const reads = AiDraftAPI.getDraft.mock.calls.length;
+    await wrapper.find('[data-testid="composer-send-draft"]').trigger('click');
+    expect(AiDraftAPI.getDraft.mock.calls.length).toBe(reads + 1);
+
+    AiDraftAPI.getDraft.mockResolvedValue(ready(2, 'v2 text'));
+    await vi.advanceTimersByTimeAsync(15_000);
+    await wrapper.find('[data-testid="composer-send-draft"]').trigger('click');
+    expect(wrapper.emitted('sendDraft').at(-1)).toEqual([
+      { text: 'v2 text', stamp: { cycleId: 12, draftVersion: 2 } },
+    ]);
+  });
+
+  it('locks Insert to edit and Send draft while an instruction is being submitted', async () => {
+    const emit = vi.spyOn(emitter, 'emit');
+    let resolve;
+    AiDraftAPI.instruct.mockReturnValue(
+      new Promise(r => {
+        resolve = r;
+      })
+    );
+    const wrapper = await mountContainer({ instructMode: true });
+    await wrapper.find('textarea').setValue('kürzer bitte');
+    await wrapper.find('[data-testid="composer-redraft"]').trigger('click');
+    await flushPromises();
+    const insert = wrapper.find('[data-testid="composer-insert"]');
+    const send = wrapper.find('[data-testid="composer-send-draft"]');
+    expect(insert.attributes('disabled')).toBeDefined();
+    expect(send.attributes('disabled')).toBeDefined();
+    // And pressing them anyway (the handlers, not only the buttons) does nothing.
+    wrapper.findComponent({ name: 'DraftDock' }).vm.$emit('insert');
+    wrapper.findComponent({ name: 'DraftDock' }).vm.$emit('send');
+    await flushPromises();
+    expect(wrapper.emitted('sendDraft')).toBeUndefined();
+    expect(emit).not.toHaveBeenCalledWith(
+      BUS_EVENTS.INSERT_INTO_RICH_EDITOR,
+      expect.anything()
+    );
+    expect(emit).not.toHaveBeenCalledWith(
+      BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR,
+      expect.anything()
+    );
+    resolve({ data: {} });
+    await flushPromises();
   });
 
   it('sends nothing while an instruction is in flight', async () => {

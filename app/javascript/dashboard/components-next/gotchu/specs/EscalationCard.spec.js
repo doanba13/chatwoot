@@ -39,8 +39,8 @@ describe('EscalationCard', () => {
   });
 
   it('draws no action unless one is named', () => {
-    // A drawn control with nothing behind it is the failure DraftDock's
-    // `writeEnabled` comment describes.
+    // A drawn control with nothing behind it reads as live, and an agent who
+    // presses it believes something happened.
     expect(mountComponent().find('button').exists()).toBe(false);
   });
 

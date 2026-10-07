@@ -185,6 +185,21 @@ let workingTicker = null;
 const draftVersion = ref(null);
 
 /**
+ * The draft Send draft last emitted, `{ cycleId, version }`, or null. The dock
+ * stays `ready` at the same version until a read says the cycle moved on, and
+ * the composer's send does not dedupe, so without this a second press inside
+ * that window posts the draft to the customer twice.
+ */
+const sent = ref(null);
+const sentShown = computed(
+  () =>
+    sent.value !== null &&
+    view.value.state === 'ready' &&
+    sent.value.cycleId === view.value.cycleId &&
+    sent.value.version === draftVersion.value
+);
+
+/**
  * Whether Rails can forward an instruction at all — its answer, per read, not a
  * guess. False until a read says otherwise, so a browser that has not heard yet,
  * or one whose read failed, offers nothing.
@@ -351,6 +366,9 @@ const read = async () => {
     // credential and restarts Rails gets the field within a poll, and one who
     // takes it away loses it just as fast.
     instructAvailable.value = data?.capabilities?.instruct === true;
+    // A different cycle, version or a state that is not ready: the sent draft
+    // is no longer the one on screen, so Send draft is free again.
+    if (sent.value && !sentShown.value) sent.value = null;
 
     // A newer draft can land on this very poll after Insert already handed
     // the old text to the composer — the dock polls every 15s and nothing
@@ -440,6 +458,7 @@ const restart = () => {
   // would otherwise sit stale until the fresh read lands, and Insert reads
   // it directly rather than through `view`.
   draftVersion.value = null;
+  sent.value = null;
   // Everything about the previous conversation goes, including a half-typed
   // instruction: it was about another customer's draft. `submitting` is cleared
   // here rather than by the request still in flight for that conversation, which
@@ -495,7 +514,7 @@ const onInsert = async () => {
   // poll landing during it must not pair this text with a newer version.
   const { text, cycleId } = view.value;
   const version = draftVersion.value;
-  if (!text || waiting.value) return;
+  if (!text || waiting.value || submitting.value || sentShown.value) return;
 
   if (!props.replyMounted) {
     emit('wantsReply');
@@ -546,7 +565,11 @@ const onSendDraft = () => {
   if (!text || state !== 'ready') return;
   if (!Number.isInteger(cycleId) || !Number.isInteger(version)) return;
   if (waiting.value || submitting.value || props.sendBlockedReason) return;
+  if (sentShown.value) return;
   emit('sendDraft', { text, stamp: { cycleId, draftVersion: version } });
+  sent.value = { cycleId, version };
+  // Learn at once that the cycle moved on, rather than up to 15 s later.
+  read();
 };
 
 /**
@@ -781,6 +804,7 @@ const dockStreamingText = computed(() =>
     :instruct-available="instructAvailable"
     :redraft-disabled="redraftDisabled"
     :send-blocked-reason="sendBlockedReason"
+    :actions-locked="submitting || sentShown"
     @insert="onInsert"
     @send="onSendDraft"
     @instruct="onInstruct"

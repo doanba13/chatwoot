@@ -657,6 +657,21 @@ describe('Send draft', () => {
     );
   });
 
+  it('dispatches once for two calls while the first is still sending', async () => {
+    let resolve;
+    createPendingMessageAndSend.mockReturnValueOnce(
+      new Promise(r => {
+        resolve = r;
+      })
+    );
+    const { wrapper } = mountWith(email);
+    const first = wrapper.vm.sendDraftMessage({ text: 'Hallo', stamp });
+    await wrapper.vm.sendDraftMessage({ text: 'Hallo', stamp });
+    resolve({ data: {} });
+    await first;
+    expect(createPendingMessageAndSend).toHaveBeenCalledTimes(1);
+  });
+
   it('leaves the supporter’s saved reply alone', async () => {
     const { wrapper, store } = mountWith(email);
     const spy = vi.spyOn(store, 'dispatch');

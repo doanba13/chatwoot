@@ -197,6 +197,9 @@ export default {
       composerTab: 'reply',
       composerTabChosen: false,
       dockHasDraft: false,
+      // A Send draft dispatch is in flight; a second press must not post the
+      // draft to the customer twice.
+      sendingDraft: false,
     };
   },
   computed: {
@@ -1033,7 +1036,7 @@ export default {
     // never a gateway route (plan Decision 1). No quoted email, no attachments,
     // and the supporter's saved Reply text is left alone.
     async sendDraftMessage({ text, stamp }) {
-      if (!this.canSendPublicReply) return;
+      if (!this.canSendPublicReply || this.sendingDraft) return;
       // The agent's signature, exactly where a typed public reply would carry
       // it (the same flag and helper `getMessagePayload`'s path uses). Always
       // public here, so `isPrivate` is not consulted.
@@ -1060,6 +1063,7 @@ export default {
       if (this.toEmails) payload.toEmails = this.toEmails;
       if (this.ccEmails) payload.ccEmails = this.ccEmails;
       if (this.bccEmails) payload.bccEmails = this.bccEmails;
+      this.sendingDraft = true;
       try {
         await this.$store.dispatch('createPendingMessageAndSend', payload);
         emitter.emit(BUS_EVENTS.SCROLL_TO_MESSAGE);
@@ -1069,6 +1073,8 @@ export default {
         useAlert(
           error?.response?.data?.error || this.$t('CONVERSATION.MESSAGE_ERROR')
         );
+      } finally {
+        this.sendingDraft = false;
       }
     },
     async onSendWhatsAppReply(messagePayload) {

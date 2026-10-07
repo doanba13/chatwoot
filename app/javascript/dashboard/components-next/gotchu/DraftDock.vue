@@ -62,6 +62,12 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  // Insert to edit and Send draft are locked: an instruction is being
+  // submitted, or the draft on screen has just been sent.
+  actionsLocked: {
+    type: Boolean,
+    default: false,
+  },
   // What the agent looked at to write this draft, already worded as AITrace's
   // `{ kind, did, result }` steps. Empty renders no trace at all.
   trace: {
@@ -321,7 +327,7 @@ const reviewLabel = computed(() => {
       variant="outline"
       size="sm"
       :label="$t('GOTCHU.COMPOSER.INSERT_TO_EDIT')"
-      :disabled="!isReady"
+      :disabled="!isReady || actionsLocked"
       @click="$emit('insert')"
     />
     <Button
@@ -332,7 +338,7 @@ const reviewLabel = computed(() => {
       :class="BRAND_BUTTON_CLASS"
       :label="$t('GOTCHU.DRAFT.SEND')"
       :title="sendBlockedReason || undefined"
-      :disabled="!isReady || !!sendBlockedReason"
+      :disabled="!isReady || actionsLocked || !!sendBlockedReason"
       @click="$emit('send')"
     />
   </div>

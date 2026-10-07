@@ -33,8 +33,8 @@ defineProps({
     default: null,
   },
   // One optional inline action ("Open the order", "Reassign"). Null renders no
-  // button; there is no default action, and a drawn control with nothing behind
-  // it is the failure `DraftDock`'s `writeEnabled` comment describes.
+  // button; there is no default action. A drawn control with nothing behind it
+  // reads as live, and an agent who presses it believes something happened.
   actionLabel: {
     type: String,
     default: null,
