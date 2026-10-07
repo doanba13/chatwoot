@@ -7,6 +7,7 @@ import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import { DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER } from 'dashboard/composables/useUISettings';
 import AiDraftAPI from 'dashboard/api/gotchu/aiDraft';
+import { clearDraftMeta, useDraftMeta } from '../helpers/draftMeta';
 import DraftDockContainer from '../DraftDockContainer.vue';
 import DraftInstruct from '../DraftInstruct.vue';
 import AITrace from '../AITrace.vue';
@@ -171,6 +172,21 @@ describe('DraftDockContainer', () => {
 });
 
 describe('DraftDockContainer cycle state mapping', () => {
+  it('writes language, channel and thread routes to the header meta after a read', async () => {
+    const payload = answer(reviewing(), { version: 1, body: 'Hallo' });
+    AiDraftAPI.getDraft.mockResolvedValue({
+      data: { ...payload.data, conversation: { channel: 'email' } },
+    });
+    await mountContainer();
+
+    expect(useDraftMeta(3580).value).toEqual({
+      lang: null,
+      channel: 'email',
+      threadRoutes: true,
+    });
+    clearDraftMeta(3580);
+  });
+
   it('shows an awaiting_review draft as ready to review', async () => {
     const wrapper = await mountContainer();
     AiDraftAPI.getDraft.mockResolvedValue(

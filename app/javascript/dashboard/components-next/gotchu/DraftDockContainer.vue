@@ -13,6 +13,7 @@ import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import AiDraftAPI from 'dashboard/api/gotchu/aiDraft';
+import { setDraftMeta } from './helpers/draftMeta';
 import DraftDock from './DraftDock.vue';
 import DraftInstruct from './DraftInstruct.vue';
 import {
@@ -347,6 +348,11 @@ const read = async () => {
     const { data } = await AiDraftAPI.getDraft(readFor, { requestId });
     if (readFor !== props.conversationId) return;
     view.value = draftViewFrom(data);
+    setDraftMeta(readFor, {
+      lang: view.value.lang,
+      channel: view.value.channel,
+      threadRoutes: view.value.threadRoutes,
+    });
     draftVersion.value =
       Number.isInteger(data?.draft?.version) && data.draft.version > 0
         ? data.draft.version

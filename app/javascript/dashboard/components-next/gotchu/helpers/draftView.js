@@ -94,6 +94,10 @@ const emptyView = (reason, expiresAt = null, cycleId = null) => ({
   emptyReason: reason,
   expiresAt,
   cycleId,
+  lang: null,
+  channel: null,
+  procedureId: null,
+  threadRoutes: false,
 });
 
 /** The view while the first read for a conversation is still in flight. */
@@ -172,8 +176,32 @@ const cycleTierOf = payload => {
  * steps — worded by the container, not here. Carried on every view, an empty
  * list included, so nothing downstream has to ask whether the field exists.
  */
-export const draftViewFrom = payload => ({
-  ...viewFrom(payload),
-  trace: Array.isArray(payload?.trace) ? payload.trace : [],
-  cycleTier: cycleTierOf(payload),
-});
+const LANGS = ['de', 'fr', 'en'];
+const CHANNELS = ['email', 'messenger', 'web', 'other'];
+const oneOf = (list, value) => (list.includes(value) ? value : null);
+const langOf = (trace, cycle) =>
+  oneOf(LANGS, trace.find(step => step?.kind === 'read')?.lang) ??
+  oneOf(LANGS, cycle?.lang);
+const procedureIdOf = trace => {
+  const id = trace.find(step => step?.kind === 'procedure')?.procedureId;
+  return Number.isInteger(id) && id > 0 ? id : null;
+};
+
+export const draftViewFrom = payload => {
+  const trace = Array.isArray(payload?.trace) ? payload.trace : [];
+  return {
+    ...viewFrom(payload),
+    trace,
+    cycleTier: cycleTierOf(payload),
+    lang: langOf(trace, payload?.cycle),
+    channel: oneOf(CHANNELS, payload?.conversation?.channel),
+    procedureId: procedureIdOf(trace),
+    // Contract issue 1: the thread routes ship in one gateway deploy with the
+    // `conversation` key, so that key is how the fork knows they exist.
+    threadRoutes: Boolean(
+      payload &&
+        typeof payload === 'object' &&
+        Object.hasOwn(payload, 'conversation')
+    ),
+  };
+};

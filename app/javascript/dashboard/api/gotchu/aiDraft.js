@@ -63,6 +63,17 @@ class AiDraftAPI extends ApiClient {
       request_id: requestId,
     });
   }
+
+  /**
+   * Stop an instruction while it is being redrafted (spec §3.4). Never changes
+   * cycle state; the worker's compare-and-set is what keeps a late v2 out.
+   */
+  cancelInstruction(conversationId, requestId) {
+    return axios.post(
+      `${this.url}/${conversationId}/ai_draft_instruction/cancel`,
+      { request_id: requestId }
+    );
+  }
 }
 
 export default new AiDraftAPI();
