@@ -6,11 +6,17 @@ import { useDraftMeta, clearDraftMeta } from '../../helpers/draftMeta';
 
 vi.mock('dashboard/api/gotchu/thread', () => ({ default: { get: vi.fn() } }));
 
-const harness = ({ id = 7, messages = [], threadRoutes = true } = {}) => {
+const harness = ({
+  id = 7,
+  messages = [],
+  threadRoutes = true,
+  draftKey,
+} = {}) => {
   const state = {
     conversationId: ref(id),
     messages: ref(messages),
     threadRoutes: ref(threadRoutes),
+    draftKey: ref(draftKey),
   };
   let api;
   mount(
@@ -221,5 +227,55 @@ describe('useThreadAnnotations', () => {
     vi.advanceTimersByTime(3000);
     await flushPromises();
     expect(ThreadAPI.get).not.toHaveBeenCalled();
+  });
+
+  it('re-reads after the draft changes, so the drafted line appears', async () => {
+    ThreadAPI.get.mockResolvedValue(answer({}));
+    const { state } = harness({ draftKey: 'none' });
+    await flushPromises();
+    expect(ThreadAPI.get).toHaveBeenCalledTimes(1);
+
+    state.draftKey.value = '12:1';
+    await nextTick();
+    vi.advanceTimersByTime(1500);
+    await flushPromises();
+    expect(ThreadAPI.get).toHaveBeenCalledTimes(2);
+
+    state.draftKey.value = '12:2';
+    await nextTick();
+    vi.advanceTimersByTime(1500);
+    await flushPromises();
+    expect(ThreadAPI.get).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not re-read for the first draft read, or for a conversation switch', async () => {
+    ThreadAPI.get.mockResolvedValue(answer({}));
+    const { state } = harness();
+    await flushPromises();
+    state.draftKey.value = '12:1'; // the dock's first read of this conversation
+    await nextTick();
+    vi.advanceTimersByTime(1500);
+    await flushPromises();
+    expect(ThreadAPI.get).toHaveBeenCalledTimes(1);
+
+    state.conversationId.value = 8;
+    state.draftKey.value = '30:4';
+    await nextTick();
+    vi.advanceTimersByTime(1500);
+    await flushPromises();
+    expect(ThreadAPI.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('says once per conversation when its first annotations have landed', async () => {
+    ThreadAPI.get.mockResolvedValue(answer({}));
+    const { state, api } = harness();
+    expect(api().annotatedFor.value).toBeNull();
+    await flushPromises();
+    expect(api().annotatedFor.value).toBe(7);
+
+    ThreadAPI.get.mockReturnValue(new Promise(() => {})); // 8's read hangs
+    state.conversationId.value = 8;
+    await flushPromises();
+    expect(api().annotatedFor.value).toBeNull();
   });
 });

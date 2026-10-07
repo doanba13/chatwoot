@@ -408,15 +408,20 @@ const read = async () => {
     const { data } = await AiDraftAPI.getDraft(readFor, { requestId });
     if (readFor !== props.conversationId) return;
     view.value = draftViewFrom(data);
-    setDraftMeta(readFor, {
-      lang: view.value.lang,
-      channel: view.value.channel,
-      threadRoutes: view.value.threadRoutes,
-    });
     draftVersion.value =
       Number.isInteger(data?.draft?.version) && data.draft.version > 0
         ? data.draft.version
         : null;
+    setDraftMeta(readFor, {
+      lang: view.value.lang,
+      channel: view.value.channel,
+      threadRoutes: view.value.threadRoutes,
+      // The thread re-reads its annotations when this changes.
+      draftKey:
+        view.value.cycleId != null && draftVersion.value != null
+          ? `${view.value.cycleId}:${draftVersion.value}`
+          : 'none',
+    });
     // Server config, read every time rather than cached: an operator who sets the
     // credential and restarts Rails gets the field within a poll, and one who
     // takes it away loses it just as fast.
@@ -829,7 +834,8 @@ const headingModel = computed(() => {
   }
   const shown = tier ? headerTier(tier.tier, view.value.cycleTier) : null;
   const named = { version, procedure: procedure.title };
-  const procedureId = procedure.procedureId ?? null;
+  // draftView's: only a positive integer, from the same procedure step.
+  const { procedureId } = view.value;
   if (!tier || (tier.channel != null && !TIERS.includes(shown))) {
     return {
       ...named,

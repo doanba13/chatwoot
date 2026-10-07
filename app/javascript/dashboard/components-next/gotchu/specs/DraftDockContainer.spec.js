@@ -193,8 +193,24 @@ describe('DraftDockContainer cycle state mapping', () => {
       lang: null,
       channel: 'email',
       threadRoutes: true,
+      draftKey: '2964:1',
     });
     clearDraftMeta(3580);
+  });
+
+  it('publishes a draft key the thread re-reads on, and "none" without a draft', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue(answer(reviewing(), null));
+    const wrapper = await mountContainer();
+    expect(useDraftMeta(3580).value.draftKey).toBe('none');
+
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answer(reviewing(), { version: 2, body: 'Hallo' })
+    );
+    await wrapper.setProps({ conversationId: 3577 });
+    await flushPromises();
+    expect(useDraftMeta(3577).value.draftKey).toBe('2964:2');
+    clearDraftMeta(3580);
+    clearDraftMeta(3577);
   });
 
   it('shows an awaiting_review draft as ready to review', async () => {
@@ -1735,6 +1751,32 @@ describe('DraftDockContainer instruction outcome', () => {
       expect(wrapper.text()).not.toMatch(
         /sending on its own|sends on its own/i
       );
+    }
+  );
+
+  it.each([
+    [5, 5],
+    ['5', null],
+    [0, null],
+  ])(
+    'links the procedure only for a positive integer id: %j',
+    async (procedureId, expected) => {
+      AiDraftAPI.getDraft.mockResolvedValue({
+        data: {
+          cycle: reviewing(),
+          draft: { version: 1, body },
+          trace: [
+            { kind: 'procedure', title: 'Where is my order', procedureId },
+            autoStep,
+          ],
+        },
+      });
+
+      const wrapper = await mountContainer();
+
+      expect(
+        wrapper.findComponent(DraftDock).props('headingParts').procedureId
+      ).toBe(expected);
     }
   );
 

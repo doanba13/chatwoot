@@ -81,10 +81,11 @@ export default {
     const conversationId = computed(() => chat.value?.id);
     const threadMessages = computed(() => chat.value?.messages || []);
     const draftMeta = useDraftMeta(conversationId);
-    const { sentDraftFor, timeline } = useThreadAnnotations({
+    const { sentDraftFor, timeline, annotatedFor } = useThreadAnnotations({
       conversationId,
       messages: threadMessages,
       threadRoutes: computed(() => draftMeta.value?.threadRoutes),
+      draftKey: computed(() => draftMeta.value?.draftKey),
     });
     // The byline names the channel the header names, inbox fallback included.
     const threadChannelWord = computed(
@@ -101,6 +102,7 @@ export default {
     return {
       sentDraftFor,
       timeline,
+      annotatedFor,
       threadChannelWord,
       captainTasksEnabled,
       getLabelSuggestions,
@@ -294,6 +296,11 @@ export default {
   },
 
   watch: {
+    // Gotchu's day and system lines land after the first paint and push the
+    // newest message down: re-scroll once per conversation, as labels do.
+    annotatedFor(id) {
+      if (id != null) this.$nextTick(this.scrollToBottomUnlessAway);
+    },
     currentChat(newChat, oldChat) {
       if (newChat.id === oldChat.id) {
         return;
@@ -347,18 +354,19 @@ export default {
       // once the labels are fetched, we need to scroll to bottom
       // but we need to wait for the DOM to be updated
       // so we use the nextTick method
-      this.$nextTick(() => {
-        // this param is added to route, telling the UI to navigate to the message
-        // it is triggered by the SCROLL_TO_MESSAGE method
-        // see setActiveChat on ConversationView.vue for more info
-        const { messageId } = this.$route.query;
+      this.$nextTick(this.scrollToBottomUnlessAway);
+    },
+    scrollToBottomUnlessAway() {
+      // this param is added to route, telling the UI to navigate to the message
+      // it is triggered by the SCROLL_TO_MESSAGE method
+      // see setActiveChat on ConversationView.vue for more info
+      const { messageId } = this.$route.query;
 
-        // only trigger the scroll to bottom if the user has not scrolled
-        // and there's no active messageId that is selected in view
-        if (!messageId && !this.hasUserScrolled) {
-          this.scrollToBottom();
-        }
-      });
+      // only trigger the scroll to bottom if the user has not scrolled
+      // and there's no active messageId that is selected in view
+      if (!messageId && !this.hasUserScrolled) {
+        this.scrollToBottom();
+      }
     },
     isLabelSuggestionDismissed() {
       return LocalStorage.getFlag(
