@@ -1,5 +1,7 @@
 <script>
-import { ref, provide, useTemplateRef } from 'vue';
+import { ref, provide, useTemplateRef, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useStore } from 'dashboard/composables/store';
 import { useElementSize } from '@vueuse/core';
 // composable
 import { useLabelSuggestions } from 'dashboard/composables/useLabelSuggestions';
@@ -8,6 +10,9 @@ import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
 // components
 import ReplyBox from './ReplyBox.vue';
 import MessageList from 'next/message/MessageList.vue';
+import { useThreadAnnotations } from 'dashboard/components-next/gotchu/thread/useThreadAnnotations';
+import { useDraftMeta } from 'dashboard/components-next/gotchu/helpers/draftMeta';
+import { headerMeta } from 'dashboard/components-next/gotchu/header/headerMeta';
 import ConversationLabelSuggestion from './conversation/LabelSuggestion.vue';
 import Banner from 'dashboard/components/ui/Banner.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
@@ -67,7 +72,36 @@ export default {
 
     provide('contextMenuElementTarget', conversationPanelRef);
 
+    // The thread's Gotchu half. It reads the store itself because the Options
+    // API computeds below are not reachable from here; both sides see the same
+    // selected chat. `messages` keeps the store's snake_case rows.
+    const { t } = useI18n();
+    const store = useStore();
+    const chat = computed(() => store.getters.getSelectedChat);
+    const conversationId = computed(() => chat.value?.id);
+    const threadMessages = computed(() => chat.value?.messages || []);
+    const draftMeta = useDraftMeta(conversationId);
+    const { sentDraftFor, timeline } = useThreadAnnotations({
+      conversationId,
+      messages: threadMessages,
+      threadRoutes: computed(() => draftMeta.value?.threadRoutes),
+    });
+    // The byline names the channel the header names, inbox fallback included.
+    const threadChannelWord = computed(
+      () =>
+        headerMeta({
+          draftMeta: draftMeta.value,
+          inboxChannelType: store.getters['inboxes/getInbox'](
+            chat.value?.inbox_id
+          )?.channel_type,
+          t,
+        }).channel
+    );
+
     return {
+      sentDraftFor,
+      timeline,
+      threadChannelWord,
       captainTasksEnabled,
       getLabelSuggestions,
       isLabelSuggestionFeatureEnabled,
@@ -498,6 +532,9 @@ export default {
       :is-an-email-channel="isAnEmailChannel"
       :inbox-supports-reply-to="inboxSupportsReplyTo"
       :messages="getMessages"
+      :timeline="timeline"
+      :sent-draft-for="sentDraftFor"
+      :channel-word="threadChannelWord"
       @retry="handleMessageRetry"
     >
       <template #beforeAll>

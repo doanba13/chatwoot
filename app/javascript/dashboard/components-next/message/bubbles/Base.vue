@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n';
 import MessageFormatter from 'shared/helpers/MessageFormatter.js';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { MESSAGE_VARIANTS, ORIENTATION, SENDER_TYPES } from '../constants';
+import { isGotchuNote } from 'dashboard/components-next/gotchu/thread/threadWords';
 
 const props = defineProps({
   hideMeta: { type: Boolean, default: false },
@@ -24,6 +25,8 @@ const {
   id,
   sender,
   senderType,
+  isPrivate,
+  contentAttributes,
 } = useMessageContext();
 const { t } = useI18n();
 
@@ -40,12 +43,23 @@ const emailMetaClass = computed(() =>
   variant.value === MESSAGE_VARIANTS.EMAIL ? 'px-3 pb-3' : ''
 );
 
+// A note Gotchu wrote reads as Gotchu's: the agent teal at half strength.
+const gotchuNote = computed(() =>
+  isGotchuNote({
+    private: isPrivate.value,
+    contentAttributes: contentAttributes.value,
+  })
+);
+const GOTCHU_NOTE_BORDER =
+  'border-[color-mix(in_srgb,var(--g-agent)_50%,transparent)]';
+
 const varaintBaseMap = {
-  [MESSAGE_VARIANTS.AGENT]: 'bg-n-solid-blue text-n-slate-12',
+  [MESSAGE_VARIANTS.AGENT]:
+    'bg-[var(--g-surface)] border border-[var(--g-agent-border)] text-n-slate-12',
   [MESSAGE_VARIANTS.PRIVATE]:
-    'bg-[var(--g-surface)] border border-dashed border-[var(--g-border-strong)] text-n-slate-11 [&_.prosemirror-mention-node]:font-semibold',
+    'bg-[var(--g-surface-note)] border border-dashed border-[var(--g-border-strong)] text-n-slate-11 [&_.prosemirror-mention-node]:font-semibold',
   [MESSAGE_VARIANTS.USER]: 'bg-[var(--g-bubble-customer)] text-n-slate-12',
-  [MESSAGE_VARIANTS.ACTIVITY]: 'bg-n-alpha-1 text-n-slate-11 text-sm',
+  [MESSAGE_VARIANTS.ACTIVITY]: 'text-n-slate-11 text-xs',
   [MESSAGE_VARIANTS.BOT]: 'bg-n-solid-iris text-n-slate-12',
   [MESSAGE_VARIANTS.TEMPLATE]: 'bg-n-solid-iris text-n-slate-12',
   [MESSAGE_VARIANTS.ERROR]: 'bg-n-ruby-4 text-n-ruby-12',
@@ -88,6 +102,7 @@ const maxWidthClass = computed(() => {
 
 const messageClass = computed(() => {
   const classToApply = [varaintBaseMap[variant.value]];
+  if (gotchuNote.value) classToApply.push(GOTCHU_NOTE_BORDER);
 
   if (variant.value !== MESSAGE_VARIANTS.ACTIVITY) {
     classToApply.push(orientationMap[orientation.value]);

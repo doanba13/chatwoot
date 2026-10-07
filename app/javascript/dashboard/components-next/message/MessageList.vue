@@ -5,6 +5,12 @@ import { MESSAGE_TYPES } from './constants.js';
 import { useCamelCase } from 'dashboard/composables/useTransformKeys';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import MessageApi from 'dashboard/api/inbox/message.js';
+import { useI18n } from 'vue-i18n';
+import ThreadDayLine from 'dashboard/components-next/gotchu/thread/ThreadDayLine.vue';
+import ThreadSystemLine from 'dashboard/components-next/gotchu/thread/ThreadSystemLine.vue';
+import { threadItems } from 'dashboard/components-next/gotchu/thread/threadItems';
+import { bylineFor } from 'dashboard/components-next/gotchu/thread/threadWords';
+import { wordStep } from 'dashboard/components-next/gotchu/traceWords';
 
 /**
  * Props definition for the component
@@ -15,6 +21,9 @@ import MessageApi from 'dashboard/api/inbox/message.js';
  * @property {Boolean} isAnEmailChannel - Whether this is an email channel
  * @property {Object} inboxSupportsReplyTo - Inbox reply support configuration
  * @property {Array} messages - Array of all messages [These are not in camelcase]
+ * @property {Array} timeline - The gateway's timeline of Gotchu's own events
+ * @property {Function} sentDraftFor - message id -> the draft it was sent from, or null
+ * @property {String} channelWord - The channel as the header names it, or null
  */
 const props = defineProps({
   currentUserId: {
@@ -37,6 +46,18 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  timeline: {
+    type: Array,
+    default: () => [],
+  },
+  sentDraftFor: {
+    type: Function,
+    default: () => null,
+  },
+  channelWord: {
+    type: String,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['retry']);
@@ -50,6 +71,34 @@ const allMessages = computed(() => {
     ],
   });
 });
+
+const { t, te } = useI18n();
+
+const items = computed(() =>
+  threadItems({ messages: allMessages.value, timeline: props.timeline })
+);
+
+// Grouping looks at a message's neighbours in the messages alone, so a day line
+// or a Gotchu line between two messages never changes it.
+const indexById = computed(
+  () => new Map(allMessages.value.map((m, index) => [m.id, index]))
+);
+
+// An activity line is not someone's turn: it carries no byline.
+const bylineOf = message =>
+  message.messageType === MESSAGE_TYPES.ACTIVITY
+    ? null
+    : bylineFor({
+        message,
+        sentDraft: props.sentDraftFor(message.id),
+        channelWord: props.channelWord,
+        t,
+      });
+
+const sentTraceOf = message =>
+  (props.sentDraftFor(message.id)?.trace || [])
+    .map(step => wordStep(step, t, te))
+    .filter(Boolean);
 
 const currentChat = useMapGetter('getSelectedChat');
 
@@ -166,23 +215,37 @@ const getInReplyToMessage = parentMessage => {
 </script>
 
 <template>
-  <ul class="px-4 bg-n-surface-1">
+  <!-- The 760px column is padding, not max-width: this list is the scroller. -->
+  <ul
+    class="flex flex-col gap-3 pt-7 px-[max(28px,calc((100%-760px)/2))] bg-n-surface-1"
+  >
     <slot name="beforeAll" />
-    <template v-for="(message, index) in allMessages" :key="message.id">
-      <slot
-        v-if="firstUnreadId && message.id === firstUnreadId"
-        name="unreadBadge"
+    <template v-for="entry in items" :key="entry.key">
+      <ThreadDayLine v-if="entry.type === 'day'" :date="entry.date" />
+      <ThreadSystemLine
+        v-else-if="entry.type === 'gotchu'"
+        :item="entry.item"
       />
-      <Message
-        v-bind="message"
-        :is-email-inbox="isAnEmailChannel"
-        :in-reply-to="getInReplyToMessage(message)"
-        :group-with-next="shouldGroupWithNext(index, allMessages)"
-        :inbox-supports-reply-to="inboxSupportsReplyTo"
-        :current-user-id="currentUserId"
-        data-clarity-mask="True"
-        @retry="emit('retry', message)"
-      />
+      <template v-else>
+        <slot
+          v-if="firstUnreadId && entry.message.id === firstUnreadId"
+          name="unreadBadge"
+        />
+        <Message
+          v-bind="entry.message"
+          :is-email-inbox="isAnEmailChannel"
+          :in-reply-to="getInReplyToMessage(entry.message)"
+          :group-with-next="
+            shouldGroupWithNext(indexById.get(entry.message.id), allMessages)
+          "
+          :inbox-supports-reply-to="inboxSupportsReplyTo"
+          :current-user-id="currentUserId"
+          :byline="bylineOf(entry.message)"
+          :sent-trace="sentTraceOf(entry.message)"
+          data-clarity-mask="True"
+          @retry="emit('retry', entry.message)"
+        />
+      </template>
     </template>
     <slot name="after" />
   </ul>

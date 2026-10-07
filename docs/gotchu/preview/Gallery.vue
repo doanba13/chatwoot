@@ -31,6 +31,7 @@ import DraftInstruct from 'dashboard/components-next/gotchu/DraftInstruct.vue';
 import MemoComposer from 'dashboard/components-next/gotchu/MemoComposer.vue';
 import { redraftSteps } from 'dashboard/components-next/gotchu/helpers/redraftSteps';
 import ComposerCard from './ComposerCard.vue';
+import ThreadPreview from './ThreadPreview.vue';
 
 // SidebarGroupLeaf is deliberately absent. It calls useSidebarContext(), which
 // injects a Symbol private to sidebar/provider.js and additionally needs
@@ -849,6 +850,13 @@ const replayDock = () => {
         Last emitted:
         <span class="font-medium">{{ lastGestureAction }}</span>
       </p>
+    </section>
+
+    <section class="flex flex-col gap-4 mb-10 max-w-[820px]">
+      <h2 class="text-sm font-medium text-n-slate-11">
+        Thread — day lines, bylines, Gotchu's lines and the trace
+      </h2>
+      <ThreadPreview />
     </section>
   </div>
 </template>

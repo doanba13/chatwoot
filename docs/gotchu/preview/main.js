@@ -2,6 +2,8 @@ import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import Gallery from './Gallery.vue';
+import ThreadPreview from './ThreadPreview.vue';
+import { threadStubs } from './threadStubs';
 
 import components from 'dashboard/i18n/locale/en/components.json';
 import gotchuAgent from 'dashboard/i18n/locale/en/gotchuAgent.json';
@@ -45,4 +47,15 @@ const router = createRouter({
   ],
 });
 
-createApp(Gallery).use(i18n).use(router).mount('#app');
+// `?only=thread` mounts the thread alone, so a screenshot is not a crop.
+const only = new URLSearchParams(window.location.search).get('only');
+createApp(only === 'thread' ? ThreadPreview : Gallery)
+  .use(i18n)
+  .use(router)
+  .use(threadStubs)
+  .mount('#app');
+
+// `?dark` opens the gallery in the dark theme, for a screenshot.
+if (new URLSearchParams(window.location.search).has('dark')) {
+  document.body.classList.add('dark');
+}

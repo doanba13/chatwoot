@@ -106,8 +106,8 @@ const handleSeeOriginal = () => {
   <BaseBubble
     class="w-full"
     :class="{
-      'bg-n-slate-4': isIncoming,
-      'bg-n-solid-blue': isOutgoing,
+      'bg-[var(--g-bubble-customer)]': isIncoming,
+      'bg-[var(--g-surface)] border border-[var(--g-agent-border)]': isOutgoing,
     }"
     data-bubble-name="email"
   >
@@ -115,7 +115,7 @@ const handleSeeOriginal = () => {
       class="p-3"
       :class="{
         'border-b border-n-strong': isIncoming,
-        'border-b border-n-slate-8/20': isOutgoing,
+        'border-b border-[var(--g-agent-border)]': isOutgoing,
       }"
     />
     <section ref="contentContainer" class="p-3">
@@ -129,9 +129,9 @@ const handleSeeOriginal = () => {
           v-if="isExpandable && !isExpanded"
           class="absolute left-0 right-0 bottom-0 h-40 px-8 flex items-end"
           :class="{
-            'bg-gradient-to-t from-n-slate-4 via-n-slate-4 via-20% to-transparent':
+            'bg-gradient-to-t from-[var(--g-bubble-customer)] via-[var(--g-bubble-customer)] via-20% to-transparent':
               isIncoming,
-            'bg-gradient-to-t from-n-solid-blue via-n-solid-blue via-20% to-transparent':
+            'bg-gradient-to-t from-[var(--g-surface)] via-[var(--g-surface)] via-20% to-transparent':
               isOutgoing,
           }"
         >

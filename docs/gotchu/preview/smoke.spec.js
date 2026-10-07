@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import Gallery from './Gallery.vue';
+import { threadStubs } from './threadStubs';
 
 import components from 'dashboard/i18n/locale/en/components.json';
 import gotchuAgent from 'dashboard/i18n/locale/en/gotchuAgent.json';
@@ -14,6 +15,7 @@ describe('Gotchu preview gallery', () => {
     mount(Gallery, {
       global: {
         plugins: [
+          threadStubs,
           createI18n({
             legacy: false,
             locale: 'en',
@@ -68,6 +70,16 @@ describe('Gotchu preview gallery', () => {
     // thing assertable here is that the flag survived into the rendered table.
     const table = mountGallery().find('table');
     expect(table.attributes('data-identifier-columns')).toBeTruthy();
+  });
+
+  it('draws the thread: bylines, Gotchu lines and the trace under a sent reply', () => {
+    const text = mountGallery().text();
+    expect(text).toContain('Anna Keller · customer · Email');
+    expect(text).toContain('Mara · sent Gotchu’s draft v1 unedited');
+    expect(text).toContain(
+      'Gotchu matched “Where is my order” and drafted a reply'
+    );
+    expect(text).toContain('Mara · private note');
   });
 
   it('renders the AI surfaces against their real copy', () => {

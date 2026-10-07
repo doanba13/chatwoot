@@ -16,6 +16,7 @@ export default defineConfig({
       helpers: path.resolve('./app/javascript/shared/helpers'),
       shared: path.resolve('./app/javascript/shared'),
       assets: path.resolve('./app/javascript/dashboard/assets'),
+      widget: path.resolve('./app/javascript/widget'),
     },
   },
   test: {

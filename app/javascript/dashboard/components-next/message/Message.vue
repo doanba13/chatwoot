@@ -23,6 +23,8 @@ import {
 } from './constants';
 
 import Avatar from 'next/avatar/Avatar.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
+import AITrace from 'dashboard/components-next/gotchu/AITrace.vue';
 
 import TextBubble from './bubbles/Text/Index.vue';
 import ActivityBubble from './bubbles/Activity.vue';
@@ -138,6 +140,10 @@ const props = defineProps({
   senderId: { type: Number, default: null },
   senderType: { type: String, default: null },
   sourceId: { type: String, default: '' }, // eslint-disable-line vue/no-unused-properties
+  // `{ text, lock }` drawn above the bubble in place of the avatar, or null.
+  byline: { type: Object, default: null },
+  // Worded trace steps of the draft this reply was sent from.
+  sentTrace: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['retry']);
@@ -145,7 +151,7 @@ const emit = defineEmits(['retry']);
 const contextMenuPosition = ref({});
 const showBackgroundHighlight = ref(false);
 const showContextMenu = ref(false);
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const inboxGetter = useMapGetter('inboxes/getInbox');
 const inbox = computed(() => inboxGetter.value(props.inboxId) || {});
@@ -255,7 +261,17 @@ const flexOrientationClass = computed(() => {
   return map[orientation.value];
 });
 
+const hasByline = computed(() => Boolean(props.byline?.text));
+
+const bylineTime = computed(() =>
+  new Intl.DateTimeFormat(locale.value, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(props.createdAt * 1000))
+);
+
 const gridClass = computed(() => {
+  if (hasByline.value) return 'grid grid-cols-1';
   const map = {
     [ORIENTATION.LEFT]: 'grid grid-cols-1fr',
     [ORIENTATION.RIGHT]: 'grid grid-cols-[1fr_24px]',
@@ -265,6 +281,14 @@ const gridClass = computed(() => {
 });
 
 const gridTemplate = computed(() => {
+  if (hasByline.value) {
+    return `
+      "byline"
+      "bubble"
+      "trace"
+      "meta"
+    `;
+  }
   const map = {
     [ORIENTATION.LEFT]: `
       "bubble"
@@ -286,6 +310,7 @@ const shouldGroupWithNext = computed(() => {
 });
 
 const shouldShowAvatar = computed(() => {
+  if (hasByline.value) return false;
   if (props.messageType === MESSAGE_TYPES.ACTIVITY) return false;
   if (orientation.value === ORIENTATION.LEFT) return false;
 
@@ -577,6 +602,15 @@ provideMessageContext({
       }"
     >
       <div
+        v-if="hasByline"
+        class="[grid-area:byline] flex items-center gap-1 mb-1 text-xs text-n-slate-11"
+        :class="flexOrientationClass"
+        data-byline
+      >
+        <Icon v-if="byline.lock" icon="i-lucide-lock" class="size-3" />
+        <span>{{ byline.text }} · {{ bylineTime }}</span>
+      </div>
+      <div
         v-if="!shouldGroupWithNext && shouldShowAvatar"
         v-tooltip.left-end="avatarTooltip"
         class="[grid-area:avatar] flex items-end"
@@ -586,7 +620,8 @@ provideMessageContext({
       <div
         class="[grid-area:bubble] flex min-w-0"
         :class="{
-          'ltr:ml-8 rtl:mr-8 justify-end': orientation === ORIENTATION.RIGHT,
+          'justify-end': orientation === ORIENTATION.RIGHT,
+          'ltr:ml-8 rtl:mr-8': orientation === ORIENTATION.RIGHT && !hasByline,
           'ltr:mr-8 rtl:ml-8': orientation === ORIENTATION.LEFT,
           'flex-col items-start gap-2': shouldShowWhatsappReferral,
         }"
@@ -598,6 +633,12 @@ provideMessageContext({
         />
         <Component :is="componentToRender" />
       </div>
+      <AITrace
+        v-if="sentTrace.length"
+        :steps="sentTrace"
+        class="[grid-area:trace] self-stretch mt-2"
+        :class="{ 'ltr:ml-8 rtl:mr-8': orientation === ORIENTATION.RIGHT }"
+      />
       <MessageError
         v-if="contentAttributes.externalError"
         class="[grid-area:meta]"
