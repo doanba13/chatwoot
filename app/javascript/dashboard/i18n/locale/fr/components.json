@@ -239,6 +239,38 @@
     },
     "TOPICS": {
       "ALWAYS_HANDS_OVER": "Transfère toujours"
+    },
+    "THREAD": {
+      "TODAY": "Aujourd’hui",
+      "YESTERDAY": "Hier",
+      "SOMEONE": "Quelqu’un",
+      "BY_CUSTOMER": "{name} · client · {channel}",
+      "BY_CUSTOMER_NO_CHANNEL": "{name} · client",
+      "BY_SENT_UNEDITED": "{name} · a envoyé le brouillon v{version} de Gotchu sans modification",
+      "BY_SENT_EDITED": "{name} · a envoyé le brouillon v{version} de Gotchu, modifié",
+      "BY_SENT_AUTO": "Gotchu · a envoyé le brouillon v{version} de lui-même",
+      "BY_NOTE": "{name} · note privée",
+      "LINE": {
+        "DRAFTED": "Gotchu a reconnu « {title} » et rédigé une réponse",
+        "DRAFTED_NO_PROCEDURE": "Gotchu a rédigé une réponse",
+        "REDRAFTED": "Gotchu a réécrit la réponse en v{version}",
+        "REDRAFTED_PLAIN": "Gotchu a réécrit la réponse",
+        "AUTO_SCHEDULED": "Gotchu a programmé l’envoi automatique de la v{version}",
+        "AUTO_SCHEDULED_PLAIN": "Gotchu a programmé l’envoi automatique du brouillon",
+        "AUTO_SENT": "Gotchu a envoyé la v{version} de lui-même",
+        "AUTO_SENT_PLAIN": "Gotchu a envoyé le brouillon de lui-même",
+        "AUTO_STOPPED": "L’envoi automatique a été arrêté",
+        "HANDED_OVER": "Gotchu a passé la main à une personne",
+        "HANDED_OVER_PROCEDURE": "« {title} » passe la main à une personne",
+        "MEMO_ADDED": "Un mémo a été ajouté pour Gotchu"
+      }
+    },
+    "HEADER": {
+      "CHANNEL": {
+        "EMAIL": "E-mail",
+        "MESSENGER": "Messenger",
+        "WEB": "Chat web"
+      }
     }
   }
 }

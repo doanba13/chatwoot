@@ -244,6 +244,38 @@
     },
     "TOPICS": {
       "ALWAYS_HANDS_OVER": "Always hands over"
+    },
+    "THREAD": {
+      "TODAY": "Today",
+      "YESTERDAY": "Yesterday",
+      "SOMEONE": "Someone",
+      "BY_CUSTOMER": "{name} · customer · {channel}",
+      "BY_CUSTOMER_NO_CHANNEL": "{name} · customer",
+      "BY_SENT_UNEDITED": "{name} · sent Gotchu’s draft v{version} unedited",
+      "BY_SENT_EDITED": "{name} · sent Gotchu’s draft v{version}, edited",
+      "BY_SENT_AUTO": "Gotchu · sent draft v{version} on its own",
+      "BY_NOTE": "{name} · private note",
+      "LINE": {
+        "DRAFTED": "Gotchu matched “{title}” and drafted a reply",
+        "DRAFTED_NO_PROCEDURE": "Gotchu drafted a reply",
+        "REDRAFTED": "Gotchu redrafted the reply as v{version}",
+        "REDRAFTED_PLAIN": "Gotchu redrafted the reply",
+        "AUTO_SCHEDULED": "Gotchu scheduled v{version} to send on its own",
+        "AUTO_SCHEDULED_PLAIN": "Gotchu scheduled the draft to send on its own",
+        "AUTO_SENT": "Gotchu sent v{version} on its own",
+        "AUTO_SENT_PLAIN": "Gotchu sent the draft on its own",
+        "AUTO_STOPPED": "Sending on its own was stopped",
+        "HANDED_OVER": "Gotchu handed this over to a person",
+        "HANDED_OVER_PROCEDURE": "“{title}” hands this over to a person",
+        "MEMO_ADDED": "A memo was added for Gotchu"
+      }
+    },
+    "HEADER": {
+      "CHANNEL": {
+        "EMAIL": "Email",
+        "MESSENGER": "Messenger",
+        "WEB": "Web chat"
+      }
     }
   }
 }

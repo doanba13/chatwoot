@@ -239,6 +239,38 @@
     },
     "TOPICS": {
       "ALWAYS_HANDS_OVER": "Übergibt immer"
+    },
+    "THREAD": {
+      "TODAY": "Heute",
+      "YESTERDAY": "Gestern",
+      "SOMEONE": "Jemand",
+      "BY_CUSTOMER": "{name} · Kunde · {channel}",
+      "BY_CUSTOMER_NO_CHANNEL": "{name} · Kunde",
+      "BY_SENT_UNEDITED": "{name} · hat Entwurf v{version} von Gotchu unverändert gesendet",
+      "BY_SENT_EDITED": "{name} · hat Entwurf v{version} von Gotchu bearbeitet gesendet",
+      "BY_SENT_AUTO": "Gotchu · hat Entwurf v{version} selbstständig gesendet",
+      "BY_NOTE": "{name} · private Notiz",
+      "LINE": {
+        "DRAFTED": "Gotchu hat „{title}“ erkannt und eine Antwort entworfen",
+        "DRAFTED_NO_PROCEDURE": "Gotchu hat eine Antwort entworfen",
+        "REDRAFTED": "Gotchu hat die Antwort als v{version} neu entworfen",
+        "REDRAFTED_PLAIN": "Gotchu hat die Antwort neu entworfen",
+        "AUTO_SCHEDULED": "Gotchu hat v{version} zum selbstständigen Senden eingeplant",
+        "AUTO_SCHEDULED_PLAIN": "Gotchu hat den Entwurf zum selbstständigen Senden eingeplant",
+        "AUTO_SENT": "Gotchu hat v{version} selbstständig gesendet",
+        "AUTO_SENT_PLAIN": "Gotchu hat den Entwurf selbstständig gesendet",
+        "AUTO_STOPPED": "Das selbstständige Senden wurde gestoppt",
+        "HANDED_OVER": "Gotchu hat an eine Person übergeben",
+        "HANDED_OVER_PROCEDURE": "„{title}“ übergibt an eine Person",
+        "MEMO_ADDED": "Für Gotchu wurde ein Memo hinzugefügt"
+      }
+    },
+    "HEADER": {
+      "CHANNEL": {
+        "EMAIL": "E-Mail",
+        "MESSENGER": "Messenger",
+        "WEB": "Webchat"
+      }
     }
   }
 }
