@@ -76,4 +76,30 @@ describe('threadItems', () => {
     }).map(i => i.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
+  it('skips a timeline kind it does not know, so no empty day opens', () => {
+    expect(
+      threadItems({
+        messages: [],
+        timeline: [{ at: at(2026, 9, 6, 9, 0).toISOString(), kind: 'future' }],
+      })
+    ).toEqual([]);
+  });
+  it('skips a timeline item with no time instead of dating it 1970', () => {
+    expect(
+      threadItems({ messages: [], timeline: [{ at: null, kind: 'drafted' }] })
+    ).toEqual([]);
+  });
+  it('keeps a message with no usable time and still sorts the rest', () => {
+    const items = threadItems({
+      messages: [
+        { id: 1, createdAt: undefined },
+        msg(2, at(2026, 9, 6, 9, 0)),
+        msg(3, at(2026, 9, 6, 8, 0)),
+      ],
+      timeline: [],
+    });
+    expect(
+      items.filter(i => i.type === 'message').map(i => i.message.id)
+    ).toEqual([3, 2, 1]);
+  });
 });
