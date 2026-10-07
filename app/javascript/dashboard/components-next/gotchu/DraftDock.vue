@@ -408,6 +408,17 @@ const reviewLabel = computed(() => {
       </div>
     </template>
   </div>
+  <!-- Below the draft body and above the footer, whether or not there is a
+    draft: the mode switch must stay on screen when the band is gone, so these
+    sit outside the band's own condition. The container fills them; the dock
+    stays props-only. -->
+  <div
+    v-if="$slots.modes"
+    class="draft-dock__modes px-3 py-2.5 border-t border-[var(--g-border)]"
+  >
+    <slot name="modes" />
+  </div>
+  <slot name="editor" />
 </template>
 
 <style scoped>

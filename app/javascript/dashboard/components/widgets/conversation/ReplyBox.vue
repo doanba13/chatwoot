@@ -17,6 +17,7 @@ import CopilotEditorSection from './CopilotEditorSection.vue';
 import MessageSignatureMissingAlert from './MessageSignatureMissingAlert.vue';
 import ReplyBoxBanner from './ReplyBoxBanner.vue';
 import QuotedEmailPreview from './QuotedEmailPreview.vue';
+import ComposerModes from 'dashboard/components-next/gotchu/ComposerModes.vue';
 import DraftDockContainer from 'dashboard/components-next/gotchu/DraftDockContainer.vue';
 import MemoComposer from 'dashboard/components-next/gotchu/MemoComposer.vue';
 import {
@@ -77,6 +78,7 @@ export default {
     ArticleSearchPopover,
     AttachmentPreview,
     AudioRecorder,
+    ComposerModes,
     DraftDockContainer,
     MemoComposer,
     ReplyBoxBanner,
@@ -1392,6 +1394,7 @@ export default {
   <ReplyBoxBanner :message="message" :is-on-private-note="isOnPrivateNote" />
   <div class="reply-box" :class="replyBoxClass">
     <ReplyTopPanel
+      v-if="composerTab === 'reply'"
       :mode="replyType"
       :conversation-id="conversationId"
       :is-reply-restricted="!canSendPublicReply"
@@ -1405,9 +1408,7 @@ export default {
       :editor-content="message"
       :has-content="hasMeaningfulEditorContent"
       :composer-tab="composerTab"
-      :instruct-available="dockHasDraft"
       @set-reply-mode="setReplyMode"
-      @set-composer-tab="setComposerTab"
       @toggle-editor-size="toggleEditorSize"
       @toggle-copilot="copilot.toggleEditor"
       @execute-copilot-action="executeCopilotAction"
@@ -1429,7 +1430,17 @@ export default {
       :reply-mounted="composerTab === 'reply'"
       @draft-state="onDraftState"
       @wants-reply="setComposerTab('reply')"
-    />
+    >
+      <template #modes>
+        <ComposerModes
+          :mode="composerTab"
+          :instruct-available="dockHasDraft"
+          :has-draft="dockHasDraft"
+          :is-note="isPrivate"
+          @update:mode="setComposerTab"
+        />
+      </template>
+    </DraftDockContainer>
     <MemoComposer
       v-if="composerTab === 'memo'"
       :conversation-id="conversationId"

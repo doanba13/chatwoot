@@ -81,6 +81,21 @@
     "CANCEL": "Cancel"
   },
   "GOTCHU": {
+    "COMPOSER": {
+      "MODES_LABEL": "What you are writing",
+      "MODE": {
+        "INSTRUCT": "Instruct",
+        "REPLY": "Reply",
+        "MEMO": "Memo"
+      },
+      "HINT": {
+        "INSTRUCT": "Gotchu rewrites the draft. Nothing reaches the customer until you press Send.",
+        "REPLY_WITH_DRAFT": "Goes to the customer as you type it. Gotchu’s draft is set aside.",
+        "REPLY": "Goes to the customer as you type it.",
+        "NOTE": "Only your team sees this note.",
+        "MEMO": "Team only. Gotchu uses it in drafts for this store from now on."
+      }
+    },
     "CONFIDENCE": {
       "SURE": "sure",
       "PROBABLY": "probably",

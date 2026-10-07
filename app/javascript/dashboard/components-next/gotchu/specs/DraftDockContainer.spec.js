@@ -75,9 +75,10 @@ const instructError = (status, reason) => {
 // hidden-tab test below count 25 reads instead of 2, one per leaked component.
 const wrappers = [];
 
-const create = (props = {}) => {
+const create = (props = {}, options = {}) => {
   const wrapper = mount(DraftDockContainer, {
     props: { conversationId: 3580, ...props },
+    ...options,
   });
   wrappers.push(wrapper);
   return wrapper;
@@ -85,8 +86,8 @@ const create = (props = {}) => {
 
 // A poll is the only way this surface learns anything, so nearly every test here
 // needs to move the clock. Real timers would make them sleep.
-const mountContainer = async (props = {}) => {
-  const wrapper = create(props);
+const mountContainer = async (props = {}, options = {}) => {
+  const wrapper = create(props, options);
   await flushPromises();
   return wrapper;
 };
@@ -618,23 +619,48 @@ describe('DraftDockContainer gotchu stamp', () => {
     }
   });
 
-  it.each([
-    [true, true],
-    [false, false],
-  ])(
-    'reports a draft to instruct about only where instructing is switched on (instruct %s)',
-    async (instruct, hasDraft) => {
-      AiDraftAPI.getDraft.mockResolvedValue({
-        data: {
-          cycle: reviewing(),
-          draft: { version: 1, body },
-          capabilities: { instruct },
+  it('reports a draft to act on even where instructing is switched off', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue({
+      data: {
+        ...answer(reviewing(), { version: 1, body }).data,
+        capabilities: { instruct: false },
+      },
+    });
+    const wrapper = await mountContainer();
+    expect(wrapper.emitted('draftState').at(-1)).toEqual([{ hasDraft: true }]);
+  });
+
+  it('renders the modes slot with no draft at all', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue({
+      data: { cycle: null, draft: null, trace: [] },
+    });
+    const wrapper = await mountContainer(
+      {},
+      { slots: { modes: '<div data-testid="modes-slot" />' } }
+    );
+    expect(wrapper.find('[data-testid="modes-slot"]').exists()).toBe(true);
+    expect(wrapper.find('.draft-dock__body').exists()).toBe(false);
+  });
+
+  it('puts the modes slot below the draft body and above the editor slot', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue(
+      answer(reviewing(), { version: 1, body })
+    );
+    const wrapper = await mountContainer(
+      {},
+      {
+        slots: {
+          modes: '<div data-testid="modes-slot" />',
+          editor: '<div data-testid="editor-slot" />',
         },
-      });
-      const wrapper = await mountContainer({ conversationId: 3582 });
-      expect(wrapper.emitted('draftState').at(-1)).toEqual([{ hasDraft }]);
-    }
-  );
+      }
+    );
+    const html = wrapper.html();
+    const at = marker => html.indexOf(marker);
+    expect(at('draft-dock__body')).toBeGreaterThan(-1);
+    expect(at('draft-dock__body')).toBeLessThan(at('modes-slot'));
+    expect(at('modes-slot')).toBeLessThan(at('editor-slot'));
+  });
 
   it('asks for the Reply tab and inserts only after it, when the editor is not on screen', async () => {
     // On the Instruct or Memo tab the reply editor is unmounted: an insert

@@ -76,6 +76,21 @@
     "CANCEL": "Abbrechen"
   },
   "GOTCHU": {
+    "COMPOSER": {
+      "MODES_LABEL": "Was Sie schreiben",
+      "MODE": {
+        "INSTRUCT": "Anweisen",
+        "REPLY": "Antworten",
+        "MEMO": "Memo"
+      },
+      "HINT": {
+        "INSTRUCT": "Gotchu schreibt den Entwurf neu. Beim Kunden kommt nichts an, bevor Sie auf Senden drücken.",
+        "REPLY_WITH_DRAFT": "Geht so an den Kunden, wie Sie es schreiben. Der Entwurf von Gotchu wird beiseitegelegt.",
+        "REPLY": "Geht so an den Kunden, wie Sie es schreiben.",
+        "NOTE": "Diese Notiz sieht nur Ihr Team.",
+        "MEMO": "Nur fürs Team. Gotchu nutzt es ab jetzt in Entwürfen für diesen Shop."
+      }
+    },
     "CONFIDENCE": {
       "SURE": "sicher",
       "PROBABLY": "wahrscheinlich",

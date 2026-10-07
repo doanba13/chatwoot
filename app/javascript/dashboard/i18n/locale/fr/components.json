@@ -76,6 +76,21 @@
     "CANCEL": "Annuler"
   },
   "GOTCHU": {
+    "COMPOSER": {
+      "MODES_LABEL": "Ce que vous écrivez",
+      "MODE": {
+        "INSTRUCT": "Instruire",
+        "REPLY": "Répondre",
+        "MEMO": "Mémo"
+      },
+      "HINT": {
+        "INSTRUCT": "Gotchu réécrit le brouillon. Rien n’est envoyé au client tant que vous n’appuyez pas sur Envoyer.",
+        "REPLY_WITH_DRAFT": "Part chez le client tel que vous l’écrivez. Le brouillon de Gotchu est mis de côté.",
+        "REPLY": "Part chez le client tel que vous l’écrivez.",
+        "NOTE": "Seule votre équipe voit cette note.",
+        "MEMO": "Réservé à l’équipe. Gotchu s’en sert désormais dans les brouillons de cette boutique."
+      }
+    },
     "CONFIDENCE": {
       "SURE": "sûr",
       "PROBABLY": "probable",

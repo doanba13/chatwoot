@@ -525,6 +525,32 @@ describe('composer tabs', () => {
     }
   );
 
+  it('renders the reply toolbar only in Reply', async () => {
+    const { wrapper } = mountWith(email);
+    await wrapper.setData({ composerTab: 'instruct' });
+    expect(wrapper.findComponent({ name: 'ReplyTopPanel' }).exists()).toBe(
+      false
+    );
+    await wrapper.setData({ composerTab: 'reply' });
+    expect(wrapper.findComponent({ name: 'ReplyTopPanel' }).exists()).toBe(
+      true
+    );
+  });
+
+  it('switches mode from the radio group under the draft', async () => {
+    const { wrapper } = mountWith(email);
+    wrapper
+      .findComponent({ name: 'DraftDockContainer' })
+      .vm.$emit('draftState', { hasDraft: true });
+    await wrapper.vm.$nextTick();
+    wrapper.vm.setComposerTab('memo');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findComponent({ name: 'ReplyBottomPanel' }).exists()).toBe(
+      false
+    );
+    expect(wrapper.vm.isAValidEvent('cmd_enter')).toBe(false);
+  });
+
   it.each(['instruct', 'memo'])(
     'sends nothing on Enter or Mod+Enter in the %s tab, even with focus left behind',
     async tab => {

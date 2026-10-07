@@ -26,12 +26,6 @@ export default {
       type: String,
       default: 'reply',
     },
-    // The Instruct tab is offered only while the draft dock has a draft to
-    // act on.
-    instructAvailable: {
-      type: Boolean,
-      default: false,
-    },
     mode: {
       type: String,
       default: REPLY_EDITOR_MODES.REPLY,
@@ -69,12 +63,7 @@ export default {
       default: false,
     },
   },
-  emits: [
-    'setReplyMode',
-    'setComposerTab',
-    'toggleEditorSize',
-    'executeCopilotAction',
-  ],
+  emits: ['setReplyMode', 'toggleEditorSize', 'executeCopilotAction'],
   setup(props, { emit }) {
     const setReplyMode = mode => {
       emit('setReplyMode', mode);
@@ -154,15 +143,6 @@ export default {
       // A restricted reply forces note mode, as the previous toggle component did.
       return this.isReplyRestricted || this.mode === REPLY_EDITOR_MODES.NOTE;
     },
-    tabs() {
-      return [
-        ...(this.instructAvailable
-          ? [{ key: 'instruct', label: 'CONVERSATION.REPLYBOX.INSTRUCT' }]
-          : []),
-        { key: 'reply', label: 'CONVERSATION.REPLYBOX.REPLY' },
-        { key: 'memo', label: 'CONVERSATION.REPLYBOX.MEMO' },
-      ];
-    },
     charLengthClass() {
       return this.charactersRemaining < 0 ? 'text-n-ruby-9' : 'text-n-slate-11';
     },
@@ -188,21 +168,6 @@ export default {
   <div
     class="flex justify-between gap-2 h-[3.25rem] items-center ltr:pl-3 ltr:pr-2 rtl:pr-3 rtl:pl-2"
   >
-    <div class="flex items-center gap-1.5" role="tablist">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        type="button"
-        role="tab"
-        class="mode-toggle"
-        :class="{ 'is-active': composerTab === tab.key }"
-        :aria-selected="composerTab === tab.key"
-        :data-testid="`composer-tab-${tab.key}`"
-        @click="$emit('setComposerTab', tab.key)"
-      >
-        {{ $t(tab.label) }}
-      </button>
-    </div>
     <button
       v-if="composerTab === 'reply'"
       type="button"
@@ -266,24 +231,6 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-// The composer tabs are bordered toggles rather than one sliding pill:
-// 4px 10px, control radius, weight 500, active taking the tank ground.
-.mode-toggle {
-  @apply inline-flex items-center gap-1.5 py-1 px-2.5 text-sm font-medium border rounded-[var(--g-radius-control)] border-[var(--g-border)] text-[var(--g-text-muted)] transition-colors duration-[var(--g-dur-hover)] ease-[var(--g-ease-out)];
-
-  &:hover:not(:disabled) {
-    @apply bg-[var(--g-surface-tank)];
-  }
-
-  &.is-active {
-    @apply bg-[var(--g-surface-tank)] border-[var(--g-border-strong)] text-[var(--g-text)];
-  }
-
-  &:disabled {
-    @apply opacity-50 cursor-not-allowed;
-  }
-}
-
 // Private note is a switch inside the Reply tab, not a tab of its own: the
 // canvas draws Instruct · Reply · Memo, and supporters still need notes.
 .note-switch {

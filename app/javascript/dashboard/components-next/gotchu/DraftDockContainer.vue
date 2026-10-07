@@ -660,15 +660,15 @@ const versionLabel = computed(() => {
   return t('GOTCHU.DRAFT.FROM_INSTRUCTION', { version: to.version });
 });
 
-// Whether the dock holds a draft to INSTRUCT about, for the composer's tabs:
-// ReplyBox offers Instruct only while it does. Where instructing is switched
-// off the tab would have no field to type in, so it is not offered there. An
-// instruction in flight keeps it, so the tab does not move mid-redraft.
-// Display only; nothing reads it to send.
+// Whether a draft is on screen to act on, for the composer: ReplyBox offers
+// Instruct and words the Reply hint from it. It does not depend on
+// `instructAvailable` (plan Decision 7): where instructing is switched off the
+// draft is still there to read, insert or send, and ReplyBox shows the
+// Instruct mode only while the box can take one. An instruction in flight keeps
+// it, so the mode does not move mid-redraft. Display only; nothing reads it to
+// send.
 const hasDraft = computed(
-  () =>
-    instructAvailable.value &&
-    (waiting.value || ['ready', 'streaming'].includes(view.value.state))
+  () => waiting.value || ['ready', 'streaming'].includes(view.value.state)
 );
 watch(hasDraft, value => emit('draftState', { hasDraft: value }), {
   immediate: true,
@@ -767,7 +767,10 @@ const dockStreamingText = computed(() =>
     :heading="dockHeading"
     @insert="onInsert"
     @dismiss-outcome="outcome = null"
-  />
+  >
+    <template v-if="$slots.modes" #modes><slot name="modes" /></template>
+    <template v-if="$slots.editor" #editor><slot name="editor" /></template>
+  </DraftDock>
   <!-- The one write on this surface, and a sibling of the dock rather than a row
     inside it: what happens to the typed text depends on how a request this file
     makes turns out, and the dock is props-only by design — it clears its own
