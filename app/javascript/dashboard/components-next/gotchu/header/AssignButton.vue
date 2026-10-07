@@ -1,9 +1,10 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
 import { OnClickOutside } from '@vueuse/components';
 import { useAlert } from 'dashboard/composables';
+import { useAgentsList } from 'dashboard/composables/useAgentsList';
 import Button from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 
@@ -16,31 +17,34 @@ const { t } = useI18n();
 const store = useStore();
 const isOpen = ref(false);
 
-const agents = computed(() => store.getters['agents/getAgents']);
+// The list the sidebar's assignee control uses: the inbox's assignable agents
+// (ConversationBox fetches them per inbox), bots included, with None first
+// while someone is assigned.
+const { agentsList } = useAgentsList(true, { includeAgentBots: true });
 
 const label = computed(() => props.assignee?.name || t('GOTCHU.HEADER.ASSIGN'));
 
+const typeOf = agent => agent.assignee_type || 'User';
+const keyOf = agent => `${typeOf(agent)}:${agent.id}`;
+
 const items = computed(() =>
-  agents.value.map(agent => ({
+  agentsList.value.map(agent => ({
     label: agent.name,
-    value: agent.id,
+    value: keyOf(agent),
     action: 'assign',
     thumbnail: { name: agent.name, src: agent.thumbnail },
-    isSelected: props.assignee?.id === agent.id,
+    isSelected: agent.id !== 0 && props.assignee?.id === agent.id,
   }))
 );
 
-onMounted(() => {
-  if (!agents.value.length) store.dispatch('agents/get');
-});
-
 // The same two dispatches ConversationAction makes: the optimistic local
-// assignee first, then the request.
+// assignee first, then the request. None (id 0) sends null, which unassigns.
 const assign = ({ value }) => {
   isOpen.value = false;
-  const agent = agents.value.find(a => a.id === value);
-  if (!agent) return;
-  const assigneeType = agent.assignee_type || 'User';
+  const picked = agentsList.value.find(a => keyOf(a) === value);
+  if (!picked) return;
+  const agent = picked.id === 0 ? null : picked;
+  const assigneeType = agent ? typeOf(agent) : null;
   store.dispatch('setCurrentChatAssignee', {
     conversationId: props.conversationId,
     assignee: agent,
@@ -49,7 +53,7 @@ const assign = ({ value }) => {
   store
     .dispatch('assignAgent', {
       conversationId: props.conversationId,
-      agentId: agent.id,
+      agentId: agent ? agent.id : null,
       assigneeType,
     })
     .then(() => useAlert(t('CONVERSATION.CHANGE_AGENT')));
