@@ -270,7 +270,10 @@
         "EMAIL": "E-mail",
         "MESSENGER": "Messenger",
         "WEB": "Chat web"
-      }
+      },
+      "ASSIGN": "Attribuer",
+      "MARK_PENDING": "Marquer en attente",
+      "ASSIGN_LABEL": "Attribuer cette conversation"
     }
   }
 }

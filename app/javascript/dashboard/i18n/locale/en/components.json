@@ -275,7 +275,10 @@
         "EMAIL": "Email",
         "MESSENGER": "Messenger",
         "WEB": "Web chat"
-      }
+      },
+      "ASSIGN": "Assign",
+      "MARK_PENDING": "Mark pending",
+      "ASSIGN_LABEL": "Assign this conversation"
     }
   }
 }

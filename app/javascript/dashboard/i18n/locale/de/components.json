@@ -270,7 +270,10 @@
         "EMAIL": "E-Mail",
         "MESSENGER": "Messenger",
         "WEB": "Webchat"
-      }
+      },
+      "ASSIGN": "Zuweisen",
+      "MARK_PENDING": "Als ausstehend markieren",
+      "ASSIGN_LABEL": "Dieses Gespräch zuweisen"
     }
   }
 }

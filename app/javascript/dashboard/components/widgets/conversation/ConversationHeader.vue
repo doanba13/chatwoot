@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 import { useElementSize } from '@vueuse/core';
@@ -15,6 +15,14 @@ import { useInbox } from 'dashboard/composables/useInbox';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
+import Button from 'dashboard/components-next/button/Button.vue';
+import AssignButton from 'dashboard/components-next/gotchu/header/AssignButton.vue';
+import { headerMeta } from 'dashboard/components-next/gotchu/header/headerMeta';
+import { useDraftMeta } from 'dashboard/components-next/gotchu/helpers/draftMeta';
+import {
+  ensureLoaded as ensureStoresLoaded,
+  stores as sharedStores,
+} from 'dashboard/components-next/gotchu/agent/sharedStores';
 
 const props = defineProps({
   chat: {
@@ -142,11 +150,31 @@ const statusLabel = computed(() => {
   return label ? label() : '';
 });
 
-const assigneeName = computed(
-  () =>
-    chatMetadata.value?.assignee?.name ||
-    t('CHAT_LIST.ASSIGNEE_TYPE_TABS.unassigned')
+const draftMeta = useDraftMeta(computed(() => props.chat.id));
+
+watch(accountId, id => ensureStoresLoaded(id), { immediate: true });
+
+const meta = computed(() =>
+  headerMeta({
+    storeKey: props.chat.custom_attributes?.store_key,
+    stores: sharedStores.value,
+    draftMeta: draftMeta.value,
+    inboxChannelType: inbox.value?.channel_type,
+    t,
+  })
 );
+
+const isPending = computed(
+  () => currentChat.value.status === wootConstants.STATUS_TYPE.PENDING
+);
+
+const markPending = () =>
+  store
+    .dispatch('toggleStatus', {
+      conversationId: props.chat.id,
+      status: wootConstants.STATUS_TYPE.PENDING,
+    })
+    .then(() => useAlert(t('CONVERSATION.CHANGE_STATUS')));
 
 const hasSlaPolicyId = computed(
   () => props.chat?.applied_sla?.id && !currentContact.value?.blocked
@@ -163,14 +191,13 @@ const copyConversationId = async () => {
 </script>
 
 <template>
-  <!-- inbox-spec.md "Thread / Header": 56px, `border-bottom`, padding `0 20px`,
-    gap 12 — ONE line. The two-line version this replaces is what made the
-    title read as stuck to the top of the window: a 40px block centred in 56px
-    leaves 8px, where the list header beside it starts at 14px. A single 20px
-    line in the same row sits at 18px and needs no padding bolted on. -->
+  <!-- Spec header: store dot, contact › subject on line one; "store · channel ·
+    language", the id and the snooze note on line two. Assign and Mark pending
+    sit with the status chip; Resolve lives in MoreActions' sibling and stays
+    slate, so Send draft is the only brand-coloured control. -->
   <div
     ref="conversationHeader"
-    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-5 pt-3 pb-2 xl:py-0 h-24 xl:h-14"
+    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-5 xl:px-7 pt-3 pb-2 xl:py-4 h-auto"
   >
     <div
       class="flex items-center justify-start w-full xl:w-auto max-w-full min-w-0 xl:flex-1"
@@ -180,52 +207,53 @@ const copyConversationId = async () => {
         :back-url="backButtonUrl"
         class="me-2"
       />
-      <!-- No avatar here. The spec's header line is the contact, a `›`, and
-        the subject — the face belongs to the list row, where it distinguishes
-        one conversation from another; in a thread there is only one person and
-        it is repeating information. -->
-      <div class="flex flex-row items-center min-w-0 gap-1.5 flex-1">
-        <span
-          class="text-sm font-semibold truncate leading-tight text-n-slate-12"
-        >
-          {{ currentContact.name }}
-        </span>
-        <fluent-icon
-          v-if="!isHMACVerified"
-          v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
-          size="14"
-          class="text-[var(--g-text)] my-0 mx-0 min-w-[14px] flex-shrink-0"
-          icon="warning"
-        />
-        <template v-if="subjectParts.length">
+      <span
+        v-if="meta.storeIndex"
+        aria-hidden="true"
+        class="flex-shrink-0 me-2.5 size-2 rounded-full"
+        :style="{ backgroundColor: `var(--g-store-${meta.storeIndex})` }"
+      />
+      <div class="flex flex-col min-w-0 gap-0.5 flex-1">
+        <div class="flex flex-row items-center min-w-0 gap-1.5">
           <span
-            aria-hidden="true"
-            class="flex-shrink-0 text-sm leading-tight text-[var(--g-text-muted)]"
+            class="text-base font-semibold truncate leading-6 text-n-slate-12"
           >
-            {{ SUBJECT_SEPARATOR }}
+            {{ currentContact.name }}
           </span>
-          <span
-            :title="mailSubject"
-            class="flex-1 min-w-0 text-sm leading-tight truncate text-[var(--g-text-muted)]"
-          >
+          <fluent-icon
+            v-if="!isHMACVerified"
+            v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
+            size="14"
+            class="text-[var(--g-text)] my-0 mx-0 min-w-[14px] flex-shrink-0"
+            icon="warning"
+          />
+          <template v-if="subjectParts.length">
             <span
-              v-for="part in subjectParts"
-              :key="part.id"
-              :class="part.mono ? 'font-[family-name:var(--g-font-mono)]' : ''"
-              >{{ part.text }}</span
+              aria-hidden="true"
+              class="flex-shrink-0 text-sm leading-tight text-[var(--g-text-muted)]"
             >
-          </span>
-        </template>
-        <!-- The conversation id, the inbox and the snooze note used to be a
-          second line under the title, which is what made this header two rows
-          tall. They stay — each is a real affordance, the id is click-to-copy —
-          but inline and muted, after the subject rather than beneath it. The id
-          is mono, as every identifier in this design is. When the pane is
-          narrow (contact panel open) it gives way before the contact's name
-          rather than running under the status chips. -->
+              {{ SUBJECT_SEPARATOR }}
+            </span>
+            <span
+              :title="mailSubject"
+              class="flex-1 min-w-0 text-sm leading-tight truncate text-[var(--g-text-muted)]"
+            >
+              <span
+                v-for="part in subjectParts"
+                :key="part.id"
+                :class="
+                  part.mono ? 'font-[family-name:var(--g-font-mono)]' : ''
+                "
+                >{{ part.text }}</span
+              >
+            </span>
+          </template>
+        </div>
         <div
-          class="flex items-center min-w-0 shrink-[4] gap-1 overflow-hidden text-xs conversation--header--actions text-[var(--g-text-muted)] text-ellipsis whitespace-nowrap"
+          class="flex items-center min-w-0 gap-1 overflow-hidden text-xs conversation--header--actions text-[var(--g-text-muted)] text-ellipsis whitespace-nowrap"
         >
+          <span v-if="meta.line" class="truncate">{{ meta.line }}</span>
+          <span v-if="meta.line">•</span>
           <button
             type="button"
             class="truncate font-[family-name:var(--g-font-mono)] text-xs text-[var(--g-text-muted)] hover:text-[var(--g-text)] !p-0 cursor-pointer"
@@ -236,9 +264,6 @@ const copyConversationId = async () => {
           <span v-if="hasMultipleInboxes">•</span>
           <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />
           <span v-if="isSnoozed">•</span>
-          <!-- Snooze was the one amber in this header. Ink keeps it the single
-            unmuted item in an otherwise muted row, which is the job the amber
-            was doing. -->
           <span v-if="isSnoozed" class="font-medium text-[var(--g-text)]">
             {{ snoozedDisplayText }}
           </span>
@@ -256,16 +281,24 @@ const copyConversationId = async () => {
         class="hidden md:flex"
       />
       <ConversationCallButton :inbox="inbox" :chat="currentChat" />
+      <AssignButton
+        :conversation-id="chat.id"
+        :assignee="chatMetadata?.assignee"
+      />
+      <Button
+        v-if="!isPending"
+        :label="t('GOTCHU.HEADER.MARK_PENDING')"
+        outline
+        slate
+        sm
+        class="flex-shrink-0"
+        @click="markPending"
+      />
       <span
         v-if="statusLabel"
         class="flex-shrink-0 hidden md:inline-flex items-center px-2.5 py-1 text-xs leading-4 border rounded-[var(--g-radius-control)] border-[var(--g-border)] text-[var(--g-text-muted)]"
       >
         {{ statusLabel }}
-      </span>
-      <span
-        class="flex-shrink-0 hidden md:inline-flex items-center max-w-[10rem] truncate px-2.5 py-1 text-xs leading-4 border rounded-[var(--g-radius-control)] border-[var(--g-border)] text-[var(--g-text-muted)]"
-      >
-        {{ assigneeName }}
       </span>
       <MoreActions :conversation-id="currentChat.id" />
     </div>
