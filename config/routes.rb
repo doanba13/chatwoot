@@ -187,6 +187,8 @@ Rails.application.routes.draw do
               # which sent messages came from which draft, and the agent's own
               # events. One Rails read for two gateway reads.
               resource :gotchu_thread, only: [:show]
+              # The order context for the native drawer: a panel read, one gateway call.
+              resource :gotchu_context, only: [:show]
             end
             member do
               post :mute
