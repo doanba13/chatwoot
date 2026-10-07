@@ -2,7 +2,7 @@
 const shipping = {
   shipped: true,
   trackingNumber: 'YWBZ1234567890',
-  carrier: 'YWBZ',
+  carrier: 'YunExpress',
   trackingUrl: null,
   shippedAt: '2026-10-01T08:00:00Z',
   ageDays: 5,

@@ -1848,7 +1848,14 @@ describe('the composer placement', () => {
 
     // The panel now imports the order drawer from components-next/gotchu, so
     // the guard names the draft, not the directory.
-    expect(panel).not.toContain('DraftDock');
+    const gotchuImports = [
+      ...panel.matchAll(/from '(dashboard\/components-next\/gotchu\/[^']*)'/g),
+    ].map(m => m[1]);
+    gotchuImports.forEach(spec =>
+      expect(spec).toMatch(
+        /components-next\/gotchu\/(drawer\/|helpers\/draftMeta$)/
+      )
+    );
     expect(panel).not.toContain('gotchu_draft');
     expect(panel).not.toContain('is_gotchu_draft_open');
     expect(

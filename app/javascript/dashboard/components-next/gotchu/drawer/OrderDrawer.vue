@@ -93,7 +93,7 @@ const contactLink = computed(() =>
         size="xs"
         :label="t('GOTCHU.DRAWER.REFRESH')"
         :aria-label="t('GOTCHU.DRAWER.REFRESH_LABEL')"
-        :disabled="refreshing"
+        :disabled="refreshing || state === 'loading'"
         @click="refresh"
       />
     </div>
@@ -189,7 +189,9 @@ const contactLink = computed(() =>
           <a
             v-if="contactLink"
             :href="contactLink"
-            class="text-[13px] font-medium text-[var(--g-brand)]"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-[13px] font-medium underline text-[var(--g-text)]"
           >
             {{ t('GOTCHU.DRAWER.OPEN_CONTACT') }}
           </a>
@@ -236,7 +238,7 @@ const contactLink = computed(() =>
         </DrawerCard>
 
         <DrawerCard
-          v-if="!view.ambiguous"
+          v-if="view.order"
           :title="t('GOTCHU.DRAWER.ACTIONS')"
           :default-open="false"
         >
