@@ -401,7 +401,7 @@ export default {
       );
     },
     replyButtonLabel() {
-      let sendMessageText = this.$t('CONVERSATION.REPLYBOX.SEND');
+      let sendMessageText = this.$t('GOTCHU.COMPOSER.SEND_REPLY');
       if (this.isPrivate) {
         sendMessageText = this.$t('CONVERSATION.REPLYBOX.CREATE');
       }
@@ -1028,6 +1028,49 @@ export default {
         useAlert(errorMessage);
       }
     },
+    // Send draft (Instruct footer): the draft on screen, verbatim, stamped with
+    // the cycle and version it was shown at. Through the composer's own send,
+    // never a gateway route (plan Decision 1). No quoted email, no attachments,
+    // and the supporter's saved Reply text is left alone.
+    async sendDraftMessage({ text, stamp }) {
+      if (!this.canSendPublicReply) return;
+      // The agent's signature, exactly where a typed public reply would carry
+      // it (the same flag and helper `getMessagePayload`'s path uses). Always
+      // public here, so `isPrivate` is not consulted.
+      const signed =
+        this.sendWithSignature && this.messageSignature
+          ? appendSignature(
+              text,
+              this.messageSignature,
+              getEffectiveChannelType(
+                this.channelType,
+                this.inbox?.medium || ''
+              )
+            )
+          : text;
+      const payload = {
+        conversationId: this.currentChat.id,
+        message: signed,
+        // The draft goes to the customer: that is what the button says,
+        // whatever the Reply mode's note switch was left on.
+        private: false,
+        sender: this.sender,
+        contentAttributes: { gotchu: stamp },
+      };
+      if (this.toEmails) payload.toEmails = this.toEmails;
+      if (this.ccEmails) payload.ccEmails = this.ccEmails;
+      if (this.bccEmails) payload.bccEmails = this.bccEmails;
+      try {
+        await this.$store.dispatch('createPendingMessageAndSend', payload);
+        emitter.emit(BUS_EVENTS.SCROLL_TO_MESSAGE);
+        emitter.emit(BUS_EVENTS.MESSAGE_SENT);
+        forgetInsertedDraft(this.conversationId);
+      } catch (error) {
+        useAlert(
+          error?.response?.data?.error || this.$t('CONVERSATION.MESSAGE_ERROR')
+        );
+      }
+    },
     async onSendWhatsAppReply(messagePayload) {
       this.sendMessage({
         conversationId: this.currentChat.id,
@@ -1393,6 +1436,40 @@ export default {
 <template>
   <ReplyBoxBanner :message="message" :is-on-private-note="isOnPrivateNote" />
   <div class="reply-box" :class="replyBoxClass">
+    <!-- The draft dock, inside this container and directly above the editor, is
+      the whole of `docs/gotchu/inbox-spec.md` §Composer: "one bordered
+      container … holding an optional draft dock above the editor". It renders
+      nothing at all until there is a draft, so on most conversations the
+      composer looks exactly as it did — and it draws its own bottom border,
+      which is the separator between the band and the editor under it.
+
+      Outside the copilot `<Transition>` below on purpose: inside it, toggling
+      Copilot would remount the container, throw away a draft already read and
+      start the poll again. -->
+    <DraftDockContainer
+      :conversation-id="conversationId"
+      :channel-type="channelType"
+      :instruct-mode="composerTab === 'instruct'"
+      :reply-mounted="composerTab === 'reply'"
+      :send-blocked-reason="
+        canSendPublicReply ? null : $t('GOTCHU.COMPOSER.SEND_DRAFT_RESTRICTED')
+      "
+      @draft-state="onDraftState"
+      @wants-reply="setComposerTab('reply')"
+      @send-draft="sendDraftMessage"
+    >
+      <template #modes>
+        <ComposerModes
+          :mode="composerTab"
+          :instruct-available="dockHasDraft"
+          :has-draft="dockHasDraft"
+          :is-note="isPrivate"
+          @update:mode="setComposerTab"
+        />
+      </template>
+    </DraftDockContainer>
+    <!-- The Reply toolbar (note switch, length warning, copilot, expand) sits
+      with the editor it belongs to, below the draft card. -->
     <ReplyTopPanel
       v-if="composerTab === 'reply'"
       :mode="replyType"
@@ -1413,34 +1490,6 @@ export default {
       @toggle-copilot="copilot.toggleEditor"
       @execute-copilot-action="executeCopilotAction"
     />
-    <!-- The draft dock, inside this container and directly above the editor, is
-      the whole of `docs/gotchu/inbox-spec.md` §Composer: "one bordered
-      container … holding an optional draft dock above the editor". It renders
-      nothing at all until there is a draft, so on most conversations the
-      composer looks exactly as it did — and it draws its own bottom border,
-      which is the separator between the band and the editor under it.
-
-      Outside the copilot `<Transition>` below on purpose: inside it, toggling
-      Copilot would remount the container, throw away a draft already read and
-      start the poll again. -->
-    <DraftDockContainer
-      :conversation-id="conversationId"
-      :channel-type="channelType"
-      :instruct-mode="composerTab === 'instruct'"
-      :reply-mounted="composerTab === 'reply'"
-      @draft-state="onDraftState"
-      @wants-reply="setComposerTab('reply')"
-    >
-      <template #modes>
-        <ComposerModes
-          :mode="composerTab"
-          :instruct-available="dockHasDraft"
-          :has-draft="dockHasDraft"
-          :is-note="isPrivate"
-          @update:mode="setComposerTab"
-        />
-      </template>
-    </DraftDockContainer>
     <MemoComposer
       v-if="composerTab === 'memo'"
       :conversation-id="conversationId"

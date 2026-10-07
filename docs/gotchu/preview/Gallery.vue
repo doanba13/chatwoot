@@ -448,16 +448,13 @@ const replayDock = () => {
       <ComposerCard>
         <DraftDock
           state="ready"
-          write-enabled
+          mode="instruct"
           :text="draftText"
-          confidence="probably"
           :expires-at="inMinutes(18.5)"
-          :adjust="['shorter', 'warmer', 'in French']"
+          instruct-available
           @insert="noteDockAction('insert')"
           @send="noteDockAction('send')"
-          @discard="noteDockAction('discard')"
-          @adjust="noteDockAction(`adjust: ${$event}`)"
-          @instruct="noteDockAction(`instruct: ${$event}`)"
+          @instruct="noteDockAction('redraft')"
         />
       </ComposerCard>
       <!-- The cap, against an ordinary 812-character draft. Uncapped this dock
@@ -470,7 +467,6 @@ const replayDock = () => {
         <DraftDock
           state="ready"
           :text="longDraftText"
-          confidence="sure"
           :expires-at="inMinutes(42)"
         />
       </ComposerCard>
@@ -494,15 +490,12 @@ const replayDock = () => {
       <ComposerCard>
         <DraftDock
           :state="dockState"
-          write-enabled
+          mode="instruct"
           streaming-text="Reading the order…"
           :text="draftText"
-          confidence="sure"
-          @stop="noteDockAction('stop')"
           @insert="noteDockAction('insert')"
           @send="noteDockAction('send')"
-          @discard="noteDockAction('discard')"
-          @instruct="noteDockAction(`instruct: ${$event}`)"
+          @instruct="noteDockAction('redraft')"
         />
       </ComposerCard>
       <!-- The loader, standing still in `streaming` so it can be looked at
@@ -535,7 +528,7 @@ const replayDock = () => {
       <ComposerCard>
         <DraftDock
           state="ready"
-          write-enabled
+          mode="instruct"
           :text="draftText"
           :expires-at="inMinutes(-5)"
         />

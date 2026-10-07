@@ -4,15 +4,16 @@ import { useI18n } from 'vue-i18n';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
-import Input from 'dashboard/components-next/input/Input.vue';
 import AgentDot from 'dashboard/components-next/gotchu/AgentDot.vue';
 import AITrace from 'dashboard/components-next/gotchu/AITrace.vue';
-import ConfidenceChip from 'dashboard/components-next/gotchu/ConfidenceChip.vue';
+import { BRAND_BUTTON_CLASS } from 'dashboard/components-next/gotchu/agent/brandButton';
 
-// The band above the reply box: streaming, then ready, then gone. Exactly two
-// paths out of a ready draft — insert it into the editor, or send it as it
-// stands — plus discard. A third path would be a second way to approve, and
-// approval is the one gesture that has to stay countable.
+// The draft card: streaming, then ready, then gone, with the mode switch and
+// the mode's editor under it and, in Instruct, the footer. Exactly two paths out
+// of a ready draft — insert it into the editor, or send it as it stands — plus
+// Redraft, which reaches the agent and never the customer. A third path would
+// be a second way to approve, and approval is the one gesture that has to stay
+// countable.
 //
 // `streaming` is a design state this build can render but cannot yet produce:
 // there is no push anywhere between the worker and a browser.
@@ -31,40 +32,35 @@ const props = defineProps({
     type: String,
     default: '',
   },
-  // Null renders no chip. See ConfidenceChip: there is no signal to default to.
-  confidence: {
-    type: String,
-    default: null,
-  },
-  // Named adjustments offered under the draft ("shorter", "warmer"). Each is
-  // emitted verbatim; the dock does not know what any of them mean.
-  adjust: {
-    type: Array,
-    default: () => [],
-  },
   // When the review window closes, as an ISO timestamp. Null renders nothing —
-  // there is no window to default to, the same reasoning as `confidence`.
+  // there is no window to default to.
   expiresAt: {
     type: String,
     default: null,
   },
-  // Whether anything behind the gestures that reach the model or the customer
-  // actually exists in this deployment. False today everywhere: the gateway's
-  // write routes are dark (`GESTURE_SURFACE` unset) and their authorization is
-  // not built.
-  //
-  // What it does is HIDE Send, Discard, the adjustments and the instruction
-  // field, not disable them. A disabled control says "not yet, wait for it",
-  // which an agent does; a live-looking one that silently does nothing is worse
-  // than no control at all, because the agent believes the reply went out. Insert
-  // is unaffected — it is local, reversible, and reaches no customer.
-  //
-  // Fail-closed, so a new mount site gets the read-only dock unless it says
-  // otherwise. The design gallery and this component's own spec pass true
-  // deliberately; they are showing the dock, not shipping it.
-  writeEnabled: {
+  // Which composer mode is open. Only Instruct has this footer: Reply sends
+  // through the composer's own panel and Memo has its own button.
+  mode: {
+    type: String,
+    default: 'reply',
+  },
+  // Whether the server can forward an instruction. False hides Redraft; Insert
+  // to edit and Send draft stay (spec §2.2).
+  instructAvailable: {
     type: Boolean,
     default: false,
+  },
+  // The box is empty or a submission is in flight. The container knows; the
+  // dock only draws it.
+  redraftDisabled: {
+    type: Boolean,
+    default: false,
+  },
+  // Why Send draft cannot post a public reply here, already translated. Set
+  // disables the button and says the reason beside it.
+  sendBlockedReason: {
+    type: String,
+    default: null,
   },
   // What the agent looked at to write this draft, already worded as AITrace's
   // `{ kind, did, result }` steps. Empty renders no trace at all.
@@ -92,28 +88,12 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits([
-  'insert',
-  'send',
-  'discard',
-  'stop',
-  'adjust',
-  'instruct',
-  'dismissOutcome',
-]);
+defineEmits(['insert', 'send', 'instruct', 'dismissOutcome']);
 
-// Free text to the agent, and only ever that. Typing "send it" here emits
-// `instruct` like anything else — the dock has no path from a typed string to
-// `send`, which is the whole of invariant 5 expressed as a component: a
-// classifier can be wrong about what a sentence meant, a button press cannot.
-const instruction = ref('');
-
-const submitInstruction = () => {
-  const text = instruction.value.trim();
-  if (!text) return;
-  emit('instruct', text);
-  instruction.value = '';
-};
+// Insert and Send act on the draft on screen, so neither while it is still
+// being written or rewritten (invariant 6: the dock reads `streaming` while an
+// instruction is in flight).
+const isReady = computed(() => props.state === 'ready');
 
 // Streaming and ready share one header row — same height, same dot, same
 // position — so becoming ready reveals a body under a header that has not
@@ -210,9 +190,9 @@ const reviewLabel = computed(() => {
           {{ versionLabel }}
         </span>
       </span>
-      <!-- One group, so the review window sits beside the chip rather than
-        taking a third slot in a `justify-between` row and pushing the chip off
-        the right edge of a 340px sidebar. Nothing in here is taller than the
+      <!-- One group, so the review window and the loader share the right-hand
+        slot rather than each taking a third one in a `justify-between` row.
+        Nothing in here is taller than the
         title beside it, so the shared header still does not move. -->
       <div class="flex items-center gap-2.5">
         <span v-if="reviewLabel" class="text-xs text-[var(--g-text-muted)]">
@@ -230,10 +210,8 @@ const reviewLabel = computed(() => {
           the label, for two reasons. `streamingText` ends in an ellipsis
           ("Writing a new draft…") and has to keep doing so, so dots set
           immediately after it read as a stutter; and this is the slot the
-          confidence chip takes once the draft is ready, which makes working →
-          assessed one thing changing rather than two appearing. The leading dot
-          and the title do not move, which is what the header comment above
-          protects.
+          review window takes once the draft is ready. The leading dot and the
+          title do not move, which is what the header comment above protects.
 
           What the dots claim is that work is happening, and only that. Nothing
           streams between the worker and a browser, which is why `streamingText`
@@ -255,32 +233,12 @@ const reviewLabel = computed(() => {
             class="draft-dock__dot w-1.5 h-1.5 rounded-full bg-[var(--g-agent)]"
           />
         </span>
-        <!-- The spine draws an `S` key beside this. That shortcut does not
-          exist, and ReplyTopPanel already settled how this fork handles a drawn
-          key with no binding behind it: name the real one, or draw none. -->
-        <button
-          v-if="isStreaming && writeEnabled"
-          type="button"
-          class="p-0 text-xs transition-colors bg-transparent border-0 cursor-pointer duration-[var(--g-dur-hover)] text-[var(--g-text-muted)] hover:text-[var(--g-text)]"
-          @click="$emit('stop')"
-        >
-          {{ $t('GOTCHU.DRAFT.STOP') }}
-        </button>
-        <!-- `!isStreaming` spelled out rather than leaning on the `v-else-if`:
-          once the stop button can be hidden by `writeEnabled`, the else branch
-          alone would let the chip take the slot it is not allowed to take while a
-          draft is still arriving. -->
-        <ConfidenceChip
-          v-else-if="!isStreaming && confidence"
-          :level="confidence"
-        />
       </div>
     </div>
     <!-- The body is mounted only once the draft is ready, rather than revealed
-      from a collapsed shell: a shell keeps Send draft in the DOM while the
-      draft is still arriving, where it is one Tab away from sending a reply
-      nobody has read. A header that does not move is worth an animation; a
-      reachable send button is not. -->
+      from a collapsed shell. The footer's Insert to edit and Send draft stay
+      disabled until then, so nothing is one Tab away from sending a reply
+      nobody has read. -->
     <template v-if="!isStreaming">
       <AITrace v-if="trace.length" :steps="trace" />
       <!-- Capped, because an uncapped draft takes the screen the customer's
@@ -304,9 +262,9 @@ const reviewLabel = computed(() => {
 
         A ceiling, not a height: `max-height` alone and no `min-height`, so a
         two-line draft is two lines tall with no scrollbar and no reserved space.
-        Only this element scrolls — the header above it and Insert below it are
-        siblings, not children, because an Insert that can scroll out of view is
-        the failure a cap must not introduce. `tabindex="0"` with `role="region"`
+        Only this element scrolls — the header above it and the footer below it
+        are siblings, not children, because a Send draft that can scroll out of
+        view is the failure a cap must not introduce. `tabindex="0"` with `role="region"`
         is what makes a scroll container reachable without a mouse; a capped div
         with neither is text a keyboard user cannot read to the end. -->
       <div
@@ -321,91 +279,6 @@ const reviewLabel = computed(() => {
           <span :key="text" class="block">{{ text }}</span>
         </Transition>
       </div>
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex gap-2">
-          <!-- These two were the same button twice — same colour, same
-            variant, same size — and only one of them reaches a customer.
-            Insert puts the draft in the editor and is reversible; Send draft
-            is not. So Send is the solid one, and each carries its own glyph:
-            an arrow into the composer, and a paper plane out. -->
-          <Button
-            color="teal"
-            variant="outline"
-            size="sm"
-            icon="i-lucide-corner-down-left"
-            :label="$t('GOTCHU.DRAFT.INSERT')"
-            @click="$emit('insert')"
-          />
-          <Button
-            v-if="writeEnabled"
-            color="teal"
-            variant="solid"
-            size="sm"
-            icon="i-lucide-send"
-            :label="$t('GOTCHU.DRAFT.SEND')"
-            @click="$emit('send')"
-          />
-          <!-- `link`, not the spine's `ghost`: Chatwoot's slate ghost is
-            `text-n-slate-12`, the strongest text on the card, which made discard
-            the loudest label in the dock and louder still in dark mode. Slate
-            link is the muted one, and dropping the box leaves the two paths that
-            reach a customer as the only things shaped like buttons. -->
-          <!-- Gated with Send, although discarding reaches no customer: there is
-            no route behind it either, and a Discard that leaves the draft exactly
-            where it was is read as the panel being broken. -->
-          <Button
-            v-if="writeEnabled"
-            color="slate"
-            variant="link"
-            size="sm"
-            :label="$t('GOTCHU.DRAFT.DISCARD')"
-            @click="$emit('discard')"
-          />
-        </div>
-        <span
-          v-if="writeEnabled && adjust.length"
-          class="inline-flex flex-wrap items-center gap-1.5 text-xs text-[var(--g-text-muted)]"
-        >
-          {{ $t('GOTCHU.DRAFT.ADJUST') }}
-          <!-- The middots are the spine's: with gaps alone, three adjustments
-            read as one phrase rather than three separate things to press. -->
-          <template v-for="(option, index) in adjust" :key="option">
-            <span v-if="index" aria-hidden="true">·</span>
-            <button
-              type="button"
-              class="p-0 text-xs transition-colors bg-transparent border-0 cursor-pointer duration-[var(--g-dur-hover)] text-[var(--g-agent)] hover:underline"
-              @click="$emit('adjust', option)"
-            >
-              {{ option }}
-            </button>
-          </template>
-        </span>
-      </div>
-      <!-- The adjustments above are shortcuts for the common cases; this is the
-        channel the desk actually works in. Every instruction the reply loop
-        handles today arrives as German or French prose in a Lark thread, so a
-        dock with only fixed chips cannot express "add the tracking number
-        first" — and that instruction is precisely the one the deployed model
-        mis-reads as a send. Here it cannot be one. -->
-      <div v-if="writeEnabled" class="flex items-center gap-2">
-        <Input
-          v-model="instruction"
-          size="sm"
-          class="flex-1 min-w-0"
-          custom-input-class="!bg-[var(--g-surface)]"
-          :placeholder="$t('GOTCHU.DRAFT.INSTRUCT_PLACEHOLDER')"
-          @enter="submitInstruction"
-        />
-        <Button
-          color="teal"
-          variant="outline"
-          size="sm"
-          icon="i-lucide-arrow-up"
-          :aria-label="$t('GOTCHU.DRAFT.INSTRUCT_SUBMIT')"
-          :disabled="!instruction.trim()"
-          @click="submitInstruction"
-        />
-      </div>
     </template>
   </div>
   <!-- Below the draft body and above the footer, whether or not there is a
@@ -419,6 +292,50 @@ const reviewLabel = computed(() => {
     <slot name="modes" />
   </div>
   <slot name="editor" />
+  <!-- Instruct's footer: Redraft · Insert to edit · Send draft. Send draft is
+    the one brand-coloured control on the screen (spec §2.3). -->
+  <div
+    v-if="mode === 'instruct' && state !== 'none'"
+    class="draft-dock__footer flex flex-wrap items-center gap-2 px-3 pt-2 pb-3"
+  >
+    <Button
+      v-if="instructAvailable"
+      data-testid="composer-redraft"
+      color="slate"
+      variant="outline"
+      size="sm"
+      :label="$t('GOTCHU.COMPOSER.REDRAFT')"
+      :disabled="!isReady || redraftDisabled"
+      @click="$emit('instruct')"
+    />
+    <span class="flex-1" />
+    <span
+      v-if="sendBlockedReason"
+      class="text-xs text-pretty text-[var(--g-text-muted)]"
+    >
+      {{ sendBlockedReason }}
+    </span>
+    <Button
+      data-testid="composer-insert"
+      color="slate"
+      variant="outline"
+      size="sm"
+      :label="$t('GOTCHU.COMPOSER.INSERT_TO_EDIT')"
+      :disabled="!isReady"
+      @click="$emit('insert')"
+    />
+    <Button
+      data-testid="composer-send-draft"
+      color="slate"
+      size="sm"
+      icon="i-lucide-send"
+      :class="BRAND_BUTTON_CLASS"
+      :label="$t('GOTCHU.DRAFT.SEND')"
+      :title="sendBlockedReason || undefined"
+      :disabled="!isReady || !!sendBlockedReason"
+      @click="$emit('send')"
+    />
+  </div>
 </template>
 
 <style scoped>

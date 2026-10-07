@@ -1,4 +1,4 @@
-import { shallowMount } from '@vue/test-utils';
+import { flushPromises, shallowMount } from '@vue/test-utils';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 import { nextTick } from 'vue';
 import { createStore } from 'vuex';
@@ -52,6 +52,8 @@ const buildStore = ({
   drafts = {},
   inboxes,
   isMetaMessageSendingDisabled = false,
+  signature = '',
+  uiSettings = {},
 }) =>
   createStore({
     state: {
@@ -81,8 +83,8 @@ const buildStore = ({
       getSelectedChat: s => s.chat,
       getCurrentUser: () => ({ id: 7, name: 'Agent', accounts: [] }),
       getCurrentAccountId: () => 1,
-      getMessageSignature: () => '',
-      getUISettings: () => ({}),
+      getMessageSignature: () => signature,
+      getUISettings: () => uiSettings,
       getLastEmailInSelectedChat: () => null,
       'globalConfig/get': () => ({}),
       'globalConfig/isMetaMessageSendingDisabled': () =>
@@ -109,6 +111,9 @@ const mountWith = ({
   drafts,
   inboxes,
   isMetaMessageSendingDisabled,
+  signature,
+  signatureEnabled = false,
+  stubs = {},
 }) => {
   const store = buildStore({
     inbox,
@@ -117,6 +122,12 @@ const mountWith = ({
     drafts,
     inboxes,
     isMetaMessageSendingDisabled,
+    signature,
+    // The key `fetchSignatureFlagFromUISettings` reads for this channel.
+    uiSettings: {
+      [`${(inbox?.channel_type || '').toLowerCase().replace('::', '_')}_signature_enabled`]:
+        signatureEnabled,
+    },
   });
   const wrapper = shallowMount(ReplyBox, {
     global: {
@@ -124,7 +135,7 @@ const mountWith = ({
       mocks: { $t: key => key },
       // The bottom panel sits inside a <Transition>, which shallowMount stubs
       // without rendering its children.
-      stubs: { transition: false },
+      stubs: { transition: false, ...stubs },
     },
   });
   return { wrapper, store };
@@ -580,5 +591,158 @@ describe('composer tabs', () => {
     const { wrapper } = mountWith(email);
     await wrapper.setData({ composerTab: 'reply', isFocused: true });
     expect(wrapper.vm.isAValidEvent('cmd_enter')).toBe(true);
+  });
+});
+
+describe('Send draft', () => {
+  const email = { inbox: { channel_type: 'Channel::Email' } };
+  const restricted = {
+    inbox: { channel_type: 'Channel::Instagram' },
+    isMetaMessageSendingDisabled: true,
+  };
+  const stamp = { cycleId: 12, draftVersion: 1 };
+
+  afterEach(() => {
+    createPendingMessageAndSend.mockClear();
+  });
+
+  it('posts the draft verbatim, stamped, as a public reply', async () => {
+    const { wrapper } = mountWith(email);
+    await wrapper.vm.sendDraftMessage({ text: 'Hallo Sabine', stamp });
+    expect(createPendingMessageAndSend).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: 'Hallo Sabine',
+        private: false,
+        contentAttributes: { gotchu: stamp },
+      })
+    );
+  });
+
+  it('sends the draft public even with the note switch on', async () => {
+    const { wrapper } = mountWith(email);
+    wrapper.vm.setReplyMode(REPLY_EDITOR_MODES.NOTE);
+    await wrapper.vm.sendDraftMessage({ text: 'Hallo', stamp });
+    expect(createPendingMessageAndSend).toHaveBeenLastCalledWith(
+      expect.objectContaining({ private: false })
+    );
+  });
+
+  it('sends nothing where a public reply is restricted', async () => {
+    const { wrapper } = mountWith(restricted);
+    await wrapper.vm.sendDraftMessage({ text: 'Hallo', stamp });
+    expect(createPendingMessageAndSend).not.toHaveBeenCalled();
+  });
+
+  it('tells the dock why Send draft is off where a public reply is restricted', () => {
+    const dock = w => w.findComponent({ name: 'DraftDockContainer' });
+    expect(dock(mountWith(email).wrapper).props('sendBlockedReason')).toBe(
+      null
+    );
+    expect(dock(mountWith(restricted).wrapper).props('sendBlockedReason')).toBe(
+      'GOTCHU.COMPOSER.SEND_DRAFT_RESTRICTED'
+    );
+  });
+
+  it('sends what the dock emits through the composer, from the sendDraft event', async () => {
+    const { wrapper } = mountWith(email);
+    wrapper
+      .findComponent({ name: 'DraftDockContainer' })
+      .vm.$emit('sendDraft', { text: 'Hallo Sabine', stamp });
+    await flushPromises();
+    expect(createPendingMessageAndSend).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: 'Hallo Sabine',
+        contentAttributes: { gotchu: stamp },
+      })
+    );
+  });
+
+  it('leaves the supporter’s saved reply alone', async () => {
+    const { wrapper, store } = mountWith(email);
+    const spy = vi.spyOn(store, 'dispatch');
+    await wrapper.vm.sendDraftMessage({ text: 'Hallo', stamp });
+    expect(spy).not.toHaveBeenCalledWith(
+      'draftMessages/delete',
+      expect.anything()
+    );
+  });
+
+  it('appends the agent signature once where the inbox signs replies', async () => {
+    const { wrapper } = mountWith({
+      ...email,
+      signature: 'Anna\nPersoliebe',
+      signatureEnabled: true,
+    });
+    await wrapper.vm.sendDraftMessage({ text: 'Hallo Sabine', stamp });
+    expect(createPendingMessageAndSend).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        // Exactly what `appendSignature` writes for email: one delimiter
+        // block, the signature's line break as a markdown hard break.
+        message: 'Hallo Sabine\n\n--\n\nAnna\\\nPersoliebe',
+        contentAttributes: { gotchu: stamp },
+      })
+    );
+  });
+
+  it('sends no signature where the inbox does not sign replies', async () => {
+    const { wrapper } = mountWith({
+      ...email,
+      signature: 'Anna',
+      signatureEnabled: false,
+    });
+    await wrapper.vm.sendDraftMessage({ text: 'Hallo Sabine', stamp });
+    expect(createPendingMessageAndSend).toHaveBeenLastCalledWith(
+      expect.objectContaining({ message: 'Hallo Sabine' })
+    );
+  });
+
+  it('labels the Reply send as Send reply, keeping the hotkey', () => {
+    const { wrapper } = mountWith(email);
+    expect(bottomPanel(wrapper).sendButtonText).toMatch(
+      /^GOTCHU\.COMPOSER\.SEND_REPLY \(/
+    );
+  });
+});
+
+describe('composer card wiring', () => {
+  const email = { inbox: { channel_type: 'Channel::Email' } };
+  // A stub that renders its slots, so the modes slot ReplyBox fills is real.
+  const slotted = {
+    DraftDockContainer: {
+      name: 'DraftDockContainer',
+      props: ['sendBlockedReason'],
+      template:
+        '<div class="dock-stub"><slot name="modes" /><slot name="editor" /></div>',
+    },
+  };
+
+  it('switches mode from the radio group it puts in the modes slot', async () => {
+    const { wrapper } = mountWith({ ...email, stubs: slotted });
+    const modes = wrapper.findComponent({ name: 'ComposerModes' });
+    expect(modes.exists()).toBe(true);
+    expect(modes.props('isNote')).toBe(false);
+
+    modes.vm.$emit('update:mode', 'memo');
+    await nextTick();
+
+    expect(wrapper.vm.composerTab).toBe('memo');
+  });
+
+  it('tells the radio group when the note switch is on', async () => {
+    const { wrapper } = mountWith({ ...email, stubs: slotted });
+    wrapper.vm.setReplyMode(REPLY_EDITOR_MODES.NOTE);
+    await nextTick();
+    expect(
+      wrapper.findComponent({ name: 'ComposerModes' }).props('isNote')
+    ).toBe(true);
+  });
+
+  it('puts the Reply toolbar with the editor, below the draft card', () => {
+    const { wrapper } = mountWith({ ...email, stubs: slotted });
+    const html = wrapper.html();
+    expect(html.indexOf('dock-stub')).toBeGreaterThan(-1);
+    expect(html.indexOf('dock-stub')).toBeLessThan(
+      html.indexOf('reply-top-panel')
+    );
   });
 });

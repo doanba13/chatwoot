@@ -94,7 +94,22 @@
         "REPLY": "Goes to the customer as you type it.",
         "NOTE": "Only your team sees this note.",
         "MEMO": "Team only. Gotchu uses it in drafts for this store from now on."
-      }
+      },
+      "REDRAFT": "Redraft",
+      "INSERT_TO_EDIT": "Insert to edit",
+      "SEND_REPLY": "Send reply",
+      "SEND_DRAFT_RESTRICTED": "Replies are closed on this conversation, so the draft cannot be sent.",
+      "WORKING_TITLE": "Gotchu is redrafting",
+      "STEP_RECEIVED": "Instruction received",
+      "STEP_REREAD_ORDER": "Re-read the thread and order {order}",
+      "STEP_REREAD": "Re-read the thread",
+      "STEP_WRITING": "Writing v{version}…",
+      "STOP": "Stop",
+      "STOPPED": "Stopped. v{version} stays.",
+      "STOP_TOO_LATE": "Too late to stop: v{version} was already written.",
+      "STOP_TOO_LATE_OTHER": "Too late to stop: the instruction had already finished.",
+      "STOP_FAILED": "Could not stop it. It may still finish.",
+      "TRACE_MEMO_USED": "memo used"
     },
     "CONFIDENCE": {
       "SURE": "sure",

@@ -247,7 +247,13 @@ describe('DraftDockContainer cycle state mapping', () => {
     // And the previous version is not on screen, because it is not what the
     // supporter asked for any more.
     expect(wrapper.text()).not.toContain(body);
-    expect(wrapper.text()).not.toContain('Insert');
+    // Nothing to insert or send while it is written: the footer is disabled.
+    expect(
+      wrapper.find('[data-testid="composer-insert"]').attributes('disabled')
+    ).toBeDefined();
+    expect(
+      wrapper.find('[data-testid="composer-send-draft"]').attributes('disabled')
+    ).toBeDefined();
   });
 
   const latest = { version: 1, body };
@@ -646,8 +652,10 @@ describe('DraftDockContainer gotchu stamp', () => {
     AiDraftAPI.getDraft.mockResolvedValue(
       answer(reviewing(), { version: 1, body })
     );
+    // Outside Instruct the editor slot is the parent's; in Instruct the
+    // container fills it with its own box (see the instruct box block).
     const wrapper = await mountContainer(
-      {},
+      { instructMode: false },
       {
         slots: {
           modes: '<div data-testid="modes-slot" />',
@@ -744,18 +752,17 @@ describe('DraftDockContainer write surface', () => {
     );
   });
 
-  it('offers Insert and nothing else while the write routes are dark', async () => {
-    const wrapper = await mountContainer();
-    const labels = wrapper.findAll('button').map(button => button.text());
-
-    // Not disabled — absent. The gateway's write routes are unreachable
-    // (`GESTURE_SURFACE` unset) and their authorization is not built, so every
-    // one of these would be a press that silently did nothing, which an agent
-    // reads as "the reply went out".
-    expect(labels).toEqual(['Insert']);
-    expect(wrapper.text()).not.toContain('Send draft');
+  it('offers Redraft, Insert to edit and Send draft, and never Discard or adjustments', async () => {
+    const wrapper = await mountContainer({ instructMode: true });
+    const labels = wrapper
+      .findAll('button')
+      .map(b => b.text())
+      .filter(Boolean);
+    expect(labels).toEqual(
+      expect.arrayContaining(['Insert to edit', 'Send draft'])
+    );
     expect(wrapper.text()).not.toContain('Discard');
-    expect(wrapper.find('input').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Adjust:');
   });
 
   it('offers no adjustments either, whatever it is handed', async () => {
@@ -765,10 +772,145 @@ describe('DraftDockContainer write surface', () => {
   });
 });
 
+// Spec §2.2: one text box. The dock's own input is gone, so the container is
+// where typed text now lives, and these hold invariant 5 there: typed text only
+// ever reaches `AiDraftAPI.instruct`, and Send draft sends the draft shown.
+describe('DraftDockContainer instruct box', () => {
+  const ready = (version, text, extra = {}) => ({
+    data: {
+      ...answer(reviewing({ id: 12 }), { version, body: text }).data,
+      conversation: { channel: 'email' },
+      capabilities: { instruct: true },
+      ...extra,
+    },
+  });
+
+  beforeEach(() => {
+    AiDraftAPI.getDraft.mockResolvedValue(ready(1, body));
+    AiDraftAPI.instruct.mockResolvedValue({ data: {} });
+  });
+
+  it('routes a typed instruction to the agent and never to the customer', async () => {
+    const wrapper = await mountContainer({ instructMode: true });
+    await wrapper.find('textarea').setValue('send it');
+    await wrapper.find('[data-testid="composer-redraft"]').trigger('click');
+    await flushPromises();
+    expect(AiDraftAPI.instruct).toHaveBeenCalledWith(
+      3580,
+      expect.objectContaining({ text: 'send it' })
+    );
+    expect(wrapper.emitted('sendDraft')).toBeUndefined();
+  });
+
+  it('treats Mod+Enter in the box as Redraft, never as a send', async () => {
+    const wrapper = await mountContainer({ instructMode: true });
+    await wrapper.find('textarea').setValue('send it now');
+    await wrapper
+      .find('textarea')
+      .trigger('keydown', { key: 'Enter', metaKey: true });
+    await flushPromises();
+    expect(AiDraftAPI.instruct).toHaveBeenCalledTimes(1);
+    expect(wrapper.emitted('sendDraft')).toBeUndefined();
+  });
+
+  it('sends the draft shown, never the text in the box', async () => {
+    const wrapper = await mountContainer({ instructMode: true });
+    await wrapper.find('textarea').setValue('make it shorter');
+    await wrapper.find('[data-testid="composer-send-draft"]').trigger('click');
+    expect(wrapper.emitted('sendDraft')).toEqual([
+      [{ text: body, stamp: { cycleId: 12, draftVersion: 1 } }],
+    ]);
+    expect(AiDraftAPI.instruct).not.toHaveBeenCalled();
+  });
+
+  it('emits the cycle and the version shown on the pill, and does not throw', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue(ready(3, 'v3 text'));
+    const wrapper = await mountContainer({ instructMode: true });
+    expect(wrapper.text()).toContain('v3');
+    await wrapper.find('[data-testid="composer-send-draft"]').trigger('click');
+    // Pins the snapshot's local name: a shadowed `draftVersion` throws here.
+    expect(wrapper.emitted('sendDraft')).toEqual([
+      [{ text: 'v3 text', stamp: { cycleId: 12, draftVersion: 3 } }],
+    ]);
+  });
+
+  it('stamps the version of the text it sends, from one snapshot', async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountContainer({ instructMode: true });
+    AiDraftAPI.getDraft.mockResolvedValue(ready(2, 'v2 text'));
+    vi.advanceTimersByTime(15000);
+    await flushPromises();
+    await wrapper.find('[data-testid="composer-send-draft"]').trigger('click');
+    expect(wrapper.emitted('sendDraft').at(-1)).toEqual([
+      { text: 'v2 text', stamp: { cycleId: 12, draftVersion: 2 } },
+    ]);
+  });
+
+  it('sends nothing while an instruction is in flight', async () => {
+    const wrapper = await mountContainer({ instructMode: true });
+    AiDraftAPI.getDraft.mockResolvedValue(
+      ready(1, body, { instruction: { state: 'working' } })
+    );
+    await wrapper.find('textarea').setValue('kürzer bitte');
+    await wrapper.find('[data-testid="composer-redraft"]').trigger('click');
+    await flushPromises();
+    const send = wrapper.find('[data-testid="composer-send-draft"]');
+    expect(send.attributes('disabled')).toBeDefined();
+    await send.trigger('click');
+    expect(wrapper.emitted('sendDraft')).toBeUndefined();
+  });
+
+  it('shows no textarea and no Redraft where instructing is off, and still offers Send draft', async () => {
+    AiDraftAPI.getDraft.mockResolvedValue({
+      data: {
+        ...answer(reviewing({ id: 12 }), { version: 1, body }).data,
+        capabilities: { instruct: false },
+      },
+    });
+    const wrapper = await mountContainer({ instructMode: true });
+    expect(wrapper.find('textarea').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="composer-redraft"]').exists()).toBe(
+      false
+    );
+    expect(wrapper.find('[data-testid="composer-send-draft"]').exists()).toBe(
+      true
+    );
+    expect(wrapper.text()).toContain(
+      'Instructions are not configured on this desk'
+    );
+  });
+
+  it('disables Send draft where a public reply is restricted, and says why', async () => {
+    const wrapper = await mountContainer({
+      instructMode: true,
+      sendBlockedReason:
+        'Replies are closed on this conversation, so the draft cannot be sent.',
+    });
+    const send = wrapper.find('[data-testid="composer-send-draft"]');
+    expect(send.attributes('disabled')).toBeDefined();
+    expect(wrapper.text()).toContain('Replies are closed on this conversation');
+    await send.trigger('click');
+    expect(wrapper.emitted('sendDraft')).toBeUndefined();
+  });
+
+  it('puts the box in the editor slot, between the mode switch and the footer', async () => {
+    const wrapper = await mountContainer(
+      { instructMode: true },
+      { slots: { modes: '<div data-testid="modes-slot" />' } }
+    );
+    const html = wrapper.html();
+    const at = marker => html.indexOf(marker);
+    expect(at('draft-dock__body')).toBeLessThan(at('modes-slot'));
+    expect(at('modes-slot')).toBeLessThan(at('<textarea'));
+    expect(at('<textarea')).toBeLessThan(at('composer-send-draft'));
+  });
+});
+
 describe('DraftDockContainer instruct', () => {
   const field = wrapper => wrapper.findComponent(DraftInstruct);
-  const input = wrapper => field(wrapper).find('input');
-  const arrow = wrapper => field(wrapper).find('button');
+  const input = wrapper => field(wrapper).find('textarea');
+  // Redraft lives in the dock's footer now, not beside the field.
+  const arrow = wrapper => wrapper.find('[data-testid="composer-redraft"]');
 
   const readyToInstruct = async () => {
     AiDraftAPI.getDraft.mockResolvedValue(
@@ -816,16 +958,6 @@ describe('DraftDockContainer instruct', () => {
     expect(input(wrapper).attributes('maxlength')).toBe('2000');
   });
 
-  it('opens no other gesture with it', async () => {
-    // The capability is instruct and only instruct. A send reaches a customer.
-    const wrapper = await readyToInstruct();
-    const labels = wrapper.findAll('button').map(button => button.text());
-
-    expect(labels).toEqual(['Insert', '']);
-    expect(wrapper.text()).not.toContain('Send draft');
-    expect(wrapper.text()).not.toContain('Discard');
-  });
-
   it('offers nothing to instruct while a draft is still being written', async () => {
     AiDraftAPI.getDraft.mockResolvedValue(
       answerWithInstruct(reviewing({ state: 'redrafting' }))
@@ -833,7 +965,8 @@ describe('DraftDockContainer instruct', () => {
 
     const wrapper = await mountContainer();
 
-    expect(field(wrapper).exists()).toBe(false);
+    expect(input(wrapper).attributes('disabled')).toBeDefined();
+    expect(arrow(wrapper).attributes('disabled')).toBeDefined();
   });
 
   it('forwards the typed instruction against the cycle on screen', async () => {
@@ -913,9 +1046,10 @@ describe('DraftDockContainer instruct', () => {
     await flushPromises();
 
     // Accepted, and now the instruction itself is in flight: the field stays
-    // out of reach until the read says how it turned out (see the outcome block
+    // locked until the read says how it turned out (see the outcome block
     // below).
-    expect(field(wrapper).exists()).toBe(false);
+    expect(input(wrapper).attributes('disabled')).toBeDefined();
+    expect(arrow(wrapper).attributes('disabled')).toBeDefined();
   });
 
   it('clears the field once the instruction is accepted', async () => {
@@ -1077,8 +1211,9 @@ describe('DraftDockContainer instruct', () => {
 
 describe('DraftDockContainer instruction outcome', () => {
   const field = wrapper => wrapper.findComponent(DraftInstruct);
-  const input = wrapper => field(wrapper).find('input');
-  const arrow = wrapper => field(wrapper).find('button');
+  const input = wrapper => field(wrapper).find('textarea');
+  // Redraft lives in the dock's footer now, not beside the field.
+  const arrow = wrapper => wrapper.find('[data-testid="composer-redraft"]');
 
   // The poll is the only way an outcome arrives, so every test here runs on a
   // fake clock from before the mount.
@@ -1350,11 +1485,12 @@ describe('DraftDockContainer instruction outcome', () => {
     expect(wrapper.text()).toContain('Kein Entwurf.');
   });
 
-  it('offers no instruction field while one is in flight', async () => {
+  it('locks the instruction field while one is in flight', async () => {
     // A second instruction would be about a draft that is about to change.
     const { wrapper } = await inFlightFor();
 
-    expect(field(wrapper).exists()).toBe(false);
+    expect(input(wrapper).attributes('disabled')).toBeDefined();
+    expect(arrow(wrapper).attributes('disabled')).toBeDefined();
   });
 
   it('dismisses the outcome line', async () => {

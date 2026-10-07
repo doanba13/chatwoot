@@ -3,7 +3,6 @@ import path from 'node:path';
 import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { withFullI18n } from 'test-i18n';
-import Input from 'dashboard/components-next/input/Input.vue';
 import AITrace from '../AITrace.vue';
 import DraftDock from '../DraftDock.vue';
 
@@ -13,47 +12,17 @@ withFullI18n();
 
 const text = 'Ihre Sendung ist unterwegs.';
 
-// `writeEnabled` is opted into here rather than defaulted, because the dock
-// defaults it to false: these tests are about the dock's full shape, and the
-// read-only shape gets its own block at the bottom.
+// Instruct mode by default: it is the only mode with a footer, and most of
+// these tests are about the gestures in it.
 const mountComponent = (props = {}) =>
   mount(DraftDock, {
-    props: { state: 'ready', text, writeEnabled: true, ...props },
+    props: { state: 'ready', text, mode: 'instruct', ...props },
   });
 
 const buttonLabelled = (wrapper, label) =>
   wrapper.findAll('button').find(button => button.text() === label);
 
-const instructSubmit = wrapper =>
-  wrapper.find('button[aria-label="Send instruction to Gotchu"]');
-
 const draftBody = wrapper => wrapper.find('.draft-dock__body');
-
-// The cap is read back out of the rendered class rather than hardcoded here, so
-// raising it in the component fails these tests instead of quietly passing them.
-const capPxOf = wrapper => {
-  const cap = draftBody(wrapper)
-    .classes()
-    .find(name => name.startsWith('max-h-['));
-
-  return Number(cap?.match(/\[(\d+)px\]/)?.[1]);
-};
-
-// Measured on staging in a 1000px viewport against real production drafts: the
-// dock rendered 329px for conversation 3572's 774-character draft and 349px for
-// 3580's 815-character one, leaving the reply box 68–70% of the window and the
-// customer's own message clipped to 216–236px.
-const MEASURED_DOCK_PX = 349;
-
-// `text-sm` is 14px/20px, so the body's line box is 20px. Backing that out of
-// both measurements agrees on the chrome around it: 329 − 12×20 = 349 − 13×20.
-const LINE_BOX_PX = 20;
-const DOCK_CHROME_PX = 89;
-
-// 800 characters, the middle of the 700–850 this agent writes routinely.
-const eightHundredChars = 'Ihre Sendung ist unterwegs. '
-  .repeat(40)
-  .slice(0, 800);
 
 // Read for the two assertions that are about a stylesheet rather than about a
 // rendered component — see the reduced-motion test for why that is the strongest
@@ -84,90 +53,83 @@ describe('DraftDock', () => {
     expect(wrapper.text()).toBe('');
   });
 
-  it('offers exactly two paths out of a ready draft, plus discard', async () => {
+  it('offers Insert to edit and Send draft out of a ready draft', async () => {
     const wrapper = mountComponent();
     expect(wrapper.text()).toContain(text);
 
-    await buttonLabelled(wrapper, 'Insert').trigger('click');
+    await buttonLabelled(wrapper, 'Insert to edit').trigger('click');
     await buttonLabelled(wrapper, 'Send draft').trigger('click');
-    await buttonLabelled(wrapper, 'Discard').trigger('click');
 
     expect(wrapper.emitted('insert')).toHaveLength(1);
     expect(wrapper.emitted('send')).toHaveLength(1);
-    expect(wrapper.emitted('discard')).toHaveLength(1);
+    expect(wrapper.text()).not.toContain('Discard');
+    expect(wrapper.text()).not.toContain('Adjust:');
   });
 
-  it('hands an adjustment back verbatim, since it does not know what one means', async () => {
-    const wrapper = mountComponent({ adjust: ['shorter', 'in French'] });
-
-    await buttonLabelled(wrapper, 'in French').trigger('click');
-
-    expect(wrapper.emitted('adjust')[0]).toEqual(['in French']);
-  });
-
-  it('renders no confidence chip when there is no level to render', () => {
-    expect(mountComponent().text()).not.toContain('probably');
-    expect(mountComponent({ confidence: 'probably' }).text()).toContain(
-      'probably'
-    );
-  });
-
-  it('routes a typed instruction to the agent and never to the customer', async () => {
-    const wrapper = mountComponent();
-
-    // The sentence a supporter is most likely to type is also the one the
-    // deployed classifier gets wrong. Here it cannot be a send: there is no
-    // path from the field to `send`, whatever the words are.
-    await wrapper.find('input').setValue('send it');
-    await instructSubmit(wrapper).trigger('click');
-
-    expect(wrapper.emitted('instruct')[0]).toEqual(['send it']);
+  it('emits send only from the Send draft button', async () => {
+    const wrapper = mountComponent({
+      state: 'ready',
+      text: 'Hallo',
+      mode: 'instruct',
+    });
+    await wrapper.find('[data-testid="composer-insert"]').trigger('click');
     expect(wrapper.emitted('send')).toBeUndefined();
-    expect(wrapper.find('input').element.value).toBe('');
+    await wrapper.find('[data-testid="composer-send-draft"]').trigger('click');
+    expect(wrapper.emitted('send')).toHaveLength(1);
   });
 
-  it('submits an instruction on enter as well as on the button', async () => {
-    const wrapper = mountComponent();
-
-    await wrapper.find('input').setValue('add the tracking number first');
-    await wrapper.findComponent(Input).vm.$emit('enter');
-
-    expect(wrapper.emitted('instruct')[0]).toEqual([
-      'add the tracking number first',
-    ]);
+  it('renders no footer outside Instruct mode', () => {
+    expect(
+      mountComponent({ state: 'ready', text: 'Hallo', mode: 'reply' })
+        .find('[data-testid="composer-send-draft"]')
+        .exists()
+    ).toBe(false);
   });
 
-  it('sends nothing for an instruction that is only whitespace', async () => {
-    const wrapper = mountComponent();
-
-    await wrapper.find('input').setValue('   ');
-
-    expect(instructSubmit(wrapper).attributes('disabled')).toBeDefined();
-
-    await instructSubmit(wrapper).trigger('click');
-
-    expect(wrapper.emitted('instruct')).toBeUndefined();
+  it('offers Redraft only where instructing is available, and emits instruct from it', async () => {
+    expect(
+      mountComponent().find('[data-testid="composer-redraft"]').exists()
+    ).toBe(false);
+    const wrapper = mountComponent({ instructAvailable: true });
+    await wrapper.find('[data-testid="composer-redraft"]').trigger('click');
+    expect(wrapper.emitted('instruct')).toHaveLength(1);
+    expect(wrapper.emitted('send')).toBeUndefined();
   });
 
-  it('offers no way to send a draft that is still arriving', async () => {
+  it('disables Redraft when the box cannot be submitted', () => {
+    const wrapper = mountComponent({
+      instructAvailable: true,
+      redraftDisabled: true,
+    });
+    expect(
+      wrapper.find('[data-testid="composer-redraft"]').attributes('disabled')
+    ).toBeDefined();
+  });
+
+  it('disables Send draft with a reason, and says it beside the button', () => {
+    const reason = 'Replies are closed on this conversation.';
+    const wrapper = mountComponent({ sendBlockedReason: reason });
+    const send = wrapper.find('[data-testid="composer-send-draft"]');
+    expect(send.attributes('disabled')).toBeDefined();
+    expect(send.attributes('title')).toBe(reason);
+    expect(wrapper.text()).toContain(reason);
+  });
+
+  it('offers no way to send or insert a draft that is still arriving', () => {
     const wrapper = mountComponent({
       state: 'streaming',
       streamingText: 'Reading the order…',
-      confidence: 'probably',
+      instructAvailable: true,
     });
 
     expect(wrapper.text()).toContain('Reading the order…');
-    expect(buttonLabelled(wrapper, 'Send draft')).toBeUndefined();
-    expect(buttonLabelled(wrapper, 'Insert')).toBeUndefined();
-    expect(wrapper.find('input').exists()).toBe(false);
-
-    // Streaming and ready share a header, so the chip has a slot to appear in
-    // before there is a draft to be confident about. It must not take it.
-    expect(wrapper.text()).not.toContain('probably');
-
-    await buttonLabelled(wrapper, 'stop and edit').trigger('click');
-
-    expect(wrapper.emitted('stop')).toHaveLength(1);
+    ['composer-send-draft', 'composer-insert', 'composer-redraft'].forEach(
+      id => {
+        expect(
+          wrapper.find(`[data-testid="${id}"]`).attributes('disabled')
+        ).toBeDefined();
+      }
+    );
   });
 });
 
@@ -208,7 +170,7 @@ describe('DraftDock review window', () => {
     // never be the reason Send draft stops working.
     const wrapper = mountComponent({ expiresAt: inMinutes(-5) });
 
-    expect(buttonLabelled(wrapper, 'Insert')).toBeDefined();
+    expect(buttonLabelled(wrapper, 'Insert to edit')).toBeDefined();
     expect(buttonLabelled(wrapper, 'Send draft')).toBeDefined();
   });
 
@@ -239,150 +201,6 @@ describe('DraftDock review window', () => {
   });
 });
 
-describe('DraftDock with no write surface behind it', () => {
-  // What the sidebar actually renders today: the gateway's write routes are dark
-  // (`GESTURE_SURFACE` unset everywhere) and their authorization is not built.
-  const readOnly = (props = {}) =>
-    mount(DraftDock, { props: { state: 'ready', text, ...props } });
-
-  it('defaults to read-only, so a new mount site cannot get live buttons by accident', () => {
-    const wrapper = readOnly();
-
-    expect(buttonLabelled(wrapper, 'Insert')).toBeDefined();
-    expect(buttonLabelled(wrapper, 'Send draft')).toBeUndefined();
-  });
-
-  it('hides the gestures rather than disabling them', () => {
-    // A disabled Send says "not yet, wait for it", and an agent waits. A Send
-    // that looks live and silently does nothing is worse: they believe the reply
-    // went out. So these are absent from the DOM, not greyed out.
-    const wrapper = readOnly({ adjust: ['shorter', 'in French'] });
-
-    expect(wrapper.text()).not.toContain('Send draft');
-    expect(wrapper.text()).not.toContain('Discard');
-    expect(wrapper.text()).not.toContain('Adjust:');
-    expect(wrapper.text()).not.toContain('in French');
-    expect(wrapper.find('input').exists()).toBe(false);
-    expect(instructSubmit(wrapper).exists()).toBe(false);
-  });
-
-  it('still shows the draft and the review window', () => {
-    // The point of the section is that an agent can read what Gotchu wrote and
-    // how long is left to act on it. Neither needs a write route.
-    const wrapper = readOnly({ expiresAt: inMinutes(18.5) });
-
-    expect(wrapper.text()).toContain(text);
-    expect(wrapper.text()).toContain('18 min to review');
-  });
-
-  it('caps the draft body in the read-only shape too', () => {
-    // The shape that actually ships, and the one the measurements were taken
-    // against: no Send, no instruction field, just the draft and Insert.
-    expect(capPxOf(readOnly({ text: eightHundredChars }))).toBe(170);
-  });
-
-  it('hides stop and still keeps the confidence chip out of the streaming header', () => {
-    // `stop` is a write too. Removing it left the chip's `v-else-if` as the only
-    // branch, which would have let it appear before there was a draft to be
-    // confident about — the thing the streaming test above asserts against.
-    const wrapper = readOnly({
-      state: 'streaming',
-      streamingText: 'Writing a new draft…',
-      confidence: 'probably',
-    });
-
-    expect(wrapper.text()).toContain('Writing a new draft…');
-    expect(wrapper.text()).not.toContain('stop and edit');
-    expect(wrapper.text()).not.toContain('probably');
-  });
-});
-
-describe('DraftDock draft body height', () => {
-  it('caps the body at half a line box, not at a whole number of lines', () => {
-    const wrapper = mountComponent({ text: eightHundredChars });
-
-    expect(draftBody(wrapper).classes()).toContain('overflow-y-auto');
-    expect(capPxOf(wrapper)).toBe(170);
-
-    // 170 is 8.5 × 20px, and the half is the affordance. A whole multiple (160,
-    // 180, 200) ends on a complete line and therefore reads as the end of the
-    // draft; half a line is unmistakably a draft that continues — and being the
-    // native clip rather than an overlay, it cannot obscure the line it hints at.
-    expect((capPxOf(wrapper) / LINE_BOX_PX) % 1).toBe(0.5);
-  });
-
-  it('brings an 800-character draft materially below the height it measured at', () => {
-    // jsdom has no layout engine and vitest runs with `css: false`, so the SFC's
-    // styles are never applied and no rendered height can be read here. What can
-    // be read is the cap the dock actually renders; the chrome around it is
-    // backed out of the two staging measurements, which agree on 89px.
-    const wrapper = mountComponent({ text: eightHundredChars });
-
-    expect(eightHundredChars).toHaveLength(800);
-    expect(DOCK_CHROME_PX + capPxOf(wrapper)).toBe(259);
-    // A cap above 180px would not be worth the change, so pin the margin rather
-    // than only the direction: 259px against the 349px measured.
-    expect(DOCK_CHROME_PX + capPxOf(wrapper)).toBeLessThan(
-      MEASURED_DOCK_PX - 80
-    );
-  });
-
-  it('keeps the header and Insert outside the scroll container', () => {
-    // The failure a cap must not introduce: Insert scrolling out of view. Both
-    // are siblings of the body rather than children, so this is assertable
-    // without layout.
-    const wrapper = mountComponent({
-      text: eightHundredChars,
-      expiresAt: inMinutes(18.5),
-    });
-    const scroller = draftBody(wrapper).element;
-
-    expect(scroller.contains(buttonLabelled(wrapper, 'Insert').element)).toBe(
-      false
-    );
-    expect(
-      scroller.contains(buttonLabelled(wrapper, 'Send draft').element)
-    ).toBe(false);
-    expect(scroller.textContent).not.toContain('18 min to review');
-    expect(scroller.textContent).toContain(eightHundredChars.slice(0, 40));
-  });
-
-  it('scrolls the body and nothing else', () => {
-    // So the cap cannot later be satisfied by wrapping the whole band in one
-    // overflow container, which is the shape that takes Insert with it.
-    const wrapper = mountComponent({ text: eightHundredChars });
-
-    expect(wrapper.findAll('[class*="overflow-y-"]')).toHaveLength(1);
-    expect(wrapper.find('[class*="overflow-y-"]').classes()).toContain(
-      'draft-dock__body'
-    );
-  });
-
-  it('leaves a short draft alone: the cap is a ceiling, not a height', () => {
-    const classes = draftBody(
-      mountComponent({ text: 'Danke, das ist erledigt.' })
-    ).classes();
-
-    // `max-height` alone. An `h-` or `min-h-` would reserve the full cap under a
-    // one-line draft, and `overflow-y-scroll` would draw a scrollbar track on a
-    // body that has nothing to scroll.
-    expect(classes).toContain('max-h-[170px]');
-    expect(classes.some(name => /^h-|^min-h-/.test(name))).toBe(false);
-    expect(classes).not.toContain('overflow-y-scroll');
-  });
-
-  it('makes the scroll container reachable and scrollable without a mouse', () => {
-    // A capped div with no tabindex is text a keyboard user cannot read to the
-    // end of: the wheel scrolls it and nothing else does. `role="region"` with a
-    // name is what makes the focus stop mean something when it is announced.
-    const scroller = draftBody(mountComponent({ text: eightHundredChars }));
-
-    expect(scroller.attributes('tabindex')).toBe('0');
-    expect(scroller.attributes('role')).toBe('region');
-    expect(scroller.attributes('aria-label')).toBe('Draft from Gotchu');
-  });
-});
-
 describe('DraftDock streaming loader', () => {
   const streaming = (props = {}) =>
     mountComponent({
@@ -398,13 +216,6 @@ describe('DraftDock streaming loader', () => {
     expect(dots(mountComponent())).toHaveLength(0);
     expect(streaming().find('.draft-dock__loader').exists()).toBe(true);
     expect(mountComponent().find('.draft-dock__loader').exists()).toBe(false);
-  });
-
-  it('shows the loader whether or not there is a write surface behind it', () => {
-    // It is not a gesture. `writeEnabled` hides Stop in this state; hiding the
-    // one thing that says work is happening with it would leave a header that
-    // looks stuck, which is what the read-only dock actually renders today.
-    expect(dots(streaming({ writeEnabled: false }))).toHaveLength(3);
   });
 
   it('says work is happening without claiming text is arriving', () => {

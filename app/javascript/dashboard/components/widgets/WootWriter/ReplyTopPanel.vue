@@ -232,9 +232,11 @@ export default {
 
 <style lang="scss" scoped>
 // Private note is a switch inside the Reply tab, not a tab of its own: the
-// canvas draws Instruct · Reply · Memo, and supporters still need notes.
+// canvas draws Instruct · Reply · Memo, and supporters still need notes. It
+// leads the row now the tab list is gone, so no `ml-auto`: that pushed it onto
+// the right-hand group and left the row's left half empty.
 .note-switch {
-  @apply inline-flex items-center gap-2 ltr:ml-auto rtl:mr-auto text-sm font-medium text-[var(--g-text-muted)] bg-transparent border-0;
+  @apply inline-flex items-center gap-2 text-sm font-medium text-[var(--g-text-muted)] bg-transparent border-0;
 
   &.is-on {
     @apply text-[var(--g-text)];

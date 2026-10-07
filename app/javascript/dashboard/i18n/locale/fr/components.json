@@ -89,7 +89,22 @@
         "REPLY": "Part chez le client tel que vous l’écrivez.",
         "NOTE": "Seule votre équipe voit cette note.",
         "MEMO": "Réservé à l’équipe. Gotchu s’en sert désormais dans les brouillons de cette boutique."
-      }
+      },
+      "REDRAFT": "Réécrire",
+      "INSERT_TO_EDIT": "Insérer pour modifier",
+      "SEND_REPLY": "Envoyer la réponse",
+      "SEND_DRAFT_RESTRICTED": "Les réponses sont fermées sur cette conversation, le brouillon ne peut donc pas être envoyé.",
+      "WORKING_TITLE": "Gotchu réécrit le brouillon",
+      "STEP_RECEIVED": "Instruction reçue",
+      "STEP_REREAD_ORDER": "Fil et commande {order} relus",
+      "STEP_REREAD": "Fil relu",
+      "STEP_WRITING": "Rédaction de la v{version}…",
+      "STOP": "Arrêter",
+      "STOPPED": "Arrêté. La v{version} reste.",
+      "STOP_TOO_LATE": "Trop tard pour arrêter : la v{version} était déjà écrite.",
+      "STOP_TOO_LATE_OTHER": "Trop tard pour arrêter : l’instruction était déjà traitée.",
+      "STOP_FAILED": "Impossible d’arrêter. Elle peut encore aboutir.",
+      "TRACE_MEMO_USED": "mémo utilisé"
     },
     "CONFIDENCE": {
       "SURE": "sûr",

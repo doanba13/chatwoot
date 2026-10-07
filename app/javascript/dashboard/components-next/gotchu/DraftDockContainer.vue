@@ -67,28 +67,18 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  // Why Send draft cannot post a public reply here, already translated, or
+  // null. ReplyBox decides it from `canSendPublicReply`; the dock draws it.
+  sendBlockedReason: {
+    type: String,
+    default: null,
+  },
 });
 
-const emit = defineEmits(['draftState', 'wantsReply']);
+const emit = defineEmits(['draftState', 'wantsReply', 'sendDraft']);
 
-/**
- * Whether the gestures that reach a CUSTOMER are reachable from this deployment.
- *
- * Still false everywhere, and still a constant: Send, Discard, the adjustments
- * and stop are hidden unconditionally. A send reaches a customer, the conditions
- * a review wrote for that path are not met, and there is no reason to open it
- * because an instruction is open. The dock hides these rather than disabling
- * them — a disabled button reads as "not yet", which an agent waits for, and a
- * live-looking button that silently does nothing is worse than no button at all.
- *
- * INSTRUCT is no longer one of them, and is no longer decided here. It cannot
- * reach a customer — the route behind it produces a note and a new draft version
- * — so it is driven by `capabilities.instruct` from the read below, which Rails
- * computes from its own env at request time. That is the point of the split:
- * turning instructions on is an env var plus a container restart, never an image
- * rebuild, and it does not turn anything else on with it.
- */
-const WRITE_SURFACE_AVAILABLE = false;
+// Send draft goes out through the composer's own stamped send, never a gateway
+// send route (plan Decision 1, 2026-10-06 conversation-screen plan).
 
 /**
  * The cap the field stops at, which is the cap Rails refuses on, which is the cap
@@ -501,8 +491,11 @@ const insertIntoRichEditor = computed(() =>
 );
 
 const onInsert = async () => {
+  // One snapshot, text and version together, taken before the await below: a
+  // poll landing during it must not pair this text with a newer version.
   const { text, cycleId } = view.value;
-  if (!text) return;
+  const version = draftVersion.value;
+  if (!text || waiting.value) return;
 
   if (!props.replyMounted) {
     emit('wantsReply');
@@ -530,12 +523,30 @@ const onInsert = async () => {
   // the receiver validates both fields as integers and would reject a
   // partial one anyway, so remembering it here would only buy a confusing
   // log line downstream.
-  if (Number.isInteger(cycleId) && Number.isInteger(draftVersion.value)) {
+  if (Number.isInteger(cycleId) && Number.isInteger(version)) {
     rememberInsertedDraft(props.conversationId, {
       cycleId,
-      draftVersion: draftVersion.value,
+      draftVersion: version,
     });
   }
+};
+
+/**
+ * Send the draft on screen, as it stands, stamped with the version shown.
+ *
+ * One snapshot: text, cycle and version are read together, so a redraft
+ * landing between render and press can never send v2's text stamped v1
+ * (invariant 6). The local is `version`, not `draftVersion`: that name would
+ * shadow the ref inside its own initialiser and throw on every press. It never
+ * reads `instruction` — typed text has no path to a customer (invariant 5).
+ */
+const onSendDraft = () => {
+  const { text, cycleId, state } = view.value;
+  const version = draftVersion.value;
+  if (!text || state !== 'ready') return;
+  if (!Number.isInteger(cycleId) || !Number.isInteger(version)) return;
+  if (waiting.value || submitting.value || props.sendBlockedReason) return;
+  emit('sendDraft', { text, stamp: { cycleId, draftVersion: version } });
 };
 
 /**
@@ -552,6 +563,11 @@ const canInstruct = computed(
     !waiting.value &&
     view.value.state === 'ready' &&
     view.value.cycleId !== null
+);
+
+// Redraft presses only with something to send and nothing in flight.
+const redraftDisabled = computed(
+  () => submitting.value || !canInstruct.value || !instruction.value.trim()
 );
 
 /**
@@ -752,41 +768,50 @@ const dockStreamingText = computed(() =>
   >
     {{ $t(noticeKey) }}
   </p>
-  <!-- Insert is the only gesture with a listener, and the only one the dock
-    renders while the write surface is unavailable. The others are not "wired to
-    nothing" — they are not on screen. -->
   <DraftDock
     :state="dockState"
     :text="view.text"
     :expires-at="view.expiresAt"
     :streaming-text="dockStreamingText"
-    :write-enabled="WRITE_SURFACE_AVAILABLE"
     :trace="traceSteps"
     :outcome="outcome"
     :version-label="versionLabel"
     :heading="dockHeading"
+    :mode="instructMode ? 'instruct' : 'reply'"
+    :instruct-available="instructAvailable"
+    :redraft-disabled="redraftDisabled"
+    :send-blocked-reason="sendBlockedReason"
     @insert="onInsert"
+    @send="onSendDraft"
+    @instruct="onInstruct"
     @dismiss-outcome="outcome = null"
   >
     <template v-if="$slots.modes" #modes><slot name="modes" /></template>
-    <template v-if="$slots.editor" #editor><slot name="editor" /></template>
+    <!-- In Instruct the editor slot is this file's own box, because what
+      happens to the typed text depends on how a request this file makes turns
+      out. Elsewhere it is the parent's. -->
+    <template v-if="instructMode || $slots.editor" #editor>
+      <template v-if="instructMode">
+        <DraftInstruct
+          v-if="instructAvailable && hasDraft"
+          v-model="instruction"
+          :busy="submitting || !canInstruct"
+          :message="instructNotice ? $t(instructNotice.key) : null"
+          :tone="instructNotice ? instructNotice.tone : 'info'"
+          :max-length="MAX_INSTRUCTION_CHARS"
+          autofocus
+          @submit="onInstruct"
+        />
+        <!-- Instructing is off here, and Instruct is still offered for its
+          footer (plan Decision 7): say why there is no box. -->
+        <p
+          v-else-if="hasDraft"
+          class="mx-3 mt-2.5 mb-1 text-xs text-pretty text-[var(--g-text-muted)]"
+        >
+          {{ $t('GOTCHU.DRAFT.INSTRUCT_UNCONFIGURED') }}
+        </p>
+      </template>
+      <slot v-else name="editor" />
+    </template>
   </DraftDock>
-  <!-- The one write on this surface, and a sibling of the dock rather than a row
-    inside it: what happens to the typed text depends on how a request this file
-    makes turns out, and the dock is props-only by design — it clears its own
-    field the moment it emits, which is exactly what must not happen to text a
-    failed submission has to give back. The dock's own instruction row is part of
-    the customer-facing set above and stays dark with it. -->
-  <DraftInstruct
-    v-if="canInstruct && instructMode"
-    v-model="instruction"
-    :busy="submitting"
-    :message="
-      instructNotice ? $t(instructNotice.key) : $t('GOTCHU.DRAFT.INSTRUCT_HINT')
-    "
-    :tone="instructNotice ? instructNotice.tone : 'info'"
-    :max-length="MAX_INSTRUCTION_CHARS"
-    autofocus
-    @submit="onInstruct"
-  />
 </template>

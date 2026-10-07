@@ -1,8 +1,5 @@
 <script setup>
-import { computed } from 'vue';
-
-import Button from 'dashboard/components-next/button/Button.vue';
-import Input from 'dashboard/components-next/input/Input.vue';
+import { computed, onMounted, ref } from 'vue';
 
 // Free text to the agent, and only ever that: "make it shorter", "add the
 // tracking number first". There is no path from anything typed here to a reply
@@ -16,15 +13,16 @@ import Input from 'dashboard/components-next/input/Input.vue';
 // all three are answers about a request this component does not make. That split
 // is also what lets a spec drive one state at a time.
 //
-// It renders BELOW the dock band rather than inside it, and pulls itself up over
-// the dock's bottom border so the two read as one surface.
+// One plain text box (spec §2.2), in the dock's `editor` slot under the mode
+// switch. It has no submit control of its own: Redraft sits in the footer, and
+// Mod+Enter here is the same press. Plain Enter is a newline.
 const props = defineProps({
   modelValue: {
     type: String,
     default: '',
   },
-  // A submission is in flight. The field and the button lock: every press is an
-  // instruction, and two instructions from one thought is the thing to prevent.
+  // A submission is in flight. The field locks: every press is an instruction,
+  // and two instructions from one thought is the thing to prevent.
   busy: {
     type: Boolean,
     default: false,
@@ -68,6 +66,18 @@ const submit = () => {
   emit('submit');
 };
 
+const box = ref(null);
+onMounted(() => {
+  if (props.autofocus) box.value?.focus();
+});
+
+// Mod+Enter is Redraft. Plain Enter falls through to the textarea's newline.
+const onKeydown = event => {
+  if (event.key !== 'Enter' || !(event.metaKey || event.ctrlKey)) return;
+  event.preventDefault();
+  submit();
+};
+
 const toneClass = computed(() => {
   switch (props.tone) {
     case 'success':
@@ -82,37 +92,26 @@ const toneClass = computed(() => {
 
 <template>
   <div
-    class="flex flex-col gap-1.5 px-3 pb-2.5 -mt-px border-b bg-[var(--g-surface-tank)] border-[var(--g-agent-border)]"
+    class="ed flex flex-col mx-3 mt-2.5 mb-1 border rounded-[10px] bg-[var(--g-surface)] border-[var(--g-border)]"
   >
-    <div class="flex items-center gap-2">
-      <Input
-        :model-value="modelValue"
-        size="sm"
-        class="flex-1 min-w-0"
-        custom-input-class="!bg-[var(--g-surface)]"
-        :disabled="busy"
-        :maxlength="maxLength"
-        :placeholder="$t('GOTCHU.DRAFT.INSTRUCT_PLACEHOLDER')"
-        :autofocus="autofocus"
-        @update:model-value="emit('update:modelValue', $event)"
-        @enter="submit"
-      />
-      <Button
-        color="teal"
-        variant="outline"
-        size="sm"
-        icon="i-lucide-arrow-up"
-        :aria-label="$t('GOTCHU.DRAFT.INSTRUCT_SUBMIT')"
-        :is-loading="busy"
-        :disabled="!submittable"
-        @click="submit"
-      />
+    <textarea
+      ref="box"
+      :value="modelValue"
+      rows="3"
+      class="w-full px-3 pt-2.5 pb-1 m-0 text-[15px] leading-[22px] bg-transparent border-0 outline-none resize-none text-[var(--g-text)] placeholder:text-[var(--g-text-muted)] disabled:opacity-60"
+      :disabled="busy"
+      :maxlength="maxLength"
+      :placeholder="$t('GOTCHU.DRAFT.INSTRUCT_PLACEHOLDER')"
+      :aria-label="$t('GOTCHU.DRAFT.INSTRUCT_PLACEHOLDER')"
+      @input="emit('update:modelValue', $event.target.value)"
+      @keydown="onKeydown"
+    />
+    <!-- Wraps rather than truncating: every sentence here tells an agent what
+      to do next. -->
+    <div class="tbar flex items-center px-3 pb-2">
+      <p class="m-0 text-xs text-pretty" :class="toneClass">
+        {{ message || $t('GOTCHU.DRAFT.INSTRUCT_HINT') }}
+      </p>
     </div>
-    <!-- Wraps rather than truncating, which is why this is not `Input`'s own
-      `message` slot: that one is a single truncated line, and every sentence here
-      tells an agent what to do next. -->
-    <p v-if="message" class="m-0 text-xs text-pretty" :class="toneClass">
-      {{ message }}
-    </p>
   </div>
 </template>
