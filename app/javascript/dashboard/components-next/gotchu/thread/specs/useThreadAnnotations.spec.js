@@ -176,4 +176,50 @@ describe('useThreadAnnotations', () => {
     await flushPromises();
     expect(ThreadAPI.get).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps the newer answer when two reads of one conversation finish out of order', async () => {
+    const resolvers = [];
+    ThreadAPI.get.mockImplementation(
+      () =>
+        new Promise(r => {
+          resolvers.push(r);
+        })
+    );
+    const { state, api } = harness({ messages: [{ id: 1, messageType: 0 }] });
+    await flushPromises();
+    state.messages.value = [...state.messages.value, { id: 2, messageType: 1 }];
+    await nextTick();
+    vi.advanceTimersByTime(1500);
+    await flushPromises();
+    expect(resolvers).toHaveLength(2);
+    resolvers[1](
+      answer({ timeline: [{ at: '2026-10-06T10:00:00Z', kind: 'drafted' }] })
+    );
+    await flushPromises();
+    resolvers[0](answer({ available: false }));
+    await flushPromises();
+    expect(api().timeline.value.map(i => i.kind)).toEqual(['drafted']);
+    expect(useDraftMeta(ref(7)).value.threadAvailable).toBe(true);
+  });
+
+  it('does not fetch without a conversation id', async () => {
+    harness({ id: null });
+    await flushPromises();
+    expect(ThreadAPI.get).not.toHaveBeenCalled();
+  });
+
+  it('cancels a pending re-read when the conversation changes', async () => {
+    ThreadAPI.get.mockResolvedValue(answer({}));
+    const { state } = harness({ messages: [{ id: 1, messageType: 0 }] });
+    await flushPromises();
+    state.messages.value = [...state.messages.value, { id: 2, messageType: 1 }];
+    await nextTick();
+    state.conversationId.value = 8;
+    await nextTick();
+    await flushPromises();
+    ThreadAPI.get.mockClear();
+    vi.advanceTimersByTime(3000);
+    await flushPromises();
+    expect(ThreadAPI.get).not.toHaveBeenCalled();
+  });
 });

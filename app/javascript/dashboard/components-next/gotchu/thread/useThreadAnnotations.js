@@ -23,6 +23,7 @@ export const useThreadAnnotations = ({
   const sentDrafts = ref([]);
   const timeline = ref([]);
   let timer = null;
+  let seq = 0;
 
   const byMessage = computed(
     () => new Map(sentDrafts.value.map(d => [String(d.messageId), d]))
@@ -32,10 +33,13 @@ export const useThreadAnnotations = ({
 
   const load = async () => {
     const id = unref(conversationId);
-    if (unref(threadRoutes) === false) return;
+    if (id == null || unref(threadRoutes) === false) return;
+    seq += 1;
+    const mine = seq;
     try {
       const { data } = await ThreadAPI.get(id);
-      if (unref(conversationId) !== id) return;
+      // Only the newest read may write: covers a switch away and back too.
+      if (mine !== seq) return;
       setDraftMeta(id, { threadAvailable: data?.available === true });
       const on = data?.available === true;
       sentDrafts.value = on ? data.sentDrafts || [] : [];
@@ -48,6 +52,8 @@ export const useThreadAnnotations = ({
   watch(
     conversationId,
     () => {
+      clearTimeout(timer);
+      seq += 1; // an in-flight read of the previous conversation is stale
       sentDrafts.value = [];
       timeline.value = [];
       load();
