@@ -33,7 +33,11 @@ const {
   sourceId,
   messageType,
   contentAttributes,
+  byline,
 } = useMessageContext();
+
+// The byline above the bubble already says the time and the lock.
+const hasByline = computed(() => Boolean(byline?.value?.text));
 
 const readableTime = computed(() =>
   messageTimestamp(createdAt.value, 'LLL d, h:mm a')
@@ -137,8 +141,8 @@ const statusToShow = computed(() => {
 </script>
 
 <template>
-  <div class="text-xs flex items-center gap-1.5">
-    <div class="inline">
+  <div class="text-xs flex items-center gap-1.5 empty:hidden">
+    <div v-if="!hasByline" class="inline">
       <time
         v-tooltip.top="{
           content: exactTime,
@@ -149,7 +153,11 @@ const statusToShow = computed(() => {
         {{ readableTime }}
       </time>
     </div>
-    <Icon v-if="isPrivate" icon="i-lucide-lock-keyhole" class="size-3" />
+    <Icon
+      v-if="isPrivate && !hasByline"
+      icon="i-lucide-lock-keyhole"
+      class="size-3"
+    />
     <MessageStatus v-if="showStatusIndicator" :status="statusToShow" />
   </div>
 </template>

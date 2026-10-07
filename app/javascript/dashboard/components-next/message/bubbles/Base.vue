@@ -43,15 +43,17 @@ const emailMetaClass = computed(() =>
   variant.value === MESSAGE_VARIANTS.EMAIL ? 'px-3 pb-3' : ''
 );
 
-// A note Gotchu wrote reads as Gotchu's: the agent teal at half strength.
+// A note Gotchu wrote reads as Gotchu's: the agent teal border.
 const gotchuNote = computed(() =>
   isGotchuNote({
     private: isPrivate.value,
     contentAttributes: contentAttributes.value,
   })
 );
-const GOTCHU_NOTE_BORDER =
-  'border-[color-mix(in_srgb,var(--g-agent)_50%,transparent)]';
+// A separate string, chosen instead of PRIVATE's: two border colours on one
+// element resolve by Tailwind's emission order, not class order, and grey won.
+const PRIVATE_GOTCHU =
+  'bg-[var(--g-surface-note)] border border-dashed border-[var(--g-agent-border)] text-n-slate-11 [&_.prosemirror-mention-node]:font-semibold';
 
 const varaintBaseMap = {
   [MESSAGE_VARIANTS.AGENT]:
@@ -92,7 +94,7 @@ const flexOrientationClass = computed(() => {
 
 const maxWidthClass = computed(() => {
   const map = {
-    [ORIENTATION.LEFT]: 'max-w-[640px]',
+    [ORIENTATION.LEFT]: 'max-w-[560px]',
     [ORIENTATION.RIGHT]: 'max-w-[560px]',
     [ORIENTATION.CENTER]: 'max-w-lg',
   };
@@ -101,8 +103,11 @@ const maxWidthClass = computed(() => {
 });
 
 const messageClass = computed(() => {
-  const classToApply = [varaintBaseMap[variant.value]];
-  if (gotchuNote.value) classToApply.push(GOTCHU_NOTE_BORDER);
+  const classToApply = [
+    gotchuNote.value && variant.value === MESSAGE_VARIANTS.PRIVATE
+      ? PRIVATE_GOTCHU
+      : varaintBaseMap[variant.value],
+  ];
 
   if (variant.value !== MESSAGE_VARIANTS.ACTIVITY) {
     classToApply.push(orientationMap[orientation.value]);

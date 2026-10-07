@@ -637,7 +637,6 @@ provideMessageContext({
         v-if="sentTrace.length"
         :steps="sentTrace"
         class="[grid-area:trace] self-stretch mt-2"
-        :class="{ 'ltr:ml-8 rtl:mr-8': orientation === ORIENTATION.RIGHT }"
       />
       <MessageError
         v-if="contentAttributes.externalError"

@@ -84,21 +84,29 @@ const indexById = computed(
   () => new Map(allMessages.value.map((m, index) => [m.id, index]))
 );
 
-// An activity line is not someone's turn: it carries no byline.
-const bylineOf = message =>
-  message.messageType === MESSAGE_TYPES.ACTIVITY
-    ? null
-    : bylineFor({
-        message,
-        sentDraft: props.sentDraftFor(message.id),
-        channelWord: props.channelWord,
-        t,
-      });
+// An activity line is not someone's turn: it carries no byline. The draft a
+// reply came from is looked up once and feeds both the byline and the trace.
+const annotate = message => {
+  if (message.messageType === MESSAGE_TYPES.ACTIVITY) {
+    return { byline: null, sentTrace: [] };
+  }
+  const sentDraft = props.sentDraftFor(message.id);
+  return {
+    byline: bylineFor({
+      message,
+      sentDraft,
+      channelWord: props.channelWord,
+      t,
+    }),
+    sentTrace: (sentDraft?.trace || [])
+      .map(step => wordStep(step, t, te))
+      .filter(Boolean),
+  };
+};
 
-const sentTraceOf = message =>
-  (props.sentDraftFor(message.id)?.trace || [])
-    .map(step => wordStep(step, t, te))
-    .filter(Boolean);
+const annotations = computed(
+  () => new Map(allMessages.value.map(m => [m.id, annotate(m)]))
+);
 
 const currentChat = useMapGetter('getSelectedChat');
 
@@ -240,8 +248,8 @@ const getInReplyToMessage = parentMessage => {
           "
           :inbox-supports-reply-to="inboxSupportsReplyTo"
           :current-user-id="currentUserId"
-          :byline="bylineOf(entry.message)"
-          :sent-trace="sentTraceOf(entry.message)"
+          :byline="annotations.get(entry.message.id).byline"
+          :sent-trace="annotations.get(entry.message.id).sentTrace"
           data-clarity-mask="True"
           @retry="emit('retry', entry.message)"
         />

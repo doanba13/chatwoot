@@ -56,6 +56,16 @@ const messages = [
   },
   {
     ...base,
+    id: 506,
+    message_type: 1,
+    private: true,
+    content: 'Gotchu: the scan matches the carrier page; no action needed.',
+    content_attributes: { gotchu_note: true },
+    created_at: seconds(at(0, 8, 50)),
+    sender: { id: 99, type: 'User', name: 'Gotchu' },
+  },
+  {
+    ...base,
     id: 505,
     message_type: 0,
     content: 'Danke, ich warte noch bis Freitag.',
