@@ -7,8 +7,11 @@ class Gotchu::ContextService
   class ConfigurationError < StandardError; end
   class UnavailableError < StandardError; end
 
-  # A live 17track read runs a 1/2/3/5 s ladder; 3 s would fail exactly the
-  # reads Refresh exists for.
+  # A live 17track read runs a 1/2/3/5 s ladder (8 s budget); 3 s would fail
+  # exactly the reads Refresh exists for. A cached read keeps 15 s too: on a
+  # cold cache (first open, or past the 1 h Shopify / carrier TTL) the gateway
+  # makes the same live reads, so the cached path is not reliably fast. Refresh
+  # is rate limited in config/initializers/rack_attack.rb instead.
   TIMEOUT_SECONDS = 15
 
   TRANSPORT_ERRORS = [

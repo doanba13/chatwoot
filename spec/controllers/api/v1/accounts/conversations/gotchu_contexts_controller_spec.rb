@@ -53,10 +53,11 @@ RSpec.describe 'Conversation Gotchu context API', type: :request do
     expect(stub).to have_been_requested
   end
 
-  it 'waits long enough for a live carrier read' do
-    expect(HTTParty).to receive(:post).with(context_url, hash_including(timeout: 15)).and_call_original
+  it 'waits long enough for a live carrier read, on a cold-cache read as on Refresh' do
+    expect(HTTParty).to receive(:post).with(context_url, hash_including(timeout: 15)).twice.and_call_original
     stub_context.to_return(status: 200, body: context.to_json)
     show
+    show(refresh: '1')
   end
 
   it 'answers a fixed 502 when the lookup fails' do

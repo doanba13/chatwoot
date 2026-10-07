@@ -280,6 +280,20 @@ class Rack::Attack
     match_data[:account_id] if match_data.present?
   end
 
+  ## Gotchu: a Refresh of the order drawer holds a Puma thread up to 15 s and
+  ## skips the gateway's Shopify and carrier caches. Per user, falling back to
+  ## the IP when the request names no user (it is refused unauthenticated anyway).
+  throttle('/api/v1/accounts/:account_id/conversations/:id/gotchu_context refresh',
+           limit: ENV.fetch('RATE_LIMIT_GOTCHU_CONTEXT_REFRESH', '6').to_i, period: 1.minute) do |req|
+    next unless req.get?
+
+    match_data = %r{\A/api/v1/accounts/(?<account_id>\d+)/conversations/\d+/gotchu_context\z}.match(req.path_without_extensions)
+    next unless match_data.present? && ActiveModel::Type::Boolean.new.cast(req.params['refresh']) == true
+
+    user_identifier = req.get_header('HTTP_UID').presence || req.get_header('HTTP_API_ACCESS_TOKEN').presence
+    user_identifier.present? ? "#{user_identifier}:#{match_data[:account_id]}" : req.ip
+  end
+
   reports_api_user_level_limit = ENV.fetch('RATE_LIMIT_REPORTS_API_USER_LEVEL', '100').to_i
   reports_drilldown_api_user_level_limit = ENV.fetch(
     'RATE_LIMIT_REPORTS_DRILLDOWN_API_USER_LEVEL',
