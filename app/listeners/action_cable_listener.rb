@@ -231,4 +231,5 @@ class ActionCableListener < BaseListener
   end
 end
 
+ActionCableListener.prepend(Gotchu::ContactBroadcast)
 ActionCableListener.prepend_mod_with('ActionCableListener')
