@@ -70,6 +70,11 @@ const store = useStore();
 const route = useRoute();
 const conversationHeader = ref(null);
 const { width } = useElementSize(conversationHeader);
+// The pane, not the viewport, decides: beside the list and the drawer a
+// 1440px screen leaves the header ~460px, and the actions alone take ~430px,
+// so a viewport breakpoint put them in one row and squeezed the name to zero.
+const HEADER_ROW_MIN_WIDTH = 760;
+const headerIsRow = computed(() => width.value >= HEADER_ROW_MIN_WIDTH);
 const { isAWebWidgetInbox } = useInbox();
 
 const currentChat = computed(() => store.getters.getSelectedChat);
@@ -210,10 +215,12 @@ const copyConversationId = async () => {
     slate, so Send draft is the only brand-coloured control. -->
   <div
     ref="conversationHeader"
-    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-5 xl:px-7 pt-3 pb-2 xl:py-4 h-auto"
+    class="flex gap-3 items-center justify-between flex-1 w-full min-w-0 h-auto"
+    :class="headerIsRow ? 'flex-row px-7 py-4' : 'flex-col px-5 pt-3 pb-2'"
   >
     <div
-      class="flex items-center justify-start w-full xl:w-auto max-w-full min-w-0 xl:flex-1"
+      class="flex items-center justify-start max-w-full min-w-0"
+      :class="headerIsRow ? 'flex-1' : 'w-full'"
     >
       <BackButton
         v-if="showBackButton"
@@ -284,7 +291,8 @@ const copyConversationId = async () => {
       </div>
     </div>
     <div
-      class="flex flex-row items-center justify-start xl:justify-end flex-shrink-0 gap-3 w-full xl:w-auto header-actions-wrap"
+      class="flex flex-row items-center flex-shrink-0 gap-3 header-actions-wrap"
+      :class="headerIsRow ? 'justify-end' : 'justify-start w-full'"
     >
       <SLACardLabel
         v-if="hasSlaPolicyId"
