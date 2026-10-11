@@ -63,6 +63,12 @@ export default {
     const topBannerRef = useTemplateRef('topBannerRef');
     const { height: containerHeight } = useElementSize(messagesViewRef);
     const { height: topBannerHeight } = useElementSize(topBannerRef);
+    // The draft dock lands after the thread has scrolled and can take most of
+    // the pane: the list shrinks under it while scrollTop stays put, hiding the
+    // newest message. Watched below to re-scroll.
+    const { height: replyBoxHeight } = useElementSize(
+      resizableEditorWrapperRef
+    );
 
     const {
       captainTasksEnabled,
@@ -113,6 +119,7 @@ export default {
       topBannerRef,
       containerHeight,
       topBannerHeight,
+      replyBoxHeight,
     };
   },
   data() {
@@ -301,6 +308,10 @@ export default {
     annotatedFor(id) {
       if (id != null) this.$nextTick(this.scrollToBottomUnlessAway);
     },
+    replyBoxHeight(now, before) {
+      if (now === before || !this.conversationPanel) return;
+      this.$nextTick(this.scrollToBottomUnlessAway);
+    },
     currentChat(newChat, oldChat) {
       if (newChat.id === oldChat.id) {
         return;
@@ -431,9 +442,12 @@ export default {
         ).slice(-1);
       }
 
+      // Half of the list's own visible height, not the whole view's: upstream
+      // assumed a small composer, and under the draft dock that put the
+      // newest message out of sight below the scroll position.
       this.conversationPanel.scrollTop = calculateScrollTop(
         this.conversationPanel.scrollHeight,
-        this.$el.scrollHeight,
+        this.conversationPanel.clientHeight,
         relevantMessages
       );
     },
