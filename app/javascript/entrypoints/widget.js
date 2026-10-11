@@ -1,4 +1,6 @@
 import { createApp } from 'vue';
+// The display face the desk uses for headings; here, the welcome heading.
+import '@fontsource-variable/bricolage-grotesque';
 import { createI18n } from 'vue-i18n';
 
 import VueDOMPurifyHTML from 'vue-dompurify-html';

@@ -52,7 +52,7 @@
       @apply mt-0.5;
 
       .agent-message .chat-bubble {
-        @apply ltr:rounded-tl-[0.25rem] rtl:rounded-tr-[0.25rem];
+        @apply ltr:rounded-tl-[var(--g-radius-tag)] rtl:rounded-tr-[var(--g-radius-tag)];
       }
     }
 
@@ -64,7 +64,7 @@
       @apply mt-0.5;
 
       .chat-bubble {
-        @apply ltr:rounded-tr-[0.25rem] rtl:rounded-tl-[0.25rem];
+        @apply ltr:rounded-tr-[var(--g-radius-tag)] rtl:rounded-tl-[var(--g-radius-tag)];
       }
     }
 
@@ -108,7 +108,7 @@
       @apply mt-0.5;
 
       .user-message .chat-bubble {
-        @apply ltr:rounded-tr-[0.25rem] rtl:rounded-tl-[0.25rem];
+        @apply ltr:rounded-tr-[var(--g-radius-tag)] rtl:rounded-tl-[var(--g-radius-tag)];
       }
     }
 
@@ -138,12 +138,12 @@
 
     + .chat-bubble-wrap {
       .chat-bubble {
-        @apply ltr:rounded-tl-[0.25rem] rtl:rounded-tr-[0.25rem];
+        @apply ltr:rounded-tl-[var(--g-radius-tag)] rtl:rounded-tr-[var(--g-radius-tag)];
       }
     }
 
     &:last-child .chat-bubble {
-      @apply ltr:rounded-bl-[1.25rem] rtl:rounded-br-[1.25rem];
+      @apply ltr:rounded-bl-[var(--g-radius-card)] rtl:rounded-br-[var(--g-radius-card)];
     }
   }
 }
@@ -153,17 +153,17 @@
 
   .chat-bubble-wrap {
     .chat-bubble {
-      @apply ltr:rounded-br-[0.25rem] rtl:rounded-bl-[0.25rem] rounded-[1.25rem];
+      @apply ltr:rounded-br-[var(--g-radius-tag)] rtl:rounded-bl-[var(--g-radius-tag)] rounded-[var(--g-radius-card)];
     }
 
     + .chat-bubble-wrap {
       .chat-bubble {
-        @apply ltr:rounded-tr-[0.25rem] rtl:rounded-tl-[0.25rem];
+        @apply ltr:rounded-tr-[var(--g-radius-tag)] rtl:rounded-tl-[var(--g-radius-tag)];
       }
     }
 
     &:last-child .chat-bubble {
-      @apply ltr:rounded-br-[1.25rem] rtl:rounded-bl-[1.25rem];
+      @apply ltr:rounded-br-[var(--g-radius-card)] rtl:rounded-bl-[var(--g-radius-card)];
     }
   }
 
@@ -173,7 +173,9 @@
 }
 
 .chat-bubble {
-  @apply shadow-[0_0.25rem_6px_rgba(50,50,93,0.08),0_1px_3px_rgba(0,0,0,0.05)] rounded-[1.25rem] inline-block text-sm leading-[1.5] max-w-full ltr:text-left rtl:text-right py-3 px-4 text-white;
+  // Flat, as the desk draws its bubbles: Gotchu keeps its one elevation for
+  // popovers, so a bubble is a ground and a radius, never a shadow.
+  @apply rounded-[var(--g-radius-card)] inline-block text-sm leading-[1.5] max-w-full ltr:text-left rtl:text-right py-3 px-4 text-white;
 
   word-break: break-word;
 
@@ -191,7 +193,7 @@
   }
 
   &.user {
-    @apply ltr:rounded-br-[0.25rem] rtl:rounded-bl-[0.25rem];
+    @apply ltr:rounded-br-[var(--g-radius-tag)] rtl:rounded-bl-[var(--g-radius-tag)];
 
     > a {
       @apply text-white;
@@ -199,7 +201,7 @@
   }
 
   &.agent {
-    @apply ltr:rounded-bl-[0.25rem] rtl:rounded-br-[0.25rem] text-n-slate-12;
+    @apply ltr:rounded-bl-[var(--g-radius-tag)] rtl:rounded-br-[var(--g-radius-tag)] border border-solid border-[var(--g-border)] bg-[var(--g-surface)] text-[var(--g-text)];
 
     .link {
       @apply text-n-brand;

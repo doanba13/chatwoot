@@ -118,7 +118,7 @@ export default {
   }
 
   .button {
-    @apply rtl:rounded-tr-[0] ltr:rounded-tl-[0] rtl:rounded-br-[0] ltr:rounded-bl-[0] rounded-lg h-auto ltr:-ml-px rtl:-mr-px text-xl;
+    @apply rtl:rounded-tr-[0] ltr:rounded-tl-[0] rtl:rounded-br-[0] ltr:rounded-bl-[0] rounded-[var(--g-radius-control)] h-auto ltr:-ml-px rtl:-mr-px text-xl;
 
     .spinner {
       display: block;

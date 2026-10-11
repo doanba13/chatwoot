@@ -195,8 +195,9 @@
   //
   // `--g-brand-rgb` bridges `n-brand`, which is a hardcoded hex in
   // theme/colors.js rather than a variable. It is defined here — i.e. only where
-  // the dashboard stylesheet loads — so the widget and v3 packs keep today's
-  // blue through the fallback in that file.
+  // this sheet loads, the dashboard and widget stylesheets — so the v3, portal
+  // and survey packs keep today's blue through the fallback in that file. The
+  // widget's accent is the store's inbox `widget_color`, set inline, never this.
   // ---------------------------------------------------------------------------
   :root {
     --g-brand-rgb: 20 33 61;

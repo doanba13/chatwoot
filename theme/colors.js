@@ -226,9 +226,9 @@ export const colors = {
     },
 
     black: '#000000',
-    // `--g-brand-rgb` is defined only by the dashboard stylesheet
-    // (_gotchu-tokens.scss), so the widget and v3 packs fall back to the
-    // original blue rather than inheriting the dashboard's ink.
+    // `--g-brand-rgb` is defined only where _gotchu-tokens.scss loads (the
+    // dashboard and widget stylesheets), so the v3, portal and survey packs
+    // fall back to the original blue rather than inheriting the desk's ink.
     brand: 'rgb(var(--g-brand-rgb, 39 129 246) / <alpha-value>)',
     // The text that sits on an ink surface. `--g-ink` and `--g-on-ink` swap in
     // dark mode, so a solid ink button cannot hardcode `text-white`. Same

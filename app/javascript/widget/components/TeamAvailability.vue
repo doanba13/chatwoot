@@ -27,7 +27,7 @@ const startConversation = () => {
 
 <template>
   <div
-    class="flex flex-col gap-3 w-full shadow outline-1 outline outline-n-container rounded-xl bg-n-background dark:bg-n-solid-2 px-5 py-4"
+    class="flex flex-col gap-3 w-full border border-solid border-[var(--g-border)] rounded-[var(--g-radius-card)] bg-[var(--g-surface)] px-5 py-4"
   >
     <AvailabilityContainer :agents="availableAgents" show-header show-avatars />
 

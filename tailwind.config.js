@@ -232,13 +232,13 @@ const tailwindConfig = {
     //     nothing to notice it.
     //  2. One tailwind.config.js feeds FIVE stylesheets — dashboard/_woot.scss,
     //     widget/woot.scss, portal/application.scss, survey/woot.scss and
-    //     dashboard/super_admin/index.scss — and only the dashboard one imports
-    //     `gotchu-tokens`. Without the fallback, an undefined `--g-radius-card`
+    //     dashboard/super_admin/index.scss — and only the dashboard and widget
+    //     ones import `gotchu-tokens`. Without the fallback, an undefined `--g-radius-card`
     //     makes `border-radius: var(…)` invalid at computed-value time; border
-    //     radius does not inherit, so every `rounded-xl` in the widget, portal,
-    //     survey and superadmin packs would collapse to 0px. The fallback keeps
-    //     those four on exactly today's values and scopes the re-theme to the
-    //     dashboard — the same trick, for the same reason, as `--g-brand-rgb` in
+    //     radius does not inherit, so every `rounded-xl` in the portal, survey
+    //     and superadmin packs would collapse to 0px. The fallback keeps those
+    //     three on exactly today's values and scopes the re-theme to the
+    //     dashboard and widget — the same trick, for the same reason, as `--g-brand-rgb` in
     //     theme/colors.js.
     //
     // `lg` (8px) is deliberately NOT remapped, and that is the decision worth
