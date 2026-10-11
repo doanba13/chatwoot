@@ -63,6 +63,14 @@ describe ActionCableListener do
     expect(stamp_in(payload_for(agent.pubsub_token)[:messages].first[:content_attributes])).to eq(stamp)
   end
 
+  it "sends a conversation's machine attributes to agents only" do
+    conversation.update!(custom_attributes: { 'store_key' => 'persoliebe', 'gotchu_tier' => 'auto', 'order_ref' => 'PL-1' })
+    listener.conversation_updated(Events::Base.new(:'conversation.updated', Time.zone.now, conversation: conversation))
+
+    expect(payload_for(conversation.contact_inbox.pubsub_token)[:custom_attributes]).to eq('order_ref' => 'PL-1')
+    expect(payload_for(agent.pubsub_token)[:custom_attributes].keys).to include('store_key', 'gotchu_tier')
+  end
+
   it 'keeps one broadcast for everyone when nothing carries a stamp' do
     plain = create(:message, message_type: 'outgoing', account: account, inbox: inbox, conversation: conversation)
     broadcasts.clear
