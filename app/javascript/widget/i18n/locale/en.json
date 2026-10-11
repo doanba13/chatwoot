@@ -62,6 +62,10 @@
   },
   "POWERED_BY": "Powered by Chatwoot",
   "EMAIL_PLACEHOLDER": "Please enter your email",
+  "EMAIL_CAPTURE": {
+    "PROMPT": "Leave your email and we'll write back there, so you don't need to keep this page open.",
+    "THANKS": "Thanks! We'll reply to you by email."
+  },
   "CHAT_PLACEHOLDER": "Type your message",
   "TODAY": "Today",
   "YESTERDAY": "Yesterday",

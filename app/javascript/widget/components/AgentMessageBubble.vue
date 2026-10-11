@@ -46,6 +46,14 @@ export default {
     isTemplateEmail() {
       return this.contentType === 'input_email';
     },
+    // The stored content is the account-language "Get notified by email";
+    // the visitor reads one message in their own language instead, and its
+    // lead-in bubble is dropped by withoutEmailCollectLeadIn.
+    emailCaptureText() {
+      return this.messageContentAttributes?.submitted_email
+        ? this.$t('EMAIL_CAPTURE.THANKS')
+        : this.$t('EMAIL_CAPTURE.PROMPT');
+    },
     isCards() {
       return this.contentType === 'cards';
     },
@@ -97,7 +105,11 @@ export default {
       "
       class="chat-bubble agent"
     >
+      <div v-if="isTemplateEmail" class="message-content text-n-slate-12">
+        {{ emailCaptureText }}
+      </div>
       <div
+        v-else
         v-dompurify-html="formatMessage(message, false)"
         class="message-content text-n-slate-12"
       />

@@ -62,6 +62,10 @@
   },
   "POWERED_BY": "Propulsé par Chatwoot",
   "EMAIL_PLACEHOLDER": "Veuillez saisir votre adresse de courriel",
+  "EMAIL_CAPTURE": {
+    "PROMPT": "Laissez-nous votre adresse e-mail : nous vous y répondrons, inutile de garder cette page ouverte.",
+    "THANKS": "Merci ! Nous vous répondrons par e-mail."
+  },
   "CHAT_PLACEHOLDER": "Tapez votre message",
   "TODAY": "Aujourd'hui",
   "YESTERDAY": "Hier",

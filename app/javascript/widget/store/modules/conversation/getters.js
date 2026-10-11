@@ -1,6 +1,9 @@
 import { MESSAGE_TYPE } from 'widget/helpers/constants';
 import { groupBy } from 'widget/helpers/utils';
-import { groupConversationBySender } from './helpers';
+import {
+  groupConversationBySender,
+  withoutEmailCollectLeadIn,
+} from './helpers';
 import { formatUnixDate } from 'shared/helpers/DateHelper';
 
 export const getters = {
@@ -25,7 +28,7 @@ export const getters = {
   },
   getGroupedConversation: _state => {
     const conversationGroupedByDate = groupBy(
-      Object.values(_state.conversations),
+      withoutEmailCollectLeadIn(Object.values(_state.conversations)),
       message => formatUnixDate(message.created_at)
     );
     return Object.keys(conversationGroupedByDate).map(date => ({
