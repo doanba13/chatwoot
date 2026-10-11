@@ -391,7 +391,7 @@ const reviewLabel = computed(() => {
       <div v-if="trace.length" class="draft-dock__trace mx-[18px]">
         <AITrace :steps="trace" :summary="traceSummary" tank />
       </div>
-      <!-- Drawn whole. The card is what is capped (`max-h-[min(70vh,100%)]` on
+      <!-- Drawn whole. The card is what is capped (`max-h-[50vh]` on
         the composer), and this body is the one thing inside it that gives way:
         `flex-1 min-h-0` lets it shrink and `overflow-y-auto` makes it scroll,
         so an ordinary draft shows in full and only a draft that outgrows the

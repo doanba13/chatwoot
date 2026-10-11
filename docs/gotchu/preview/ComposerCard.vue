@@ -6,7 +6,7 @@
 // outgrows it can be seen scrolling its own body. Whatever DraftDock draws goes
 // in the default slot; the card has no rows of its own.
 defineProps({
-  // The card's ceiling, standing in for `min(70vh, 100%)` of the thread column.
+  // The card's ceiling, standing in for `50vh` of the thread column.
   maxHeight: { type: String, default: null },
 });
 </script>
