@@ -228,3 +228,5 @@ class ConversationReplyMailer < ApplicationMailer
                 })
   end
 end
+
+ConversationReplyMailer.prepend(Gotchu::ReplyMailerIdentity)
