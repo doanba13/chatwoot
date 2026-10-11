@@ -188,7 +188,18 @@ const activeChild = computed(() => {
     // This is not perfect, ideally we should rank each route based on all the techniques
     // and then return the highest ranked one
     // But this is good enough for now
-    return rankedPage ?? activeOnPages[0];
+    // Gotchu: never one whose own params contradict the route's. A store's
+    // list shares the queue route, and "the first anyway" lit up Needs you.
+    return (
+      rankedPage ??
+      activeOnPages.find(child =>
+        Object.keys(child.to.params).every(
+          key =>
+            route.params[key] === undefined ||
+            String(child.to.params[key]) === String(route.params[key])
+        )
+      )
+    );
   }
 
   return navigableChildren.value.find(child => {

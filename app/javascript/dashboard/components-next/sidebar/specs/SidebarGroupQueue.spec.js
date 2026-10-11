@@ -135,6 +135,16 @@ describe('Sidebar queue entries', () => {
     ).toEqual(['SIDEBAR.QUEUE_AUTO_HOLDING']);
   });
 
+  it('highlights no queue on a store list, which shares the queue route', () => {
+    expect(
+      activeLeaves({
+        name: 'queue_conversations',
+        path: '/app/accounts/1/queue/store-cadeauniq',
+        params: { accountId: '1', queue: 'store-cadeauniq' },
+      })
+    ).toEqual([]);
+  });
+
   it('highlights only the queue a conversation was opened through', () => {
     expect(
       activeLeaves({

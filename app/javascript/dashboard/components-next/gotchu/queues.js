@@ -82,15 +82,25 @@ const payloadFor = (states, userId) => {
 // (Gotchu::QueueAttributes). Display routing only.
 export const STORE_QUEUE_PREFIX = 'store-';
 
-export function storeFolder(key) {
-  if (!key) return undefined;
+// `<key>-inbox-<id>` is one store's mail in one inbox: the rail's "Email, via
+// Support Mail" under that store, which would otherwise open the whole shared
+// inbox from every store.
+const STORE_INBOX = /^(.+)-inbox-(\d+)$/;
+export const storeInboxQueue = (key, inboxId) =>
+  `${STORE_QUEUE_PREFIX}${key}-inbox-${inboxId}`;
+
+export function storeFolder(param) {
+  if (!param) return undefined;
+  const [, key = param, inboxId] = param.match(STORE_INBOX) ?? [];
+  const rows = [condition('store_key', 'equal_to', [key])];
+  if (inboxId) rows.push(condition('inbox_id', 'equal_to', [Number(inboxId)]));
   return {
-    id: `store:${key}`,
+    id: `store:${param}`,
     name: key,
     query: {
-      payload: [
-        { ...condition('store_key', 'equal_to', [key]), query_operator: null },
-      ],
+      payload: rows.map((row, i) =>
+        i === rows.length - 1 ? { ...row, query_operator: null } : row
+      ),
     },
   };
 }
@@ -141,3 +151,13 @@ export function queueFolder(key, t, userId, tab = 'all') {
     },
   };
 }
+
+// Whether two active folders show the same list. ChatList's folder is rebuilt
+// from the signed-in user, whose object is replaced on every presence tick, and
+// a refetch empties the conversation list -- so "a new object" must not count
+// as "a new folder".
+const folderKey = folder =>
+  folder
+    ? JSON.stringify([folder.id, folder.name, folder.query ?? null])
+    : null;
+export const sameFolder = (a, b) => folderKey(a) === folderKey(b);

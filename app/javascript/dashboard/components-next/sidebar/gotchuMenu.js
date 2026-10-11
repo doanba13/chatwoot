@@ -1,5 +1,5 @@
 import { h } from 'vue';
-import { QUEUES } from '../gotchu/queues';
+import { QUEUES, storeInboxQueue } from '../gotchu/queues';
 
 const CHANNEL_ICONS = {
   email: 'i-lucide-mail',
@@ -43,7 +43,9 @@ const storesGroup = ({ t, accountScopedRoute, stores, inboxes }) => {
         name: `store-${store.key}-shared-${inbox.id}`,
         label: t('SIDEBAR.EMAIL_VIA_SHARED', { name: inbox.name }),
         icon: CHANNEL_ICONS.email,
-        to: inboxRoute(inbox.id),
+        to: accountScopedRoute('queue_conversations', {
+          queue: storeInboxQueue(store.key, inbox.id),
+        }),
         shared: true,
       }));
     const children = [...own, ...shared];

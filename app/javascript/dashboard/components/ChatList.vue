@@ -52,6 +52,7 @@ import {
 import {
   queueFolder,
   storeFolder,
+  sameFolder,
   STORE_QUEUE_PREFIX,
 } from 'dashboard/components-next/gotchu/queues';
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
@@ -894,9 +895,10 @@ watch(
 );
 
 watch(activeFolder, (newVal, oldVal) => {
-  if (newVal !== oldVal) {
-    store.dispatch('customViews/setActiveConversationFolder', newVal || null);
-  }
+  // A queue folder is rebuilt on every presence tick; only a different list
+  // may empty the store, or the open conversation reloads every 20s.
+  if (sameFolder(newVal, oldVal)) return;
+  store.dispatch('customViews/setActiveConversationFolder', newVal || null);
   resetAndFetchData();
 });
 

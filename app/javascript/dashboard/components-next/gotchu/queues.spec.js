@@ -1,4 +1,11 @@
-import { QUEUES, queueFolder, filtersFor, queueTabs } from './queues';
+import {
+  QUEUES,
+  queueFolder,
+  filtersFor,
+  queueTabs,
+  storeFolder,
+  sameFolder,
+} from './queues';
 import { matchesFilters } from 'dashboard/store/modules/conversations/helpers/filterHelpers';
 
 // The payload shape is the one a saved folder stores (filterQueryGenerator):
@@ -198,5 +205,75 @@ describe('queue tabs', () => {
     expect(
       queueFolder('drafted', key => key, 7, 'handed_over')
     ).toBeUndefined();
+  });
+});
+
+// "Email, via Support Mail" under a store is that store's mail in the shared
+// inbox, not the whole inbox: every store's copy used to open the same
+// unfiltered list.
+describe('store folders', () => {
+  const conversation = (storeKey, inboxId) => ({
+    status: 'open',
+    inbox_id: inboxId,
+    custom_attributes: { store_key: storeKey },
+  });
+
+  it('shows the store across every inbox', () => {
+    const { payload } = storeFolder('cadeauniq').query;
+    expect(matchesFilters(conversation('cadeauniq', 1), payload)).toBe(true);
+    expect(matchesFilters(conversation('cadeauniq', 3), payload)).toBe(true);
+    expect(matchesFilters(conversation('persoliebe', 1), payload)).toBe(false);
+  });
+
+  it('narrows to one inbox when the route names one', () => {
+    const folder = storeFolder('cadeauniq-inbox-1');
+    expect(folder.name).toBe('cadeauniq');
+    const { payload } = folder.query;
+    expect(payload[payload.length - 1].query_operator).toBeNull();
+    expect(matchesFilters(conversation('cadeauniq', 1), payload)).toBe(true);
+    expect(matchesFilters(conversation('cadeauniq', 3), payload)).toBe(false);
+    expect(matchesFilters(conversation('persoliebe', 1), payload)).toBe(false);
+  });
+});
+
+// ChatList refetches when its folder changes. A queue folder is rebuilt
+// whenever the signed-in user object is replaced -- every 20s presence tick --
+// and a refetch empties the list, which took the open conversation with it.
+describe('sameFolder', () => {
+  const t = key => key;
+
+  it('treats a rebuilt folder with the same query as the same folder', () => {
+    expect(
+      sameFolder(queueFolder('needs_you', t, 7), queueFolder('needs_you', t, 7))
+    ).toBe(true);
+    expect(sameFolder(storeFolder('giftera'), storeFolder('giftera'))).toBe(
+      true
+    );
+    expect(sameFolder(undefined, undefined)).toBe(true);
+  });
+
+  it('tells apart a different queue, user, tab, store or inbox', () => {
+    const needsYou = queueFolder('needs_you', t, 7);
+    expect(sameFolder(needsYou, queueFolder('needs_you', t, 8))).toBe(false);
+    expect(sameFolder(needsYou, queueFolder('drafted', t, 7))).toBe(false);
+    expect(
+      sameFolder(needsYou, queueFolder('needs_you', t, 7, 'handed_over'))
+    ).toBe(false);
+    expect(sameFolder(storeFolder('giftera'), storeFolder('cadeauniq'))).toBe(
+      false
+    );
+    expect(
+      sameFolder(storeFolder('giftera'), storeFolder('giftera-inbox-1'))
+    ).toBe(false);
+    expect(sameFolder(needsYou, undefined)).toBe(false);
+  });
+
+  it('tells apart a saved folder whose name or query was edited', () => {
+    const folder = { id: 3, name: 'VIP', query: { payload: [{ a: 1 }] } };
+    expect(sameFolder(folder, { ...folder })).toBe(true);
+    expect(sameFolder(folder, { ...folder, name: 'VIPs' })).toBe(false);
+    expect(
+      sameFolder(folder, { ...folder, query: { payload: [{ a: 2 }] } })
+    ).toBe(false);
   });
 });

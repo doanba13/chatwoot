@@ -214,6 +214,16 @@ describe('gotchuMenu', () => {
       'Messenger',
       'SIDEBAR.EMAIL_VIA_SHARED',
     ]);
+    // The store's own mail in the shared inbox, not the whole inbox: the
+    // whole inbox is the "all stores" entry.
+    expect(stores.children[0].children[1].to).toEqual({
+      name: 'queue_conversations',
+      params: { queue: 'store-persoliebe-inbox-1' },
+    });
+    expect(stores.children[1].to).toEqual({
+      name: 'inbox_dashboard',
+      params: { inbox_id: 1 },
+    });
   });
 
   it('renders no badge for a count it could not read', () => {
