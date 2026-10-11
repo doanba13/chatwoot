@@ -1741,8 +1741,11 @@ export default {
 
 // The editor sits in the board's `.ed` frame inside the card: inset 18px, a
 // 10px radius, a slate hairline, and the agent colour at 15% when it has focus.
+// It gives way like the draft body does: the card is capped at 50vh, and an
+// editor holding an inserted draft would otherwise overflow the card and sit on
+// top of the Send button.
 .reply-box__top {
-  @apply relative p-3 mx-[18px] mt-2.5 mb-1 min-h-[2.75rem] border border-[var(--g-border)] rounded-[10px] bg-[var(--g-surface)];
+  @apply relative p-3 mx-[18px] mt-2.5 mb-1 min-h-[2.75rem] overflow-y-auto border border-[var(--g-border)] rounded-[10px] bg-[var(--g-surface)];
 
   &:focus-within {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-agent) 15%, transparent);
