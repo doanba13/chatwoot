@@ -27,7 +27,6 @@ export default {
   computed: {
     ...mapGetters({
       appConfig: 'appConfig/getAppConfig',
-      availableAgents: 'agent/availableAgents',
     }),
     portal() {
       return window.chatwootWebChannel.portal;
@@ -130,7 +129,6 @@ export default {
           :title="channelConfig.websiteName"
           :avatar-url="channelConfig.avatarUrl"
           :show-popout-button="appConfig.showPopoutButton"
-          :available-agents="availableAgents"
           :show-back-button="showBackButton"
         />
       </div>

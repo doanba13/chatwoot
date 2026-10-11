@@ -20,7 +20,10 @@
   "TEAM_AVAILABILITY": {
     "ONLINE": "Nous sommes en ligne",
     "OFFLINE": "Nous sommes absents pour le moment",
-    "BACK_AS_SOON_AS_POSSIBLE": "Nous serons de retour dès que possible"
+    "BACK_AS_SOON_AS_POSSIBLE": "Nous serons de retour dès que possible",
+    "ASYNC_TITLE": "Écrivez-nous",
+    "ASYNC_REPLY": "Nous répondons généralement en quelques heures — laissez votre adresse e-mail et nous vous écrirons.",
+    "ASYNC_REPLY_SHORT": "Répond généralement en quelques heures"
   },
   "REPLY_TIME": {
     "IN_A_FEW_MINUTES": "Répond généralement en quelques minutes",

@@ -5,7 +5,6 @@ import AvailabilityContainer from 'widget/components/Availability/AvailabilityCo
 import { useMapGetter } from 'dashboard/composables/store.js';
 
 const props = defineProps({
-  availableAgents: { type: Array, default: () => [] },
   hasConversation: { type: Boolean, default: false },
 });
 
@@ -29,7 +28,7 @@ const startConversation = () => {
   <div
     class="flex flex-col gap-3 w-full border border-solid border-[var(--g-border)] rounded-[var(--g-radius-card)] bg-[var(--g-surface)] px-5 py-4"
   >
-    <AvailabilityContainer :agents="availableAgents" show-header show-avatars />
+    <AvailabilityContainer />
 
     <button
       class="inline-flex items-center gap-1 font-medium text-n-slate-12"
