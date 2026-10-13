@@ -387,24 +387,28 @@ const reviewLabel = computed(() => {
       from a collapsed shell. The footer's Insert to edit and Send draft stay
       disabled until then, so nothing is one Tab away from sending a reply
       nobody has read. -->
-    <template v-if="!isStreaming">
+    <!-- Drawn whole. The card is what is capped (`max-h-[50vh]` on the
+      composer), and this scroller is the one thing inside it that gives way:
+      `flex-1 min-h-0` lets it shrink and `overflow-y-auto` makes it scroll, so
+      an ordinary draft shows in full and only a draft that outgrows the card
+      scrolls. The trace scrolls with the body: an opened trace outside it could
+      not shrink and spilled over the footer. The header above and the footer
+      below are siblings, not children, so Send draft never scrolls out of
+      view. `tabindex="0"` with `role="region"` is what makes the scroll
+      container reachable without a mouse. -->
+    <div
+      v-if="!isStreaming"
+      class="draft-dock__scroll flex-1 min-h-0 overflow-y-auto"
+      role="region"
+      tabindex="0"
+      :aria-label="$t('GOTCHU.DRAFT.TITLE')"
+    >
       <div v-if="trace.length" class="draft-dock__trace mx-[18px]">
         <AITrace :steps="trace" :summary="traceSummary" tank />
       </div>
-      <!-- Drawn whole. The card is what is capped (`max-h-[50vh]` on
-        the composer), and this body is the one thing inside it that gives way:
-        `flex-1 min-h-0` lets it shrink and `overflow-y-auto` makes it scroll,
-        so an ordinary draft shows in full and only a draft that outgrows the
-        card scrolls. The header above and the footer below are siblings, not
-        children, so Send draft never scrolls out of view. `tabindex="0"` with
-        `role="region"` is what makes the scroll container reachable without a
-        mouse. -->
       <div
-        class="draft-dock__body flex-1 min-h-0 overflow-y-auto px-[18px] py-4 text-[15px] leading-6 whitespace-pre-line text-pretty text-[var(--g-text)]"
+        class="draft-dock__body px-[18px] py-4 text-[15px] leading-6 whitespace-pre-line text-pretty text-[var(--g-text)]"
         :class="{ 'is-dimmed': working }"
-        role="region"
-        tabindex="0"
-        :aria-label="$t('GOTCHU.DRAFT.TITLE')"
       >
         <!-- Keyed by the text, so a redraft landing under the reader fades in
           as a new draft rather than swapping characters in place. -->
@@ -412,7 +416,7 @@ const reviewLabel = computed(() => {
           <span :key="text" class="block">{{ text }}</span>
         </Transition>
       </div>
-    </template>
+    </div>
   </div>
   <!-- Below the draft body and above the footer, whether or not there is a
     draft: the mode switch must stay on screen when the band is gone, so these
@@ -487,7 +491,7 @@ const reviewLabel = computed(() => {
 /* The capped body is focusable so it can be scrolled from the keyboard, and
    anything focusable has to show where the focus is. `focus-visible` rather than
    `focus`, so clicking into the draft text does not draw a ring around it. */
-.draft-dock__body:focus-visible {
+.draft-dock__scroll:focus-visible {
   outline: 2px solid var(--g-agent);
   outline-offset: 2px;
 }

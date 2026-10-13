@@ -1718,11 +1718,12 @@ export default {
 }
 
 // The board's dock: one card, teal-edged, lifted by the design's single
-// elevation, centred in the thread column and capped (plan Decision 2) so a
-// long draft scrolls its own body instead of pushing the conversation off the
-// screen. The only child that gives way is the draft body.
+// elevation, as wide as the thread with the same 28px gutters, and capped
+// (plan Decision 2) so a long draft scrolls its own body instead of pushing the
+// conversation off the screen. The only child that gives way is the draft
+// body and its trace.
 .reply-box {
-  @apply relative flex flex-col self-center mx-auto mb-7 w-[calc(100%-56px)] max-w-[760px] max-h-[50vh] border border-[var(--g-agent-border)] rounded-[16px] bg-[var(--g-surface)];
+  @apply relative flex flex-col self-center mx-auto mb-7 w-[calc(100%-56px)] max-h-[50vh] border border-[var(--g-agent-border)] rounded-[16px] bg-[var(--g-surface)];
 
   box-shadow: var(--g-shadow-pop);
 

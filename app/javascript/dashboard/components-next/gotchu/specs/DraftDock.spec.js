@@ -282,14 +282,29 @@ describe('DraftDock card', () => {
 
   it('draws an ordinary draft whole and lets only the body scroll inside the card', () => {
     const wrapper = mountComponent({ text: 'x'.repeat(800) });
-    const body = wrapper.find('.draft-dock__body');
-    expect(body.classes()).not.toContain('max-h-[170px]');
-    expect(body.classes()).toEqual(
+    const scroll = wrapper.find('.draft-dock__scroll');
+    expect(wrapper.find('.draft-dock__body').classes()).not.toContain(
+      'max-h-[170px]'
+    );
+    expect(scroll.find('.draft-dock__body').exists()).toBe(true);
+    expect(scroll.classes()).toEqual(
       expect.arrayContaining(['overflow-y-auto', 'min-h-0'])
     );
-    expect(body.find('[data-testid="composer-send-draft"]').exists()).toBe(
+    expect(scroll.find('[data-testid="composer-send-draft"]').exists()).toBe(
       false
     );
+  });
+
+  // An opened trace is taller than the capped card. Outside the scroller it
+  // could not shrink, so it spilled over the modes, the instruct box and the
+  // footer, which then floated on top of it.
+  it('scrolls the trace with the draft body, so opening it stays inside the card', () => {
+    const wrapper = mountComponent({
+      trace: [{ kind: 'policy', did: 'Read the shop policy', result: '' }],
+    });
+    const scroll = wrapper.find('.draft-dock__scroll');
+    expect(scroll.findComponent(AITrace).exists()).toBe(true);
+    expect(scroll.find('.draft-dock__body').exists()).toBe(true);
   });
 
   it('splits the heading into a pill and a provenance line with a link', () => {

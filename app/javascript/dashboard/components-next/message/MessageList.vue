@@ -223,10 +223,8 @@ const getInReplyToMessage = parentMessage => {
 </script>
 
 <template>
-  <!-- The 760px column is padding, not max-width: this list is the scroller. -->
-  <ul
-    class="flex flex-col gap-3 pt-7 px-[max(28px,calc((100%-760px)/2))] bg-n-surface-1"
-  >
+  <!-- Full pane width with 28px gutters, the same edges as the draft card. -->
+  <ul class="flex flex-col gap-3 pt-7 px-7 bg-n-surface-1">
     <slot name="beforeAll" />
     <template v-for="entry in items" :key="entry.key">
       <ThreadDayLine v-if="entry.type === 'day'" :date="entry.date" />
