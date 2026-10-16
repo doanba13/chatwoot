@@ -280,30 +280,43 @@ describe('DraftDock card', () => {
   };
   const stubs = { 'router-link': { template: '<a class="link"><slot /></a>' } };
 
-  it('draws an ordinary draft whole and lets only the body scroll inside the card', () => {
+  // Measured on staging 2026-10-16: the card's fixed parts take ~305px, so
+  // under a 50vh cap a 768px-high laptop left the draft text 45px, and an
+  // opened trace pushed it to 0. The region has a floor, the text keeps one of
+  // its own, and only the body and the trace scroll.
+  it('gives the draft text a floor and lets only the body scroll inside the card', () => {
     const wrapper = mountComponent({ text: 'x'.repeat(800) });
     const scroll = wrapper.find('.draft-dock__scroll');
-    expect(wrapper.find('.draft-dock__body').classes()).not.toContain(
-      'max-h-[170px]'
-    );
+    const body = wrapper.find('.draft-dock__body');
     expect(scroll.find('.draft-dock__body').exists()).toBe(true);
     expect(scroll.classes()).toEqual(
-      expect.arrayContaining(['overflow-y-auto', 'min-h-0'])
+      expect.arrayContaining(['flex', 'flex-col', 'min-h-[148px]'])
     );
+    expect(scroll.classes()).not.toContain('overflow-y-auto');
+    expect(body.classes()).toEqual(
+      expect.arrayContaining(['flex-1', 'min-h-[96px]', 'overflow-y-auto'])
+    );
+    expect(body.attributes('role')).toBe('region');
+    expect(body.attributes('tabindex')).toBe('0');
     expect(scroll.find('[data-testid="composer-send-draft"]').exists()).toBe(
       false
     );
   });
 
-  // An opened trace is taller than the capped card. Outside the scroller it
-  // could not shrink, so it spilled over the modes, the instruct box and the
-  // footer, which then floated on top of it.
-  it('scrolls the trace with the draft body, so opening it stays inside the card', () => {
+  // An opened trace is taller than the capped card. Outside the region it
+  // could not shrink and spilled over the footer; inside one shared scroller
+  // it pushed the draft text out of view. It now shrinks and scrolls on its
+  // own, beside a body that keeps its floor.
+  it('lets an opened trace shrink and scroll on its own, never over the draft', () => {
     const wrapper = mountComponent({
       trace: [{ kind: 'policy', did: 'Read the shop policy', result: '' }],
     });
     const scroll = wrapper.find('.draft-dock__scroll');
+    const trace = wrapper.find('.draft-dock__trace');
     expect(scroll.findComponent(AITrace).exists()).toBe(true);
+    expect(trace.classes()).toEqual(
+      expect.arrayContaining(['min-h-[34px]', 'overflow-y-auto'])
+    );
     expect(scroll.find('.draft-dock__body').exists()).toBe(true);
   });
 
