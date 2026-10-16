@@ -1721,9 +1721,11 @@ export default {
 // elevation, as wide as the thread with the same 28px gutters, and capped
 // (plan Decision 2) so a long draft scrolls its own body instead of pushing the
 // conversation off the screen. The only child that gives way is the draft
-// body and its trace.
+// body and its trace. The cap never goes below 460px: the fixed parts take
+// ~305px and the draft region's floor is 148px, so a plain 50vh left a
+// 768px-high laptop 45px of draft.
 .reply-box {
-  @apply relative flex flex-col self-center mx-auto mb-7 w-[calc(100%-56px)] max-h-[50vh] border border-[var(--g-agent-border)] rounded-[16px] bg-[var(--g-surface)];
+  @apply relative flex flex-col self-center mx-auto mb-7 w-[calc(100%-56px)] max-h-[max(50vh,460px)] border border-[var(--g-agent-border)] rounded-[16px] bg-[var(--g-surface)];
 
   box-shadow: var(--g-shadow-pop);
 
