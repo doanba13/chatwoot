@@ -227,12 +227,30 @@ describe('store folders', () => {
 
   it('narrows to one inbox when the route names one', () => {
     const folder = storeFolder('cadeauniq-inbox-1');
-    expect(folder.name).toBe('cadeauniq');
+    expect(folder.name).toBe('cadeauniq · #1');
     const { payload } = folder.query;
     expect(payload[payload.length - 1].query_operator).toBeNull();
     expect(matchesFilters(conversation('cadeauniq', 1), payload)).toBe(true);
     expect(matchesFilters(conversation('cadeauniq', 3), payload)).toBe(false);
     expect(matchesFilters(conversation('persoliebe', 1), payload)).toBe(false);
+  });
+
+  // The header read "persoliebe" for both the store and its shared mail, so
+  // the two pages looked the same (staging sweep 2026-10-16).
+  it('titles the queue with the store name, and the inbox when it names one', () => {
+    const names = {
+      stores: [{ key: 'cadeauniq', name: 'Cadeauniq' }],
+      inboxes: [{ id: 1, name: 'Support Mailbox' }],
+    };
+    expect(storeFolder('cadeauniq', names).name).toBe('Cadeauniq');
+    expect(storeFolder('cadeauniq-inbox-1', names).name).toBe(
+      'Cadeauniq · Support Mailbox'
+    );
+    expect(storeFolder('cadeauniq-inbox-9', names).name).toBe('Cadeauniq · #9');
+  });
+
+  it('falls back to the key while the store list has not loaded', () => {
+    expect(storeFolder('giftera').name).toBe('giftera');
   });
 });
 
@@ -250,6 +268,13 @@ describe('sameFolder', () => {
       true
     );
     expect(sameFolder(undefined, undefined)).toBe(true);
+  });
+
+  it('keeps a store queue the same folder when only its title arrives', () => {
+    const named = storeFolder('giftera', {
+      stores: [{ key: 'giftera', name: 'Giftera' }],
+    });
+    expect(sameFolder(storeFolder('giftera'), named)).toBe(true);
   });
 
   it('tells apart a different queue, user, tab, store or inbox', () => {
