@@ -89,14 +89,24 @@ const STORE_INBOX = /^(.+)-inbox-(\d+)$/;
 export const storeInboxQueue = (key, inboxId) =>
   `${STORE_QUEUE_PREFIX}${key}-inbox-${inboxId}`;
 
-export function storeFolder(param) {
+// Titled from the store list the rail already loads (sharedStores), the key
+// until it arrives; with an inbox, the inbox too, so a store's shared mail does
+// not read as the whole store.
+const storeTitle = (key, inboxId, { stores = [], inboxes = [] }) => {
+  const store = stores.find(s => s.key === key)?.name ?? key;
+  if (!inboxId) return store;
+  const inbox = inboxes.find(i => i.id === Number(inboxId))?.name;
+  return `${store} · ${inbox ?? `#${inboxId}`}`;
+};
+
+export function storeFolder(param, names = {}) {
   if (!param) return undefined;
   const [, key = param, inboxId] = param.match(STORE_INBOX) ?? [];
   const rows = [condition('store_key', 'equal_to', [key])];
   if (inboxId) rows.push(condition('inbox_id', 'equal_to', [Number(inboxId)]));
   return {
     id: `store:${param}`,
-    name: key,
+    name: storeTitle(key, inboxId, names),
     query: {
       payload: rows.map((row, i) =>
         i === rows.length - 1 ? { ...row, query_operator: null } : row
@@ -155,9 +165,16 @@ export function queueFolder(key, t, userId, tab = 'all') {
 // Whether two active folders show the same list. ChatList's folder is rebuilt
 // from the signed-in user, whose object is replaced on every presence tick, and
 // a refetch empties the conversation list -- so "a new object" must not count
-// as "a new folder".
-const folderKey = folder =>
-  folder
-    ? JSON.stringify([folder.id, folder.name, folder.query ?? null])
-    : null;
+// as "a new folder". A store queue's title arrives with the store list after
+// the first render, and a title alone never changes what the list shows; a
+// saved folder's name is the user's own edit, so it still counts.
+const folderKey = folder => {
+  if (!folder) return null;
+  const isStore = String(folder.id).startsWith('store:');
+  return JSON.stringify([
+    folder.id,
+    isStore ? null : folder.name,
+    folder.query ?? null,
+  ]);
+};
 export const sameFolder = (a, b) => folderKey(a) === folderKey(b);

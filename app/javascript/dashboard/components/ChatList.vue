@@ -55,6 +55,10 @@ import {
   sameFolder,
   STORE_QUEUE_PREFIX,
 } from 'dashboard/components-next/gotchu/queues';
+import {
+  stores as gotchuStores,
+  inboxes as gotchuInboxes,
+} from 'dashboard/components-next/gotchu/agent/sharedStores';
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
@@ -159,7 +163,10 @@ watch(
 
 const activeFolder = computed(() => {
   if (props.queue?.startsWith(STORE_QUEUE_PREFIX)) {
-    return storeFolder(props.queue.slice(STORE_QUEUE_PREFIX.length));
+    return storeFolder(props.queue.slice(STORE_QUEUE_PREFIX.length), {
+      stores: gotchuStores.value,
+      inboxes: gotchuInboxes.value,
+    });
   }
   if (props.queue) {
     return queueFolder(props.queue, t, currentUser.value?.id, queueTab.value);
