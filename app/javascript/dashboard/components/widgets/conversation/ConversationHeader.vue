@@ -16,6 +16,7 @@ import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import Button from 'dashboard/components-next/button/Button.vue';
+import TranslateSwitch from 'dashboard/components-next/gotchu/header/TranslateSwitch.vue';
 import AssignButton from 'dashboard/components-next/gotchu/header/AssignButton.vue';
 import { headerMeta } from 'dashboard/components-next/gotchu/header/headerMeta';
 import { useDraftMeta } from 'dashboard/components-next/gotchu/helpers/draftMeta';
@@ -302,6 +303,7 @@ const copyConversationId = async () => {
         class="hidden md:flex"
       />
       <ConversationCallButton :inbox="inbox" :chat="currentChat" />
+      <TranslateSwitch />
       <AssignButton
         :conversation-id="chat.id"
         :assignee="chatMetadata?.assignee"

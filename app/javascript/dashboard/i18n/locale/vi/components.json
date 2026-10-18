@@ -74,5 +74,20 @@
     "ERROR": "That doesn't look like a supported video link",
     "ADD": "Embed",
     "CANCEL": "Huỷ"
+  },
+  "GOTCHU": {
+    "TRANSLATE": {
+      "SWITCH_LABEL": "Dịch",
+      "SWITCH_TOOLTIP": "Dịch các tin nhắn trong cuộc trò chuyện này",
+      "LANGUAGE_LABEL": "Dịch sang",
+      "LANGUAGES": {
+        "en": "Tiếng Anh",
+        "vi": "Tiếng Việt",
+        "de": "Tiếng Đức",
+        "fr": "Tiếng Pháp"
+      },
+      "FAILED": "Không dịch được — đang hiển thị bản gốc",
+      "PARTIAL": "Chỉ phần đầu được dịch — mở bản gốc để xem phần còn lại"
+    }
   }
 }

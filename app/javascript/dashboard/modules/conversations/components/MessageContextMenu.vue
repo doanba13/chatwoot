@@ -16,6 +16,7 @@ import MenuItem from '../../../components/widgets/conversation/contextMenu/menuI
 import { useTrack } from 'dashboard/composables';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import ReportCaptainMessageDialog from './ReportCaptainMessageDialog.vue';
+import { resolveTranslateTarget } from 'dashboard/composables/useTranslateSetting';
 
 export default {
   components: {
@@ -122,8 +123,11 @@ export default {
     },
     async handleTranslate() {
       const { locale: accountLocale } = this.getAccount(this.currentAccountId);
-      const agentLocale = this.getUISettings?.locale;
-      const targetLanguage = agentLocale || accountLocale || 'en';
+      const targetLanguage = resolveTranslateTarget({
+        saved: this.getUISettings?.gotchu_translate_target,
+        uiLocale: this.getUISettings?.locale,
+        accountLocale,
+      });
       try {
         await this.$store.dispatch('translateMessage', {
           conversationId: this.conversationId,

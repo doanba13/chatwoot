@@ -2,30 +2,22 @@ import { selectTranslation } from '../useTranslations';
 
 describe('selectTranslation', () => {
   it('returns null when translations is null', () => {
-    expect(selectTranslation(null, 'en', 'en')).toBeNull();
+    expect(selectTranslation(null, 'en')).toBeNull();
   });
 
   it('returns null when translations is empty', () => {
-    expect(selectTranslation({}, 'en', 'en')).toBeNull();
+    expect(selectTranslation({}, 'en')).toBeNull();
   });
 
-  it('returns first translation when no locale matches', () => {
-    const translations = { en: 'Hello', es: 'Hola' };
-    expect(selectTranslation(translations, 'fr', 'de')).toBe('Hello');
+  it('returns the translation for the target', () => {
+    expect(selectTranslation({ en: 'Hello', de: 'Hallo' }, 'de')).toBe('Hallo');
   });
 
-  it('returns translation matching agent locale', () => {
-    const translations = { en: 'Hello', es: 'Hola', zh_CN: '你好' };
-    expect(selectTranslation(translations, 'es', 'en')).toBe('Hola');
+  it('never falls back to another stored language', () => {
+    expect(selectTranslation({ de: 'Hallo' }, 'vi')).toBeNull();
   });
 
-  it('falls back to account locale when agent locale not found', () => {
-    const translations = { en: 'Hello', zh_CN: '你好' };
-    expect(selectTranslation(translations, 'fr', 'zh_CN')).toBe('你好');
-  });
-
-  it('returns first translation when both locales are undefined', () => {
-    const translations = { en: 'Hello', es: 'Hola' };
-    expect(selectTranslation(translations, undefined, undefined)).toBe('Hello');
+  it('returns null without a target', () => {
+    expect(selectTranslation({ en: 'Hello' }, undefined)).toBeNull();
   });
 });

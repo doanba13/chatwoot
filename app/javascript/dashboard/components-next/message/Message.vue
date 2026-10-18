@@ -1,9 +1,15 @@
 <script setup>
-import { onMounted, computed, ref, toRefs } from 'vue';
+import { onMounted, computed, ref, toRefs, toRef, watch } from 'vue';
 import { useTimeoutFn } from '@vueuse/core';
 import { provideMessageContext } from './provider.js';
 import { useTrack } from 'dashboard/composables';
-import { useMapGetter } from 'dashboard/composables/store';
+import { useMapGetter, useStore } from 'dashboard/composables/store';
+import {
+  useTranslateSetting,
+  shouldAutoTranslate,
+  claimAutoTranslate,
+} from 'dashboard/composables/useTranslateSetting';
+import { useTranslations } from 'dashboard/composables/useTranslations';
 import { emitter } from 'shared/helpers/mitt';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -441,6 +447,51 @@ const contextMenuEnabledOptions = computed(() => {
   };
 });
 
+const store = useStore();
+const translateSetting = useTranslateSetting();
+const { isPartial } = useTranslations(toRef(props, 'contentAttributes'));
+const translateFailed = ref(false);
+
+// With the switch on, a message is translated without being asked. The
+// request is made once per message and language: a text already in the
+// target language stores nothing, and must not be asked for again.
+const requestTranslation = async () => {
+  const target = translateSetting.target.value;
+  if (!claimAutoTranslate(props.id, target)) return;
+  translateFailed.value = false;
+  try {
+    await store.dispatch('translateMessage', {
+      conversationId: props.conversationId,
+      messageId: props.id,
+      targetLanguage: target,
+    });
+  } catch (error) {
+    translateFailed.value = true;
+  }
+};
+
+watch(
+  () =>
+    props.status !== MESSAGE_STATUS.PROGRESS &&
+    props.status !== MESSAGE_STATUS.FAILED &&
+    shouldAutoTranslate(props, {
+      enabled: translateSetting.enabled.value,
+      target: translateSetting.target.value,
+      translations: props.contentAttributes?.translations,
+    }),
+  wanted => {
+    if (wanted) requestTranslation();
+  },
+  { immediate: true }
+);
+
+const translateNotice = computed(() => {
+  if (!translateSetting.enabled.value) return '';
+  if (translateFailed.value) return t('GOTCHU.TRANSLATE.FAILED');
+  if (isPartial.value) return t('GOTCHU.TRANSLATE.PARTIAL');
+  return '';
+});
+
 const shouldRenderMessage = computed(() => {
   const hasAttachments = !!(props.attachments && props.attachments.length > 0);
   const isEmailContentType = props.contentType === CONTENT_TYPES.INCOMING_EMAIL;
@@ -639,6 +690,14 @@ provideMessageContext({
         :steps="sentTrace"
         class="[grid-area:trace] self-stretch mt-2"
       />
+      <span
+        v-if="translateNotice && !contentAttributes.externalError"
+        class="[grid-area:meta] text-xs text-n-slate-11"
+        :class="flexOrientationClass"
+        data-translate-notice
+      >
+        {{ translateNotice }}
+      </span>
       <MessageError
         v-if="contentAttributes.externalError"
         class="[grid-area:meta]"

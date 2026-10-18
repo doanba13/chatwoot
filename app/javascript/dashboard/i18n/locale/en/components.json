@@ -355,6 +355,19 @@
       "DEGRADED_NOT_RECOGNISED": "This carrier’s numbers cannot be tracked live",
       "DEGRADED_QUOTA": "Live tracking is paused (quota reached)",
       "DEGRADED_NO_DATA": "The carrier has no scans for this parcel yet"
+    },
+    "TRANSLATE": {
+      "SWITCH_LABEL": "Translate",
+      "SWITCH_TOOLTIP": "Translate messages in this conversation",
+      "LANGUAGE_LABEL": "Translate into",
+      "LANGUAGES": {
+        "en": "English",
+        "vi": "Vietnamese",
+        "de": "German",
+        "fr": "French"
+      },
+      "FAILED": "Couldn't translate — showing original",
+      "PARTIAL": "Only the first part was translated — open the original for the rest"
     }
   }
 }

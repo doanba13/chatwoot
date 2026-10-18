@@ -11,7 +11,7 @@ import { useTranslations } from 'dashboard/composables/useTranslations';
 const { content, attachments, contentAttributes, messageType } =
   useMessageContext();
 
-const { hasTranslations, translationContent } =
+const { hasTranslations, translationContent, showToggle } =
   useTranslations(contentAttributes);
 
 const renderOriginal = ref(false);
@@ -49,7 +49,7 @@ const handleSeeOriginal = () => {
       </span>
       <FormattedContent v-if="renderContent" :content="renderContent" />
       <TranslationToggle
-        v-if="hasTranslations"
+        v-if="showToggle"
         class="-mt-3"
         :showing-original="renderOriginal"
         @toggle="handleSeeOriginal"

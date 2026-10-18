@@ -32,7 +32,7 @@ onMounted(() => {
 const isOutgoing = computed(() => messageType.value === MESSAGE_TYPES.OUTGOING);
 const isIncoming = computed(() => !isOutgoing.value);
 
-const { hasTranslations, translationContent } =
+const { hasTranslations, translationContent, showToggle } =
   useTranslations(contentAttributes);
 
 const originalEmailText = computed(() => {
@@ -196,7 +196,7 @@ const handleSeeOriginal = () => {
       </div>
     </section>
     <TranslationToggle
-      v-if="hasTranslations"
+      v-if="showToggle"
       class="py-2 px-3"
       :showing-original="renderOriginal"
       @toggle="handleSeeOriginal"
