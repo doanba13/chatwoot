@@ -1,4 +1,6 @@
 class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::Conversations::BaseController
+  TRANSLATE_FAILED = 'Could not translate this message'.freeze
+
   before_action :ensure_api_inbox, only: :update
 
   def index
@@ -34,27 +36,38 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   end
 
   def translate
+    target = permitted_params[:target_language]
+    return render_could_not_create_error(TRANSLATE_FAILED) unless Gotchu::TranslateService::TARGETS.include?(target)
     return head :ok if already_translated_content_available?
 
-    translated_content = Integrations::GoogleTranslate::ProcessorService.new(
-      message: message,
-      target_language: permitted_params[:target_language]
-    ).perform
+    result = Gotchu::TranslateService.new(account_id: Current.account.id).message(message: message, target: target)
+    return render_could_not_create_error(TRANSLATE_FAILED) if result.nil?
+    return render json: { content: message.content } if result[:skipped]
 
-    if translated_content.present?
-      translations = {}
-      translations[permitted_params[:target_language]] = translated_content
-      translations = message.translations.merge!(translations) if message.translations.present?
-      message.update!(translations: translations)
-    end
-
-    render json: { content: translated_content }
-  rescue Google::Cloud::Error => e
-    # `details` carries the clean human message; `message` includes gRPC debug noise
-    render_could_not_create_error(e.details.presence || e.message)
+    store_translation(target, result)
+    render json: { content: stored_content(result[:text]) }
   end
 
   private
+
+  # Email bubbles render the stored translation as HTML, so it is escaped
+  # paragraphs there; every other bubble interpolates it as plain text.
+  def stored_content(text)
+    return text unless message.inbox.email?
+
+    text.split(/\n{2,}/).compact_blank.map do |paragraph|
+      "<p>#{ERB::Util.html_escape(paragraph.strip).gsub("\n", '<br />')}</p>"
+    end.join("\n\n")
+  end
+
+  def store_translation(target, result)
+    partial = Array(message.translation_partial) - [target]
+    partial << target if result[:partial]
+    message.update!(
+      translations: (message.translations.presence || {}).merge(target => stored_content(result[:text])),
+      translation_partial: partial
+    )
+  end
 
   def message
     @message ||= @conversation.messages.find(permitted_params[:id])

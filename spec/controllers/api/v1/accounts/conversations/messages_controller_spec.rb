@@ -380,4 +380,136 @@ RSpec.describe 'Conversation Messages API', type: :request do
       end
     end
   end
+
+  describe 'POST /api/v1/accounts/{account.id}/conversations/<id>/messages/{id}/translate' do
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:inbox) { create(:inbox, account: account) }
+    let(:conversation) { create(:conversation, inbox: inbox, account: account) }
+    let(:message) { create(:message, conversation: conversation, account: account, inbox: inbox, content: 'Hallo Welt') }
+    let(:gateway_url) { 'http://gateway.test:8137/api/translate' }
+    let(:gateway_reply) { { text: 'xin chào', partial: false, skipped: false } }
+
+    before do
+      create(:inbox_member, inbox: inbox, user: agent)
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_URL', nil).and_return('http://gateway.test:8137')
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRET', nil).and_return('a-shared-secret')
+      allow(ENV).to receive(:fetch).with('GOTCHU_GATEWAY_SECRETS', nil).and_return(nil)
+      allow(ENV).to receive(:fetch).with('GOTCHU_GESTURE_SECRET', nil).and_return('a-gesture-secret')
+    end
+
+    def stub_gateway(status: 200, body: gateway_reply)
+      stub_request(:post, gateway_url).with(query: { secret: 'a-shared-secret' })
+                                      .to_return(status: status, body: body.to_json)
+    end
+
+    def translate(target, extra = {})
+      post translate_api_v1_account_conversation_message_url(account_id: account.id, conversation_id: conversation.display_id, id: message.id),
+           params: { target_language: target }.merge(extra), headers: agent.create_new_auth_token, as: :json
+    end
+
+    it 'refuses target_language outside en vi de fr' do
+      stub = stub_gateway
+      translate('es')
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(stub).not_to have_been_requested
+    end
+
+    it 'stores the translation under the target language and returns it' do
+      stub_gateway
+      translate('vi')
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['content']).to eq('xin chào')
+      expect(message.reload.translations['vi']).to eq('xin chào')
+    end
+
+    it 'merges with translations already stored for other languages' do
+      message.update!(translations: { 'de' => 'Hallo' })
+      stub_gateway
+      translate('vi')
+      expect(message.reload.translations).to eq('de' => 'Hallo', 'vi' => 'xin chào')
+    end
+
+    it 'does not call the gateway when the language is already stored' do
+      message.update!(translations: { 'vi' => 'da co' })
+      stub = stub_gateway
+      translate('vi')
+      expect(response).to have_http_status(:ok)
+      expect(stub).not_to have_been_requested
+    end
+
+    it 'stores nothing when the gateway refuses' do
+      [429, 502].each do |status|
+        stub_gateway(status: status, body: { error: 'x' })
+        translate('vi')
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to be_present
+        expect(message.reload.translations).to be_blank
+      end
+    end
+
+    it 'records partial' do
+      stub_gateway(body: { text: 'Hallo', partial: true, skipped: false })
+      translate('de')
+      expect(message.reload.translation_partial).to include('de')
+    end
+
+    it 'stores nothing and returns the original when skipped' do
+      stub_gateway(body: { text: '', partial: false, skipped: true })
+      translate('de')
+      expect(response.parsed_body['content']).to eq('Hallo Welt')
+      expect(message.reload.translations).to be_blank
+    end
+
+    it 'ignores a text param and sends the stored content' do
+      stub = stub_gateway.with { |req| JSON.parse(req.body)['text'] == 'Hallo Welt' }
+      translate('vi', text: 'attacker text', content: 'attacker content')
+      expect(stub).to have_been_requested
+    end
+
+    it 'does not consult the google_translate hook' do
+      create(:integrations_hook, account: account, app_id: 'google_translate', settings: { project_id: 'p', credentials: {} })
+      stub_gateway
+      expect(Integrations::GoogleTranslate::ProcessorService).not_to receive(:new)
+      translate('vi')
+      expect(response).to have_http_status(:success)
+    end
+
+    context 'with an email message' do
+      let(:inbox) { create(:inbox, account: account, channel: create(:channel_email, account: account)) }
+
+      it 'stores an HTML-only email translation as escaped paragraphs' do
+        message.update!(content_attributes: { email: { html_content: { full: '<p>Hallo</p><p>Welt</p>' } } })
+        stub = stub_gateway(body: { text: "Hello\n\nWorld", partial: false, skipped: false }).with do |req|
+          JSON.parse(req.body)['text'] == "Hallo\n\nWelt"
+        end
+        translate('en')
+        expect(stub).to have_been_requested
+        expect(message.reload.translations['en']).to eq("<p>Hello</p>\n\n<p>World</p>")
+      end
+
+      it 'prefers the email text part over HTML when both exist' do
+        message.update!(content_attributes: { email: { text_content: { full: 'plain' }, html_content: { full: '<p>html</p>' } } })
+        stub = stub_gateway.with { |req| JSON.parse(req.body)['text'] == 'plain' }
+        translate('en')
+        expect(stub).to have_been_requested
+      end
+
+      it 'stores gateway markup escaped' do
+        evil = '<img src=x onerror=alert(1)><script>alert(2)</script>'
+        stub_gateway(body: { text: evil, partial: false, skipped: false })
+        translate('en')
+        stored = message.reload.translations['en']
+        expect(stored).not_to include('<img')
+        expect(stored).not_to include('<script')
+        expect(stored).to include('&lt;img src=x onerror=alert(1)&gt;')
+      end
+    end
+
+    it 'stores gateway markup as plain text for a non-email message' do
+      stub_gateway(body: { text: '<b>x</b>', partial: false, skipped: false })
+      translate('en')
+      expect(message.reload.translations['en']).to eq('<b>x</b>')
+    end
+  end
 end
