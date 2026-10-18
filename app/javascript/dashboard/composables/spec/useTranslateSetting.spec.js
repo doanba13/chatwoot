@@ -2,6 +2,7 @@ import {
   resolveTranslateTarget,
   shouldAutoTranslate,
   claimAutoTranslate,
+  releaseAutoTranslate,
   createTaskQueue,
 } from '../useTranslateSetting';
 
@@ -82,6 +83,16 @@ describe('claimAutoTranslate', () => {
     expect(claimAutoTranslate(901, 'de')).toBe(true);
     expect(claimAutoTranslate(901, 'de')).toBe(false);
     expect(claimAutoTranslate(901, 'fr')).toBe(true);
+  });
+});
+
+describe('releaseAutoTranslate', () => {
+  it('lets a released claim be taken again, for that language only', () => {
+    expect(claimAutoTranslate(902, 'de')).toBe(true);
+    expect(claimAutoTranslate(902, 'fr')).toBe(true);
+    releaseAutoTranslate(902, 'de');
+    expect(claimAutoTranslate(902, 'de')).toBe(true);
+    expect(claimAutoTranslate(902, 'fr')).toBe(false);
   });
 });
 

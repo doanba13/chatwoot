@@ -420,6 +420,7 @@ RSpec.describe 'Conversation Messages API', type: :request do
       translate('vi')
       expect(response).to have_http_status(:success)
       expect(response.parsed_body['content']).to eq('xin chào')
+      expect(response.parsed_body).to include('target_language' => 'vi', 'skipped' => false, 'partial' => false)
       expect(message.reload.translations['vi']).to eq('xin chào')
     end
 
@@ -435,6 +436,7 @@ RSpec.describe 'Conversation Messages API', type: :request do
       stub = stub_gateway
       translate('vi')
       expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include('content' => 'da co', 'skipped' => false)
       expect(stub).not_to have_been_requested
     end
 
@@ -451,13 +453,14 @@ RSpec.describe 'Conversation Messages API', type: :request do
     it 'records partial' do
       stub_gateway(body: { text: 'Hallo', partial: true, skipped: false })
       translate('de')
+      expect(response.parsed_body['partial']).to be(true)
       expect(message.reload.translation_partial).to include('de')
     end
 
     it 'stores nothing and returns the original when skipped' do
       stub_gateway(body: { text: '', partial: false, skipped: true })
       translate('de')
-      expect(response.parsed_body['content']).to eq('Hallo Welt')
+      expect(response.parsed_body).to include('content' => 'Hallo Welt', 'skipped' => true)
       expect(message.reload.translations).to be_blank
     end
 

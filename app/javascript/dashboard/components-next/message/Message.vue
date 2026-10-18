@@ -8,6 +8,7 @@ import {
   useTranslateSetting,
   shouldAutoTranslate,
   claimAutoTranslate,
+  releaseAutoTranslate,
   enqueueTranslation,
 } from 'dashboard/composables/useTranslateSetting';
 import { useTranslations } from 'dashboard/composables/useTranslations';
@@ -469,6 +470,7 @@ const requestTranslation = async () => {
       })
     );
   } catch (error) {
+    releaseAutoTranslate(props.id, target);
     translateFailed.value = true;
   }
 };

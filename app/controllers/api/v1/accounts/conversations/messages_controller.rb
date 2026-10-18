@@ -38,17 +38,26 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   def translate
     target = permitted_params[:target_language]
     return render_could_not_create_error(TRANSLATE_FAILED) unless Gotchu::TranslateService::TARGETS.include?(target)
-    return head :ok if already_translated_content_available?
+    return render_stored_translation(target) if already_translated_content_available?
 
     result = Gotchu::TranslateService.new(account_id: Current.account.id).message(message: message, target: target)
     return render_could_not_create_error(TRANSLATE_FAILED) if result.nil?
-    return render json: { content: message.content } if result[:skipped]
+    return render json: translate_payload(message.content, target, true, false) if result[:skipped]
 
     store_translation(target, result)
-    render json: { content: stored_content(result[:text]) }
+    render json: translate_payload(stored_content(result[:text]), target, false, result[:partial].present?)
   end
 
   private
+
+  def translate_payload(content, target, skipped, partial)
+    { content: content, target_language: target, skipped: skipped, partial: partial }
+  end
+
+  def render_stored_translation(target)
+    partial = Array(message.translation_partial).include?(target)
+    render json: translate_payload(message.translations[target], target, false, partial)
+  end
 
   # Email bubbles render the stored translation as HTML, so it is escaped
   # paragraphs there; every other bubble interpolates it as plain text.

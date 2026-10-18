@@ -53,6 +53,14 @@ export function claimAutoTranslate(messageId, target) {
 }
 
 /**
+ * Gives a claim back after a failed request, so a later mount or re-render
+ * of the bubble can ask again.
+ */
+export function releaseAutoTranslate(messageId, target) {
+  claimed.delete(`${messageId}:${target}`);
+}
+
+/**
  * FIFO queue running at most `limit` async tasks at once. A rejection is
  * passed to that task's caller and never stalls the others.
  */
