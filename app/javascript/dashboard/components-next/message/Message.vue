@@ -8,6 +8,7 @@ import {
   useTranslateSetting,
   shouldAutoTranslate,
   claimAutoTranslate,
+  enqueueTranslation,
 } from 'dashboard/composables/useTranslateSetting';
 import { useTranslations } from 'dashboard/composables/useTranslations';
 import { emitter } from 'shared/helpers/mitt';
@@ -460,11 +461,13 @@ const requestTranslation = async () => {
   if (!claimAutoTranslate(props.id, target)) return;
   translateFailed.value = false;
   try {
-    await store.dispatch('translateMessage', {
-      conversationId: props.conversationId,
-      messageId: props.id,
-      targetLanguage: target,
-    });
+    await enqueueTranslation(() =>
+      store.dispatch('translateMessage', {
+        conversationId: props.conversationId,
+        messageId: props.id,
+        targetLanguage: target,
+      })
+    );
   } catch (error) {
     translateFailed.value = true;
   }

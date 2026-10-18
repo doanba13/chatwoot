@@ -52,6 +52,40 @@ export function claimAutoTranslate(messageId, target) {
   return true;
 }
 
+/**
+ * FIFO queue running at most `limit` async tasks at once. A rejection is
+ * passed to that task's caller and never stalls the others.
+ */
+export function createTaskQueue(limit) {
+  const waiting = [];
+  let running = 0;
+
+  const next = () => {
+    if (running >= limit || waiting.length === 0) return;
+    const { task, resolve, reject } = waiting.shift();
+    running += 1;
+    Promise.resolve()
+      .then(task)
+      .then(resolve, reject)
+      .finally(() => {
+        running -= 1;
+        next();
+      });
+  };
+
+  return task =>
+    new Promise((resolve, reject) => {
+      waiting.push({ task, resolve, reject });
+      next();
+    });
+}
+
+const MAX_TRANSLATIONS_IN_FLIGHT = 3;
+
+// One queue for the page: opening a long thread must not ask the gateway
+// for every message at once.
+export const enqueueTranslation = createTaskQueue(MAX_TRANSLATIONS_IN_FLIGHT);
+
 export function useTranslateSetting() {
   const { uiSettings, updateUISettings } = useUISettings();
   const { currentAccount } = useAccount();

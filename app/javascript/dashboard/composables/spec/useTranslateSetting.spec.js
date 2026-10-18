@@ -2,6 +2,7 @@ import {
   resolveTranslateTarget,
   shouldAutoTranslate,
   claimAutoTranslate,
+  createTaskQueue,
 } from '../useTranslateSetting';
 
 describe('resolveTranslateTarget', () => {
@@ -81,5 +82,48 @@ describe('claimAutoTranslate', () => {
     expect(claimAutoTranslate(901, 'de')).toBe(true);
     expect(claimAutoTranslate(901, 'de')).toBe(false);
     expect(claimAutoTranslate(901, 'fr')).toBe(true);
+  });
+});
+
+describe('createTaskQueue', () => {
+  it('never runs more than the limit at once and completes every task', async () => {
+    const enqueue = createTaskQueue(3);
+    let active = 0;
+    let peak = 0;
+    const order = [];
+    const make = i => async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      order.push(i);
+      await new Promise(r => {
+        setTimeout(r, 2);
+      });
+      active -= 1;
+      return i;
+    };
+    const results = await Promise.all(
+      Array.from({ length: 10 }, (_, i) => enqueue(make(i)))
+    );
+    expect(peak).toBe(3);
+    expect(results).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(order).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it('keeps going after a rejection', async () => {
+    const enqueue = createTaskQueue(1);
+    const bad = enqueue(() => Promise.reject(new Error('boom')));
+    const good = enqueue(() => Promise.resolve('ok'));
+    await expect(bad).rejects.toThrow('boom');
+    await expect(good).resolves.toBe('ok');
+  });
+
+  it('survives a task that throws synchronously', async () => {
+    const enqueue = createTaskQueue(1);
+    const bad = enqueue(() => {
+      throw new Error('sync');
+    });
+    const good = enqueue(() => 'ok');
+    await expect(bad).rejects.toThrow('sync');
+    await expect(good).resolves.toBe('ok');
   });
 });
