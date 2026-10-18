@@ -1,0 +1,130 @@
+{
+  "PROCEDURES_MGMT": {
+    "HEADER": "Quy trình",
+    "HEADER_BTN_TXT": "Quy trình mới",
+    "DESCRIPTION": "Quy trình là hướng dẫn do chủ cửa hàng viết để Gotchu làm theo khi tin nhắn của khách khớp với cụm từ kích hoạt bạn đặt. Hãy viết một quy trình, thử nó trên các cuộc trò chuyện gần đây bằng Phát lại, rồi kích hoạt.",
+    "LOADING": "Đang tải quy trình",
+    "SEARCH_PLACEHOLDER": "Tìm quy trình...",
+    "NO_RESULTS": "Không tìm thấy quy trình nào khớp với tìm kiếm",
+    "COUNT": "{n} quy trình | {n} quy trình",
+    "LIST": {
+      "404": "Chưa có quy trình nào.",
+      "GLOBAL": "Tất cả cửa hàng",
+      "TABLE_HEADER": {
+        "SLUG": "Slug",
+        "TITLE": "Tiêu đề",
+        "STORE": "Cửa hàng",
+        "STATUS": "Trạng thái",
+        "TRIGGERS": "Cụm từ kích hoạt",
+        "ACTIONS": "Thao tác"
+      }
+    },
+    "STATUS": {
+      "TESTING": "Thử nghiệm",
+      "ACTIVE": "Đang hoạt động",
+      "ARCHIVED": "Đã lưu trữ",
+      "API": {
+        "SUCCESS_MESSAGE": "Đã cập nhật trạng thái quy trình"
+      }
+    },
+    "ACTIONS": {
+      "EDIT": "Sửa",
+      "ACTIVATE": "Kích hoạt",
+      "RETURN_TO_TESTING": "Đưa về thử nghiệm",
+      "ARCHIVE": "Lưu trữ",
+      "REPLAY": "Phát lại"
+    },
+    "UNCONFIGURED": {
+      "DESCRIPTION": "Bàn hỗ trợ này chưa cấu hình quy trình. Hãy đặt các giá trị sau trên gateway rồi khởi động lại để bật tính năng này:"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Bàn hỗ trợ này chưa cấu hình quy trình nên chưa có gì được gửi.",
+      "UNAVAILABLE": "Không xác nhận được yêu cầu đã đến Gotchu. Hãy kiểm tra gateway trước khi thử lại.",
+      "INVALID": "Gotchu từ chối quy trình này. Hãy kiểm tra định dạng slug, giới hạn độ dài, và đảm bảo tiêu đề, nội dung và cụm từ kích hoạt không nêu tên khách hàng hay đơn hàng cụ thể.",
+      "DUPLICATE_SLUG": "Cửa hàng này đã có một quy trình với slug này.",
+      "NOT_FOUND": "Quy trình này không còn tồn tại. Hãy tải lại danh sách.",
+      "STALE_VERSION": "Quy trình đã thay đổi kể từ khi bạn mở. Hãy tải lại trang và thử lại.",
+      "NOT_ACTIVE_FOR_AUTO": "Chỉ quy trình đang hoạt động mới có thể nâng lên tự động. Hãy kích hoạt nó trước.",
+      "VERSION_REQUIRED": "Cần có phiên bản quy trình để đổi kênh. Hãy tải lại trang và thử lại."
+    },
+    "FORM": {
+      "SLUG": {
+        "LABEL": "Slug",
+        "PLACEHOLDER": "return_window",
+        "HINT": "Chỉ gồm chữ thường, số và dấu gạch dưới, dài 3-40 ký tự.",
+        "IMMUTABLE": "Slug được đặt khi tạo và không thể thay đổi.",
+        "REQUIRED_ERROR": "Cần có slug.",
+        "PATTERN_ERROR": "Phải khớp ^[a-z0-9_]{3,40}$ -- chỉ gồm chữ thường, số và dấu gạch dưới, dài 3-40 ký tự."
+      },
+      "TITLE": {
+        "LABEL": "Tiêu đề",
+        "PLACEHOLDER": "Thời hạn đổi trả",
+        "REQUIRED_ERROR": "Cần có tiêu đề.",
+        "LENGTH_ERROR": "Tiêu đề tối đa 100 ký tự."
+      },
+      "BODY": {
+        "LABEL": "Nội dung",
+        "PLACEHOLDER": "Bàn hỗ trợ nên làm gì trong trường hợp này...",
+        "REQUIRED_ERROR": "Cần có nội dung.",
+        "LENGTH_ERROR": "Nội dung tối đa 4000 ký tự."
+      },
+      "PHRASES": {
+        "LABEL": "Cụm từ kích hoạt",
+        "PLACEHOLDER": "Gõ một cụm từ rồi nhấn Enter",
+        "HINT": "Cách khách hàng có thể hỏi về việc này, bằng lời của chính họ. Tối đa {max} cụm từ.",
+        "COUNT": "{count} trên {max} cụm từ",
+        "MIN_ERROR": "Cần ít nhất một cụm từ kích hoạt.",
+        "MAX_ERROR": "Cho phép tối đa 12 cụm từ kích hoạt."
+      },
+      "STORE": {
+        "LABEL": "Cửa hàng",
+        "GLOBAL_DESCRIPTION": "Quy trình này áp dụng cho các cuộc trò chuyện từ mọi cửa hàng.",
+        "SCOPED_DESCRIPTION": "Quy trình này chỉ áp dụng cho các cuộc trò chuyện của {store}."
+      },
+      "CANCEL": "Hủy"
+    },
+    "CREATE": {
+      "DESCRIPTION": "Quy trình mới bắt đầu ở trạng thái Thử nghiệm. Chỉ khi bạn kích hoạt thì nó mới được dùng cho bản nháp.",
+      "SUBMIT": "Tạo quy trình",
+      "API": {
+        "SUCCESS_MESSAGE": "Đã tạo quy trình, ở trạng thái Thử nghiệm"
+      }
+    },
+    "EDIT": {
+      "VERSION_LABEL": "Phiên bản {version}",
+      "STORE_SCOPE": "Cửa hàng: {store}",
+      "SUBMIT": "Lưu phiên bản mới",
+      "NOT_FOUND": "Quy trình đó không còn tồn tại.",
+      "API": {
+        "SUCCESS_MESSAGE": "Đã cập nhật quy trình"
+      }
+    },
+    "REPLAY": {
+      "TITLE": "Kết quả phát lại",
+      "MATCH_COUNT": "{count} cuộc trò chuyện sẽ khớp với quy trình này. | {count} cuộc trò chuyện sẽ khớp với quy trình này.",
+      "SCOPE": "Đã quét {days} ngày gần nhất ({considered} cuộc trò chuyện).",
+      "SCOPE_CAPPED": "Đã quét {considered} cuộc trò chuyện gần nhất — trong khoảng thời gian này còn nhiều hơn số lần quét này bao phủ.",
+      "TIMED_OUT": "Lần quét không hoàn tất kịp thời. Các số liệu này chưa đầy đủ.",
+      "CLOSE": "Đóng"
+    },
+    "CHANNEL_TIERS": {
+      "TITLE": "Kênh",
+      "DESCRIPTION": "Bật quy trình này theo từng kênh. Bản nháp để Gotchu đề xuất câu trả lời cho nhân viên gửi; Tự động cho phép gửi mà không cần duyệt.",
+      "LOADING": "Đang tải cài đặt kênh",
+      "CHANNELS": {
+        "EMAIL": "Email",
+        "MESSENGER": "Messenger",
+        "WEB": "Widget web"
+      },
+      "TIERS": {
+        "OFF": "Tắt",
+        "DRAFT": "Bản nháp",
+        "AUTO": "Tự động"
+      },
+      "AUTO_DISABLED_HINT": "Hãy kích hoạt quy trình này trước khi nâng một kênh của nó lên tự động.",
+      "AUTO_LIMITED_HINT": "Có thể bật Tự động tại đây, nhưng hiện chưa có gì được tự động gửi trên kênh này -- mọi bản nháp đều bị từ chối với lý do \"đơn hàng chưa được xác minh\", vì danh tính của khách truy cập trên kênh này có thể bị giả mạo.",
+      "AUTHORISES_VERSION": "Cho phép v{version}",
+      "REVOKE": "Thu hồi"
+    }
+  }
+}

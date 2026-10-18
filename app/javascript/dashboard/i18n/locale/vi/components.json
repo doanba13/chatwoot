@@ -73,7 +73,12 @@
     "HINT": "Works with YouTube, Vimeo, Loom, Wistia, Arcade, Bunny, CodePen, GuideJar and mp4 links",
     "ERROR": "That doesn't look like a supported video link",
     "ADD": "Embed",
-    "CANCEL": "Huỷ"
+    "CANCEL": "Huỷ",
+    "TAB_EMBED": "Dán liên kết",
+    "TAB_UPLOAD": "Tải lên",
+    "UPLOAD_LABEL": "Chọn tệp video",
+    "UPLOAD_HINT": "MP4 · tối đa {size}MB · hoặc kéo thả vào đây",
+    "UPLOAD_ERROR": "Chỉ có thể tải lên tệp MP4"
   },
   "GOTCHU": {
     "TRANSLATE": {
@@ -90,6 +95,281 @@
       "PARTIAL": "Chỉ phần đầu được dịch — mở bản gốc để xem phần còn lại",
       "DRAFT_LABEL": "Đang hiển thị {target} — khách nhận {source}",
       "DRAFT_LABEL_NO_SOURCE": "Đang hiển thị {target} — khách nhận bản gốc"
+    },
+    "COMPOSER": {
+      "MODES_LABEL": "Bạn đang soạn gì",
+      "MODE": {
+        "INSTRUCT": "Chỉ dẫn",
+        "REPLY": "Trả lời",
+        "MEMO": "Memo"
+      },
+      "HINT": {
+        "INSTRUCT": "Gotchu viết lại bản nháp. Chỉ khi bạn nhấn Gửi thì khách hàng mới nhận được.",
+        "REPLY_WITH_DRAFT": "Gửi đến khách hàng đúng như bạn gõ. Bản nháp của Gotchu được để sang một bên.",
+        "REPLY": "Gửi đến khách hàng đúng như bạn gõ.",
+        "NOTE": "Chỉ nhóm của bạn thấy ghi chú này.",
+        "MEMO": "Chỉ nhóm thấy. Từ giờ Gotchu sẽ dùng nội dung này khi soạn nháp cho cửa hàng này."
+      },
+      "REDRAFT": "Soạn lại",
+      "INSERT_TO_EDIT": "Chèn để chỉnh sửa",
+      "SEND_REPLY": "Gửi trả lời",
+      "SEND_DRAFT_RESTRICTED": "Cuộc trò chuyện này đã đóng phần trả lời nên không thể gửi bản nháp.",
+      "WORKING_TITLE": "Gotchu đang soạn lại",
+      "STEP_RECEIVED": "Đã nhận chỉ dẫn",
+      "STEP_REREAD_ORDER": "Đọc lại cuộc trò chuyện và đơn hàng {order}",
+      "STEP_REREAD": "Đọc lại cuộc trò chuyện",
+      "STEP_WRITING": "Đang viết v{version}…",
+      "STOP": "Dừng",
+      "STOPPED": "Đã dừng. Giữ nguyên v{version}.",
+      "STOPPED_PLAIN": "Đã dừng. Bản nháp được giữ nguyên.",
+      "STOP_TOO_LATE": "Đã quá muộn để dừng: v{version} đã được viết xong.",
+      "STOP_TOO_LATE_OTHER": "Đã quá muộn để dừng: chỉ dẫn đã được xử lý xong.",
+      "STOP_FAILED": "Không thể dừng. Có thể nó vẫn sẽ hoàn tất.",
+      "TRACE_MEMO_USED": "đã dùng memo"
+    },
+    "CONFIDENCE": {
+      "SURE": "chắc chắn",
+      "PROBABLY": "có thể",
+      "CHECK": "cần kiểm tra"
+    },
+    "TRACE": {
+      "HOW_IT_GOT_HERE": "Cách đi đến kết quả này",
+      "STEPS": "{count} bước | {count} bước",
+      "ORDER": "Đã tra đơn {name}",
+      "DAYS_OLD": "{n} ngày trước | {n} ngày trước",
+      "TRACKING": "Đã kiểm tra vận đơn",
+      "POLICY": "Đã đọc chính sách cửa hàng",
+      "PROCEDURE": "Đã làm theo \"{title}\"",
+      "MEMOS": "Đã áp dụng {n} ghi chú của bàn hỗ trợ | Đã áp dụng {n} ghi chú của bàn hỗ trợ",
+      "PRECEDENTS": "Tìm thấy {n} câu trả lời tương tự | Tìm thấy {n} câu trả lời tương tự",
+      "PROCEDURE_V": "Quy trình {title} v{version}",
+      "MATCH": "khớp {score}, gần nhất tiếp theo {next}",
+      "MATCH_ONLY": "khớp {score}",
+      "FOUND_BY": {
+        "CONTACT_EMAIL": "tìm theo email người gửi",
+        "ORDER_NUMBER": "tìm theo mã đơn họ đã viết",
+        "THREAD_ROOT": "tìm từ chuỗi email",
+        "PERSISTED_ATTRIBUTES": "tìm thấy trên cuộc trò chuyện"
+      },
+      "CHECKED_AGO": "đã kiểm tra {ago}",
+      "MEMOS_NONE": "Memo: không có",
+      "RULES": "Quy tắc: đã áp dụng {n}",
+      "RULE_HOLDS": "giữ lại việc gửi",
+      "RULE_HANDS_OVER": "chuyển giao",
+      "RULE_MISSING": "không kiểm tra được {facts} nên giữ lại việc gửi",
+      "RULE_MISSING_TEXT_ONLY": "không kiểm tra được {facts} nên phần nội dung bị bỏ qua",
+      "RULE_INBOX_UNKNOWN": "không rõ hộp thư",
+      "RULE_RENDER_CAP": "không hiển thị: có quá nhiều quy tắc khớp",
+      "RULE_UNREADABLE": "phiên bản này không đọc được",
+      "RULE_SKIPPED": "không hiển thị",
+      "RULE_STILL_HOLDS": "; vẫn giữ lại việc gửi",
+      "RULE_ADDS_TEXT": "đã thêm vào câu trả lời",
+      "RULE_TESTING": "đang thử nghiệm, lẽ ra đã áp dụng, không thay đổi gì",
+      "READ": "Đọc {lang}",
+      "LANG": {
+        "DE": "tiếng Đức",
+        "FR": "tiếng Pháp",
+        "EN": "tiếng Anh",
+        "NONE": "ngôn ngữ chưa xác định"
+      },
+      "THREAD": "Chuỗi: {n} tin nhắn trước đó được đưa vào ngữ cảnh | Chuỗi: {n} tin nhắn trước đó được đưa vào ngữ cảnh",
+      "TIER": "Mức {tier} trên {channel}",
+      "TIER_NONE": "Không có quy trình nào khớp",
+      "TIER_CHANNEL_UNKNOWN": "Không có mức: không rõ kênh",
+      "CHANNEL_UNKNOWN": "không rõ kênh",
+      "TIERS": {
+        "OFF": "tắt",
+        "HAND_OVER": "chuyển giao",
+        "DRAFT": "bản nháp",
+        "AUTO": "tự động"
+      },
+      "TIER_WAIT": "chờ một nhân viên",
+      "TIER_AUTO": "có thể tự gửi; điều đó được quyết định khi hết thời gian giữ, không phải ở đây",
+      "TIER_RULE_HOLD": "một quy tắc giữ lại việc gửi nên chờ một nhân viên",
+      "TIER_HANDOVER": "quy trình chuyển trường hợp này cho một nhân viên"
+    },
+    "DRAFT": {
+      "TITLE": "Bản nháp từ Gotchu",
+      "SEND": "Gửi bản nháp",
+      "INSTRUCT_PLACEHOLDER": "Cho Gotchu biết cần sửa gì…",
+      "INSTRUCT_REFUSED": "Gotchu không nhận chỉ dẫn đó — bản nháp có thể đã thay đổi. Hãy tải lại cuộc trò chuyện.",
+      "INSTRUCT_UNAVAILABLE": "Không xác nhận được chỉ dẫn đã đến Gotchu. Hãy xem các ghi chú riêng trong cuộc trò chuyện này trước khi gửi lại.",
+      "INSTRUCT_UNCONFIGURED": "Bàn hỗ trợ này chưa cấu hình chỉ dẫn nên chưa có gì được gửi.",
+      "INSTRUCT_INVALID": "Chỉ dẫn đó trống hoặc dài hơn 2000 ký tự.",
+      "REVIEW_MINUTES": "Còn {count} phút để duyệt",
+      "REVIEW_HOURS": "Còn {count} giờ để duyệt",
+      "REVIEW_SOON": "Còn chưa đến một phút để duyệt",
+      "REVIEW_EXPIRED": "đã hết thời gian duyệt",
+      "REDRAFTING": "Đang soạn bản nháp mới…",
+      "NOTICE_UNAVAILABLE": "Gotchu không phản hồi nên không rõ ở đây có bản nháp hay không.",
+      "NOTICE_UNCONFIGURED": "Bàn hỗ trợ này chưa cấu hình Gotchu nên không đọc được bản nháp.",
+      "NOTICE_FAILED": "Không đọc được bản nháp của cuộc trò chuyện này.",
+      "FROM_INSTRUCTION": "v{version} · theo chỉ dẫn của bạn",
+      "OUTCOME_FAILED": "Gotchu không hoàn tất được. Hãy thử lại.",
+      "DISMISS": "Đóng",
+      "REFUSED": {
+        "GENERIC": "Gotchu không thay đổi bản nháp.",
+        "TERMINAL": "Bản nháp này đã kết thúc — không còn gì để sửa.",
+        "REDRAFT_CAP": "Đã đạt giới hạn soạn lại cho bản nháp này.",
+        "NOT_A_REDRAFT": "Đó không phải là một chỉnh sửa cho câu trả lời. Hãy nói rõ cần sửa gì."
+      },
+      "HEADER": "Bản nháp v{version} · từ {procedure} · mức: {tier}",
+      "HEADER_NO_PROCEDURE": "Bản nháp v{version} · không có quy trình nào khớp",
+      "HEADER_NO_TIER": "Bản nháp v{version} · từ {procedure}",
+      "PILL": "Bản nháp v{version}",
+      "PART_FROM": "từ",
+      "PART_NO_PROCEDURE": "không có quy trình nào khớp",
+      "PART_TIER": "mức: {tier}",
+      "INSTRUCT_OFF": "Chỉ dẫn đang tắt trên bàn hỗ trợ này. Bạn vẫn có thể chèn bản nháp để chỉnh sửa hoặc gửi nguyên văn.",
+      "INSTRUCT_HINT": "Cứ viết bình thường là đủ. Gotchu giữ nguyên định dạng."
+    },
+    "HANDLED": {
+      "BY": "Do {name} xử lý",
+      "BY_IN": "Do {name} xử lý · {count} phút"
+    },
+    "APPROVAL": {
+      "TITLE": "Cần bạn phê duyệt",
+      "PLANNED": "Các hành động dự kiến",
+      "APPROVE": "Phê duyệt",
+      "ADJUST": "Điều chỉnh",
+      "HAND_OVER": "Chuyển giao"
+    },
+    "ESCALATION": {
+      "HANDED_TO": "Đã chuyển cho {name}",
+      "NOTE": "Gotchu không soạn gì. Khách hàng đã được báo là có người đang xử lý."
+    },
+    "STORES": {
+      "OPEN": "{count} đang mở",
+      "OPEN_PERSONA": "{count} đang mở · phong cách: {persona}",
+      "ALL": "Tất cả cửa hàng · Đang mở"
+    },
+    "AUTONOMY": {
+      "DRAFT_TITLE": "Chỉ soạn nháp",
+      "DRAFT_DESCRIPTION": "Khách hàng nghe từ nhóm của bạn. Gotchu viết, bạn gửi.",
+      "APPROVE_TITLE": "Duyệt trước",
+      "APPROVE_DESCRIPTION": "Khách hàng chờ vài phút. Mỗi câu trả lời và hành động cần bạn nhấn một lần.",
+      "HANDLE_TITLE": "Tự xử lý các chủ đề đã chọn",
+      "HANDLE_DESCRIPTION": "Trả lời ngay ở những chủ đề bạn bật. Mọi việc còn lại chờ bạn."
+    },
+    "TOPICS": {
+      "ALWAYS_HANDS_OVER": "Luôn chuyển giao"
+    },
+    "THREAD": {
+      "TODAY": "Hôm nay",
+      "YESTERDAY": "Hôm qua",
+      "SOMEONE": "Ai đó",
+      "BY_CUSTOMER": "{name} · khách hàng · {channel}",
+      "BY_CUSTOMER_NO_CHANNEL": "{name} · khách hàng",
+      "BY_SENT_UNEDITED": "{name} · đã gửi bản nháp v{version} của Gotchu, không chỉnh sửa",
+      "BY_SENT_EDITED": "{name} · đã gửi bản nháp v{version} của Gotchu, có chỉnh sửa",
+      "BY_SENT_AUTO": "Gotchu · tự gửi bản nháp v{version}",
+      "BY_NOTE": "{name} · ghi chú riêng",
+      "LINE": {
+        "DRAFTED": "Gotchu khớp được “{title}” và đã soạn một bản trả lời",
+        "DRAFTED_NO_PROCEDURE": "Gotchu đã soạn một bản trả lời",
+        "REDRAFTED": "Gotchu đã soạn lại câu trả lời thành v{version}",
+        "REDRAFTED_PLAIN": "Gotchu đã soạn lại câu trả lời",
+        "AUTO_SCHEDULED": "Gotchu đã lên lịch tự gửi v{version}",
+        "AUTO_SCHEDULED_PLAIN": "Gotchu đã lên lịch tự gửi bản nháp",
+        "AUTO_SENT": "Gotchu đã tự gửi v{version}",
+        "AUTO_SENT_PLAIN": "Gotchu đã tự gửi bản nháp",
+        "AUTO_STOPPED": "Việc tự động gửi đã bị dừng",
+        "HANDED_OVER": "Gotchu đã chuyển trường hợp này cho một nhân viên",
+        "HANDED_OVER_PROCEDURE": "“{title}” chuyển trường hợp này cho một nhân viên",
+        "MEMO_ADDED": "Đã thêm một memo cho Gotchu"
+      }
+    },
+    "HEADER": {
+      "CHANNEL": {
+        "EMAIL": "Email",
+        "MESSENGER": "Messenger",
+        "WEB": "Chat trên web"
+      },
+      "ASSIGN": "Giao việc",
+      "MARK_PENDING": "Đánh dấu chờ xử lý",
+      "ASSIGN_LABEL": "Giao cuộc trò chuyện này"
+    },
+    "DRAWER": {
+      "ORDER_TITLE": "Đơn hàng {name}",
+      "NO_ORDER": "Không tìm thấy đơn hàng",
+      "AMBIGUOUS": "Có nhiều đơn hàng khớp nên chưa chọn đơn nào. Hãy chọn một đơn trong tab bảng đơn hàng.",
+      "UNAVAILABLE": "Hiện không tra cứu được đơn hàng.",
+      "REFRESH": "Làm mới",
+      "REFRESH_LABEL": "Làm mới đơn hàng",
+      "NOT_AVAILABLE": "Không có thông tin đơn hàng: {reason}",
+      "REASON": {
+        "UNCONFIGURED": "bàn hỗ trợ này chưa thiết lập tra cứu đơn hàng.",
+        "UNAVAILABLE": "tra cứu đơn hàng không phản hồi."
+      },
+      "CONTACT": "Liên hệ",
+      "LOADING": "Đang tải thông tin đơn hàng…",
+      "CUSTOMER": "Khách hàng",
+      "OPEN_CONTACT": "Mở liên hệ",
+      "EMAIL": "Email",
+      "PHONE": "Điện thoại",
+      "SHIP_TO": "Giao đến",
+      "ORDERS": "Đơn hàng",
+      "ORDERS_VALUE": "{count} · tổng {total}",
+      "PII_HIDDEN": "Gói Shopify của cửa hàng này ẩn thông tin khách hàng nên không hiển thị email, điện thoại và địa chỉ.",
+      "SHIPPING": "Vận chuyển",
+      "ORDERED": "Đã đặt",
+      "SHIPPED": "Đã gửi hàng",
+      "SHIPPED_WITH": "Đã gửi hàng, {carrier}",
+      "LAST_SCAN": "Lần quét gần nhất",
+      "LAST_SCAN_AT": "Lần quét gần nhất, {place}",
+      "DELIVERED": "Đã giao",
+      "NOT_SHIPPED": "Chưa gửi hàng",
+      "NO_TRACKING": "Đã gửi hàng nhưng không có mã vận đơn",
+      "DEGRADED": "Không có theo dõi trực tiếp",
+      "CHECKED_AGO": "Hãng vận chuyển được kiểm tra {ago}",
+      "NOT_CHECKED_LIVE": "Chưa kiểm tra trực tiếp với hãng vận chuyển; trạng thái lấy từ cửa hàng",
+      "ORDER": "Đơn hàng",
+      "TOTAL": "Tổng",
+      "ITEMS": "Sản phẩm",
+      "PAID": "Thanh toán",
+      "MATCHED_BY": "Khớp theo",
+      "ACTIONS": "Thao tác",
+      "GOODWILL": "Tặng mã thiện chí…",
+      "CANCEL_ORDER": "Hủy đơn hàng",
+      "CONVERSATION": "Cuộc trò chuyện",
+      "LABELS": "Nhãn",
+      "PREVIOUS": "Các cuộc trò chuyện trước",
+      "MACROS": "Macro",
+      "STATE": {
+        "DELIVERED": "Đã giao",
+        "IN_TRANSIT": "Đang vận chuyển",
+        "SHIPPED": "Đã gửi hàng",
+        "PREPARING": "Đang chuẩn bị",
+        "FAILED": "Giao hàng thất bại",
+        "CANCELLED": "Đã hủy",
+        "OUT_FOR_DELIVERY": "Đang giao hàng",
+        "AWAITING_PICKUP": "Chờ lấy hàng",
+        "UNDELIVERED": "Chưa giao được",
+        "RETURNING": "Đang hoàn trả",
+        "RETURNED": "Đã hoàn trả",
+        "EXCEPTION": "Hãng vận chuyển báo sự cố",
+        "UNKNOWN": "Không rõ trạng thái"
+      },
+      "FINANCIAL": {
+        "PAID": "đã thanh toán",
+        "PENDING": "đang chờ",
+        "AUTHORIZED": "đã ủy quyền",
+        "PARTIALLY_PAID": "thanh toán một phần",
+        "PARTIALLY_REFUNDED": "hoàn tiền một phần",
+        "REFUNDED": "đã hoàn tiền",
+        "VOIDED": "đã hủy giao dịch"
+      },
+      "REFUND": {
+        "NONE": "chưa hoàn tiền",
+        "MATCH": "đã hoàn {amount}",
+        "PAYPAL_AHEAD": "PayPal đã hoàn {paypal}, Shopify hiển thị {shopify}",
+        "SHOPIFY_AHEAD": "Shopify hiển thị đã hoàn {shopify}, PayPal {paypal}",
+        "NO_PAYPAL": "đã hoàn {amount} trên Shopify"
+      },
+      "DEGRADED_REGISTERING": "Theo dõi trực tiếp vẫn đang đăng ký bưu kiện này",
+      "DEGRADED_NOT_RECOGNISED": "Mã vận đơn của hãng này không thể theo dõi trực tiếp",
+      "DEGRADED_QUOTA": "Theo dõi trực tiếp đang tạm dừng (đã hết hạn mức)",
+      "DEGRADED_NO_DATA": "Hãng vận chuyển chưa có lần quét nào cho bưu kiện này"
     }
   }
 }

@@ -150,8 +150,8 @@
       "EMPTY_MESSAGE": "Bạn không có thông báo tin chưa đọc"
     },
     "LIST": {
-      "LOADING_MESSAGE": "Đang tải thông báo...",
       "404": "Không có thông báo",
+      "LOADING_MESSAGE": "Đang tải thông báo...",
       "TABLE_HEADER": [
         "Tên",
         "Số điện thoại",
@@ -197,7 +197,8 @@
       "SETTINGS": "Cài đặt",
       "AI_ASSIST": "AI Assist",
       "APPEARANCE": "Appearance",
-      "SNOOZE_NOTIFICATION": "Snooze Notification"
+      "SNOOZE_NOTIFICATION": "Snooze Notification",
+      "EXECUTE_MACRO": "Chạy macro"
     },
     "COMMANDS": {
       "GO_TO_MY_INBOX": "Go to My Inbox",
@@ -255,7 +256,10 @@
       "LIGHT_MODE": "Light",
       "DARK_MODE": "Dark",
       "SYSTEM_MODE": "System",
-      "SNOOZE_NOTIFICATION": "Snooze Notification"
+      "SNOOZE_NOTIFICATION": "Snooze Notification",
+      "GO_TO_SETTINGS_PROCEDURES": "Đi tới Quy trình",
+      "GO_TO_SETTINGS_GOTCHU_STORES": "Đi tới cửa hàng Gotchu",
+      "EXECUTE_A_MACRO": "Chạy một macro"
     }
   },
   "DASHBOARD_APPS": {

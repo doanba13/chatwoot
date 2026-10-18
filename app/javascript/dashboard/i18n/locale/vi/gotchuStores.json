@@ -1,0 +1,68 @@
+{
+  "GOTCHU_STORES": {
+    "HEADER": "Cửa hàng và hộp thư của chúng",
+    "DESCRIPTION": "Cho Gotchu biết mỗi hộp thư thuộc cửa hàng nào. Một trang Messenger hoặc widget trên website thường thuộc về một cửa hàng. Hộp thư mà nhiều cửa hàng cùng chuyển tiếp vào thì không thuộc cửa hàng nào: hãy để ở chế độ dùng chung và liệt kê địa chỉ của từng cửa hàng bên dưới. Kết nối các cửa hàng Shopify ở đầu trang này; Gotchu chỉ đọc đơn hàng và vận chuyển của họ sau khi bạn cấp quyền trên Shopify.",
+    "LOADING": "Đang tải hộp thư và cửa hàng",
+    "NO_STORES": "Tài khoản này chưa kết nối cửa hàng Shopify nào. Hãy kết nối một cửa hàng ở trên, rồi gán hộp thư cho nó tại đây.",
+    "UNCONFIGURED": "Bàn hỗ trợ này chưa cấu hình Gotchu. Quản trị viên cần đặt GOTCHU_GATEWAY_URL, một gateway secret cho tài khoản này và GOTCHU_GESTURE_SECRET.",
+    "LOAD_FAILED": {
+      "TITLE": "Không tải được các cửa hàng của bạn",
+      "UNAVAILABLE": "Gotchu không phản hồi. Hãy tải lại trang để thử lại.",
+      "UNCONFIGURED": "Bàn hỗ trợ này chưa cấu hình Gotchu."
+    },
+    "SAVE": "Lưu ánh xạ",
+    "SAVED": "Đã lưu ánh xạ. Từ giờ các cuộc trò chuyện mới sẽ được định tuyến theo đó.",
+    "SHARED": "Dùng chung / không thuộc một cửa hàng",
+    "CHANNEL": {
+      "EMAIL": "Email",
+      "MESSENGER": "Messenger",
+      "WEB": "Website",
+      "UNSUPPORTED": "Khác"
+    },
+    "INBOXES": {
+      "TITLE": "Hộp thư",
+      "EMPTY": "Tài khoản này chưa có hộp thư nào.",
+      "UNSUPPORTED": "Chưa được hỗ trợ",
+      "TABLE_HEADER": {
+        "INBOX": "Hộp thư",
+        "CHANNEL": "Kênh",
+        "STORE": "Cửa hàng"
+      }
+    },
+    "SHOP_EMAILS": {
+      "TITLE": "Địa chỉ cửa hàng",
+      "DESCRIPTION": "Các địa chỉ chuyển tiếp vào hộp thư dùng chung. Gotchu đọc địa chỉ chuyển tiếp trong tin nhắn đầu tiên của cuộc trò chuyện và xếp nó vào cửa hàng đó.",
+      "PLACEHOLDER": "contact{'@'}yourshop.com",
+      "LIMIT": "Tối đa 20 địa chỉ cho mỗi cửa hàng.",
+      "TO_STORE": "xếp vào {store}",
+      "FALLBACK": "Thư từ địa chỉ không có trong danh sách này sẽ được xếp theo mã đơn hàng trong chuỗi thư, nếu có."
+    },
+    "SHARED_WARNING": {
+      "TITLE": "Hộp thư này có dùng chung không?",
+      "DESCRIPTION": "Nhiều cửa hàng của bạn cùng chuyển tiếp vào hộp thư này? Hãy để nó ở chế độ dùng chung và liệt kê địa chỉ các cửa hàng.",
+      "CONFIRM": "Chỉ thuộc cửa hàng này",
+      "CANCEL": "Giữ dùng chung"
+    },
+    "UNLISTED": {
+      "TITLE": "Hộp thư Gotchu không còn thấy",
+      "DESCRIPTION": "Các hộp thư này vẫn đang được ánh xạ, nhưng danh sách hộp thư của bạn không còn hiển thị chúng cho Gotchu -- đã bị xóa, hoặc người dùng mà Gotchu đăng nhập không thấy được. Khi lưu, mỗi hộp thư vẫn giữ ánh xạ với cửa hàng hiện tại trừ khi bạn gỡ nó bên dưới.",
+      "ITEM": "Hộp thư #{id} ({channel}), ánh xạ với {store}",
+      "PENDING_REMOVAL": "Sẽ bị gỡ khỏi {store} khi bạn lưu",
+      "REMOVE": "Gỡ ánh xạ",
+      "UNDO": "Hoàn tác"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Bàn hỗ trợ này chưa cấu hình Gotchu.",
+      "UNAVAILABLE": "Gotchu chưa xác nhận thay đổi. Hãy tải lại để xem những gì đã được lưu.",
+      "INVALID": "Có hộp thư hoặc địa chỉ không dùng được. Hãy kiểm tra các địa chỉ và thử lại.",
+      "DUPLICATE": "Một hộp thư hoặc một địa chỉ được gán cho nhiều hơn một cửa hàng.",
+      "ONE_PER_CHANNEL": "Mỗi cửa hàng chỉ có thể có một hộp thư cho mỗi kênh. Hãy để hộp thư còn lại ở chế độ dùng chung.",
+      "STORES_CHANGED": "Các cửa hàng của bạn đã thay đổi kể từ khi trang này được mở. Hãy tải lại và thử lại.",
+      "UNCONFIRMED": "Không xác nhận được việc lưu. Hãy tải lại trang để xem đã lưu hay chưa.",
+      "UNLISTED_INBOX_DROPPED": "Hộp thư {ids} không còn hiển thị và chưa được xác nhận gỡ. Hãy tải lại trang và quyết định lại.",
+      "TOO_MANY_SAVES": "Lưu quá nhiều lần trong thời gian ngắn. Hãy đợi một phút rồi lưu lại."
+    },
+    "EMAIL_VIA_SHARED": "Email, qua {name} · dùng chung",
+    "CONNECT_INBOX": "+ Kết nối hộp thư"
+  }
+}

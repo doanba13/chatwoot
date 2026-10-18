@@ -1,8 +1,8 @@
 {
   "CONVERSATION": {
+    "404": "Xin lỗi, chúng tôi không thể tìm thấy hội thoại. Vui lòng thử lại",
     "SELECT_A_CONVERSATION": "Vui lòng chọn một cuộc trò chuyện từ ngăn bên trái",
     "CSAT_REPLY_MESSAGE": "Bạn hãy vui lòng đánh giá hội thoại",
-    "404": "Xin lỗi, chúng tôi không thể tìm thấy hội thoại. Vui lòng thử lại",
     "SWITCH_VIEW_LAYOUT": "Chuyển đổi bố cục",
     "DASHBOARD_APP_TAB_MESSAGES": "Tin nhắn",
     "UNVERIFIED_SESSION": "Danh tính của người dùng này không được xác thực",
@@ -363,6 +363,54 @@
       "UNMUTE": "Unmute mic",
       "VIEW_CHAT_HISTORY": "View chat history",
       "GO_TO_CONVERSATION": "Go to conversation thread"
+    },
+    "GOTCHU_QUEUE": {
+      "DRAFTED": "Đã có bản nháp",
+      "AUTO_HOLDING": "Sắp tự gửi",
+      "HANDED_OVER": "Đã chuyển giao",
+      "SENT": "Đã gửi",
+      "NO_PROCEDURE": "không có quy trình",
+      "TAB_ALL": "Tất cả",
+      "TAB_DRAFTS": "Bản nháp",
+      "TAB_HANDED_OVER": "Đã chuyển giao"
+    },
+    "REFERRAL": {
+      "AD_LABEL": "Quảng cáo",
+      "POST_LABEL": "Bài đăng",
+      "VIEW_AD": "Xem quảng cáo",
+      "WELCOME_MESSAGE_LABEL": "Tin nhắn soạn sẵn: ",
+      "REPLIED_BELOW": "Khách hàng đã trả lời bên dưới"
+    },
+    "WHATSAPP_REFERRAL": {
+      "AD": "Quảng cáo"
+    },
+    "PICKER": {
+      "VARIABLE": {
+        "SEARCH_PLACEHOLDER": "Tìm biến",
+        "DESCRIPTION": "Mô tả",
+        "VALUE": "Giá trị",
+        "NO_VALUE": "Không có giá trị cho cuộc trò chuyện này"
+      },
+      "EMOJI": {
+        "SEARCH_PLACEHOLDER": "Tìm biểu tượng cảm xúc",
+        "EMPTY_STATE": "Gõ để tìm biểu tượng cảm xúc"
+      },
+      "MACRO": {
+        "SEARCH_PLACEHOLDER": "Tìm macro",
+        "ACTION_COUNT": "1 thao tác | {count} thao tác"
+      },
+      "MENTION": {
+        "SEARCH_PLACEHOLDER": "Tìm nhân viên và nhóm",
+        "FILTER": {
+          "ALL": "Tất cả"
+        },
+        "AVAILABILITY": "Trạng thái sẵn sàng",
+        "ROLE": "Vai trò",
+        "AUTO_ASSIGN": "Tự động giao",
+        "ENABLED": "Đã bật",
+        "DISABLED": "Đã tắt",
+        "YOU_ARE_A_MEMBER": "Bạn là thành viên của nhóm này"
+      }
     }
   },
   "EMAIL_TRANSCRIPT": {

@@ -21,6 +21,7 @@ describe('DashboardAppFrame', () => {
         getCurrentUser: state => state.currentUser,
         'contacts/getContact': state => () => state.contact,
         'attributes/getAttributes': state => state.customAttributes,
+        getUISettings: () => ({ locale: 'vi' }),
       },
       mutations: {
         setCustomAttributes(state, customAttributes) {
@@ -84,6 +85,7 @@ describe('DashboardAppFrame', () => {
         },
         customAttributes,
         theme: 'light',
+        locale: 'vi',
       },
     });
   });

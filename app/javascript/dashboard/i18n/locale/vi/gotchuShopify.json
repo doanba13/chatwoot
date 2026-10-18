@@ -1,0 +1,31 @@
+{
+  "GOTCHU_SHOPIFY": {
+    "SHOP_LABEL": "Cửa hàng Shopify của bạn",
+    "SHOP_PLACEHOLDER": "your-store.myshopify.com",
+    "CONNECT": "Kết nối cửa hàng Shopify",
+    "RECONNECT": "Kết nối lại",
+    "EMPTY": "Chưa kết nối cửa hàng nào.",
+    "COMPLETING": "Đang hoàn tất kết nối với Shopify",
+    "CONNECTED": "Đã kết nối {key}.",
+    "PREFIX_REVIEW": "Hãy kiểm tra tiền tố đơn hàng bên dưới: chúng tôi không đọc được nó từ các đơn hàng của bạn.",
+    "PREFIX_LABEL": "Tiền tố đơn hàng",
+    "PREFIX_SAVE": "Lưu",
+    "PREFIX_SAVED": "Đã lưu tiền tố đơn hàng.",
+    "STATUS": {
+      "ACTIVE": "Đã kết nối",
+      "DISCONNECTED": "Đã ngắt kết nối"
+    },
+    "ERRORS": {
+      "UNCONFIGURED": "Bàn hỗ trợ này chưa cấu hình Gotchu. Quản trị viên cần đặt GOTCHU_GATEWAY_URL, một gateway secret cho tài khoản này và GOTCHU_GESTURE_SECRET.",
+      "UNAVAILABLE": "Gotchu chưa xác nhận yêu cầu. Hãy thử lại sau giây lát.",
+      "INVALID_SHOP": "Nhập địa chỉ myshopify.com của cửa hàng, ví dụ your-store.myshopify.com.",
+      "INVALID_PREFIX": "Dùng 1 đến 10 chữ cái hoặc chữ số, trong đó có ít nhất một chữ cái.",
+      "INVALID_QUERY": "Không đọc được phản hồi của Shopify. Hãy bắt đầu kết nối lại.",
+      "NOT_FOUND": "Không tìm thấy cửa hàng đó. Hãy tải lại trang và thử lại.",
+      "PREFIX_UNAVAILABLE": "Tiền tố đơn hàng đó đã được dùng. Hãy chọn tiền tố khác.",
+      "TOO_MANY_SAVES": "Quá nhiều yêu cầu trong thời gian ngắn. Hãy đợi một phút rồi thử lại.",
+      "INSTALL_FAILED": "Không thể kết nối cửa hàng. Hãy bắt đầu kết nối lại.",
+      "INSTALL_FAILED_REFERENCE": "Không thể kết nối cửa hàng. Hãy bắt đầu kết nối lại. Nếu vẫn lỗi, hãy cung cấp mã tham chiếu {reference}."
+    }
+  }
+}

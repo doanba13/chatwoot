@@ -20,6 +20,9 @@ import datePicker from './datePicker.json';
 import emoji from './emoji.json';
 import general from './general.json';
 import generalSettings from './generalSettings.json';
+import gotchuAgent from './gotchuAgent.json';
+import gotchuShopify from './gotchuShopify.json';
+import gotchuStores from './gotchuStores.json';
 import helpCenter from './helpCenter.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
@@ -30,6 +33,7 @@ import login from './login.json';
 import macros from './macros.json';
 import mfa from './mfa.json';
 import onboarding from './onboarding.json';
+import proceduresMgmt from './proceduresMgmt.json';
 import report from './report.json';
 import resetPassword from './resetPassword.json';
 import search from './search.json';
@@ -65,6 +69,9 @@ export default {
   ...emoji,
   ...general,
   ...generalSettings,
+  ...gotchuAgent,
+  ...gotchuShopify,
+  ...gotchuStores,
   ...helpCenter,
   ...inbox,
   ...inboxMgmt,
@@ -75,6 +82,7 @@ export default {
   ...macros,
   ...mfa,
   ...onboarding,
+  ...proceduresMgmt,
   ...report,
   ...resetPassword,
   ...search,

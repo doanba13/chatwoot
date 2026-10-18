@@ -1,5 +1,6 @@
 <script>
 import LoadingState from 'dashboard/components/widgets/LoadingState.vue';
+import { resolveTranslateTarget } from 'dashboard/composables/useTranslateSetting';
 
 const FETCH_INFO_MESSAGE = 'chatwoot-dashboard-app:fetch-info';
 const APP_CONTEXT_EVENT = 'appContext';
@@ -47,7 +48,19 @@ export default {
         currentAgent: this.currentAgent,
         customAttributes: this.customAttributes,
         theme: this.currentTheme,
+        locale: this.interfaceLocale,
       };
+    },
+    // The embedded Gotchu panel speaks en, vi, de or fr; anything else is en.
+    interfaceLocale() {
+      const { getters } = this.$store;
+      const account = getters['accounts/getAccount']?.(
+        this.currentChat?.account_id
+      );
+      return resolveTranslateTarget({
+        uiLocale: getters.getUISettings?.locale,
+        accountLocale: account?.locale,
+      });
     },
     customAttributes() {
       return this.$store.getters['attributes/getAttributes'];
