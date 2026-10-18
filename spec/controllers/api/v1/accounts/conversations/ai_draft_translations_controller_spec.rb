@@ -27,7 +27,7 @@ RSpec.describe 'Conversation AI Draft Translations API', type: :request do
       .to_return(status: status, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
   end
 
-  def fetch(params = { version: 2, target_language: 'vi' })
+  def fetch(params = { cycle_id: 5, version: 2, target_language: 'vi' })
     get translation_url, params: params, headers: agent.create_new_auth_token, as: :json
   end
 
@@ -43,13 +43,13 @@ RSpec.describe 'Conversation AI Draft Translations API', type: :request do
     stub = stub_gateway
     allow(Gotchu::GatewayClient).to receive(:new).and_call_original
 
-    fetch(version: 2, target_language: 'vi', account_id: other.id)
+    fetch(cycle_id: 5, version: 2, target_language: 'vi', account_id: other.id)
 
     expect(response).to have_http_status(:success)
     expect(Gotchu::GatewayClient).to have_received(:new).with(account_id: account.id)
-    sent = ->(req) { JSON.parse(req.body).values_at('kind', 'conversationId', 'version', 'target') }
-    expect(stub.with { |req| sent.call(req) == ['draft', conversation.display_id, 2, 'vi'] }).to have_been_requested
-    expect(response.parsed_body).to eq('text' => 'Ihre Sendung ist unterwegs.', 'partial' => false, 'version' => 2)
+    sent = ->(req) { JSON.parse(req.body).values_at('kind', 'conversationId', 'cycleId', 'version', 'target') }
+    expect(stub.with { |req| sent.call(req) == ['draft', conversation.display_id, 5, 2, 'vi'] }).to have_been_requested
+    expect(response.parsed_body).to eq('text' => 'Ihre Sendung ist unterwegs.', 'partial' => false, 'version' => 2, 'cycle_id' => 5)
   end
 
   it 'answers 409 when the gateway says stale' do
@@ -62,14 +62,21 @@ RSpec.describe 'Conversation AI Draft Translations API', type: :request do
   end
 
   it 'answers 422 for an unsupported language without reaching the gateway' do
-    fetch(version: 2, target_language: 'xx')
+    fetch(cycle_id: 5, version: 2, target_language: 'xx')
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(a_request(:post, translate_endpoint)).not_to have_been_made
   end
 
   it 'answers 422 for a missing version' do
-    fetch(target_language: 'vi')
+    fetch(cycle_id: 5, target_language: 'vi')
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(a_request(:post, translate_endpoint)).not_to have_been_made
+  end
+
+  it 'answers 422 for a missing cycle_id' do
+    fetch(version: 2, target_language: 'vi')
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(a_request(:post, translate_endpoint)).not_to have_been_made

@@ -75,20 +75,20 @@ RSpec.describe Gotchu::TranslateService do
 
   describe '#draft' do
     it 'posts the draft kind' do
-      stub = stub_gateway.with(body: { kind: 'draft', conversationId: 7, version: 3, target: 'fr' }.to_json)
-      expect(service.draft(conversation_id: 7, version: 3, target: 'fr')).to include(text: 'Hello World')
+      stub = stub_gateway.with(body: { kind: 'draft', conversationId: 7, cycleId: 5, version: 3, target: 'fr' }.to_json)
+      expect(service.draft(conversation_id: 7, cycle_id: 5, version: 3, target: 'fr')).to include(text: 'Hello World')
       expect(stub).to have_been_requested
     end
 
     it 'raises ConflictError on 409' do
       stub_gateway(status: 409, body: { error: 'stale', latest: 4 })
-      expect { service.draft(conversation_id: 7, version: 3, target: 'fr') }
+      expect { service.draft(conversation_id: 7, cycle_id: 5, version: 3, target: 'fr') }
         .to raise_error(Gotchu::GatewayClient::ConflictError)
     end
 
     it 'returns nil on 429' do
       stub_gateway(status: 429, body: { error: 'limited' })
-      expect(service.draft(conversation_id: 7, version: 3, target: 'fr')).to be_nil
+      expect(service.draft(conversation_id: 7, cycle_id: 5, version: 3, target: 'fr')).to be_nil
     end
   end
 end

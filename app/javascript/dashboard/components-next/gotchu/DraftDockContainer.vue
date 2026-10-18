@@ -912,35 +912,47 @@ const dockState = computed(() =>
 // `view.text` and `draftVersion`.
 const { enabled: translateOn, target: translateTarget } = useTranslateSetting();
 const draftTranslation = ref(null);
+const translationFailed = ref(false);
 let translationSeq = 0;
 
 async function loadDraftTranslation() {
   translationSeq += 1;
   const seq = translationSeq;
   draftTranslation.value = null;
+  translationFailed.value = false;
   const version = draftVersion.value;
+  const cycleId = view.value.cycleId;
   const conversationId = props.conversationId;
   if (
     !translateOn.value ||
     view.value.state !== 'ready' ||
-    !Number.isInteger(version)
+    !Number.isInteger(version) ||
+    !Number.isInteger(cycleId)
   ) {
     return;
   }
   const target = translateTarget.value;
   try {
     const { data } = await enqueueTranslation(() =>
-      DraftTranslationAPI.getTranslation(conversationId, { version, target })
+      DraftTranslationAPI.getTranslation(conversationId, {
+        cycleId,
+        version,
+        target,
+      })
     );
     if (seq !== translationSeq) return;
     draftTranslation.value = {
+      cycleId: data.cycle_id,
       version: data.version,
       text: data.text,
       partial: data.partial === true,
     };
-  } catch {
-    // Stale, limited or failed: the original stays on screen, as it was.
-    if (seq === translationSeq) draftTranslation.value = null;
+  } catch (error) {
+    // The original stays on screen. A 409 is the draft moving on, and a refetch
+    // follows; anything else is said.
+    if (seq !== translationSeq) return;
+    draftTranslation.value = null;
+    translationFailed.value = error?.response?.status !== 409;
   }
 }
 
@@ -949,6 +961,7 @@ watch(
     translateOn.value,
     translateTarget.value,
     draftVersion.value,
+    view.value.cycleId,
     props.conversationId,
     view.value.state === 'ready',
   ],
@@ -958,18 +971,33 @@ watch(
 
 const shownDraft = computed(() =>
   pickDraftText({
-    draft: { version: draftVersion.value, body: view.value.text },
+    draft: {
+      cycleId: view.value.cycleId,
+      version: draftVersion.value,
+      body: view.value.text,
+    },
     translation: draftTranslation.value,
     enabled: translateOn.value,
   })
 );
 
-// Only the plain ready view is translated: a held or in-flight text is not the
-// version the translation was fetched for.
+// True when dockText below renders the translation: the held and the
+// in-flight-without-a-ready-view texts are not what was fetched.
+const rendersTranslation = computed(
+  () =>
+    shownDraft.value.translated &&
+    !holdShown.value &&
+    !(waiting.value && view.value.state !== 'ready')
+);
 const translationLabel = computed(() => {
-  if (!shownDraft.value.translated || waiting.value || holdShown.value) {
-    return null;
+  if (
+    translateOn.value &&
+    translationFailed.value &&
+    !rendersTranslation.value
+  ) {
+    return t('GOTCHU.TRANSLATE.FAILED');
   }
+  if (!rendersTranslation.value) return null;
   const targetName = t(`GOTCHU.TRANSLATE.LANGUAGES.${translateTarget.value}`);
   const lang = view.value.lang;
   return lang && te(`GOTCHU.TRANSLATE.LANGUAGES.${lang}`)
@@ -980,7 +1008,7 @@ const translationLabel = computed(() => {
     : t('GOTCHU.TRANSLATE.DRAFT_LABEL_NO_SOURCE', { target: targetName });
 });
 const translationPartial = computed(
-  () => !!translationLabel.value && draftTranslation.value?.partial === true
+  () => rendersTranslation.value && draftTranslation.value?.partial === true
 );
 
 const dockText = computed(() => {

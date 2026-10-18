@@ -1,13 +1,23 @@
 import { pickDraftText } from '../helpers/draftTranslation';
 
 describe('pickDraftText', () => {
-  const draft = { version: 3, body: 'B3' };
+  const draft = { cycleId: 7, version: 3, body: 'B3' };
 
   it('ignores a translation for a superseded version', () => {
     expect(
       pickDraftText({
         draft,
-        translation: { version: 2, text: 'T2' },
+        translation: { cycleId: 7, version: 2, text: 'T2' },
+        enabled: true,
+      })
+    ).toEqual({ text: 'B3', translated: false });
+  });
+
+  it('ignores a translation for the same version of another cycle', () => {
+    expect(
+      pickDraftText({
+        draft,
+        translation: { cycleId: 8, version: 3, text: 'T3' },
         enabled: true,
       })
     ).toEqual({ text: 'B3', translated: false });
@@ -17,7 +27,7 @@ describe('pickDraftText', () => {
     expect(
       pickDraftText({
         draft,
-        translation: { version: 3, text: 'T3' },
+        translation: { cycleId: 7, version: 3, text: 'T3' },
         enabled: false,
       })
     ).toEqual({ text: 'B3', translated: false });
@@ -27,7 +37,7 @@ describe('pickDraftText', () => {
     expect(
       pickDraftText({
         draft,
-        translation: { version: 3, text: 'T3' },
+        translation: { cycleId: 7, version: 3, text: 'T3' },
         enabled: true,
       })
     ).toEqual({ text: 'T3', translated: true });
@@ -40,7 +50,7 @@ describe('pickDraftText', () => {
     expect(
       pickDraftText({
         draft,
-        translation: { version: 3, text: '' },
+        translation: { cycleId: 7, version: 3, text: '' },
         enabled: true,
       }).translated
     ).toBe(false);

@@ -15,9 +15,9 @@ class DraftTranslationAPI extends ApiClient {
     super('conversations', { accountScoped: true });
   }
 
-  getTranslation(conversationId, { version, target }) {
+  getTranslation(conversationId, { cycleId, version, target }) {
     return axios.get(`${this.url}/${conversationId}/ai_draft_translation`, {
-      params: { version, target_language: target },
+      params: { cycle_id: cycleId, version, target_language: target },
     });
   }
 }

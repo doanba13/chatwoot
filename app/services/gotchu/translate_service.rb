@@ -28,9 +28,9 @@ class Gotchu::TranslateService
 
   # Same answer shape. A draft that is no longer the latest version raises
   # GatewayClient::ConflictError so the caller can say "reload".
-  def draft(conversation_id:, version:, target:)
+  def draft(conversation_id:, cycle_id:, version:, target:)
     post(
-      { kind: 'draft', conversationId: conversation_id, version: version, target: target },
+      { kind: 'draft', conversationId: conversation_id, cycleId: cycle_id, version: version, target: target },
       refusals: { Gotchu::GatewayClient::ConflictError => [409] }
     )
   end
