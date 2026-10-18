@@ -32,6 +32,16 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  // Set while `text` is a translation of the draft: says what the customer
+  // actually receives. Display only; send and insert use the original.
+  translationLabel: {
+    type: String,
+    default: null,
+  },
+  translationPartial: {
+    type: Boolean,
+    default: false,
+  },
   // When the review window closes, as an ISO timestamp. Null renders nothing —
   // there is no window to default to.
   expiresAt: {
@@ -421,6 +431,15 @@ const reviewLabel = computed(() => {
           <span :key="text" class="block">{{ text }}</span>
         </Transition>
       </div>
+      <p
+        v-if="translationLabel"
+        class="draft-dock__translation m-0 px-[18px] pb-2 text-xs text-[var(--g-text-muted)]"
+      >
+        {{ translationLabel }}
+        <template v-if="translationPartial">
+          · {{ $t('GOTCHU.TRANSLATE.PARTIAL') }}
+        </template>
+      </p>
     </div>
   </div>
   <!-- Below the draft body and above the footer, whether or not there is a

@@ -367,7 +367,9 @@
         "fr": "French"
       },
       "FAILED": "Couldn't translate — showing original",
-      "PARTIAL": "Only the first part was translated — open the original for the rest"
+      "PARTIAL": "Only the first part was translated — open the original for the rest",
+      "DRAFT_LABEL": "Showing {target} — customer receives {source}",
+      "DRAFT_LABEL_NO_SOURCE": "Showing {target} — customer receives the original"
     }
   }
 }

@@ -362,7 +362,9 @@
         "fr": "Français"
       },
       "FAILED": "Traduction impossible — original affiché",
-      "PARTIAL": "Seule la première partie a été traduite — ouvrez l'original pour le reste"
+      "PARTIAL": "Seule la première partie a été traduite — ouvrez l'original pour le reste",
+      "DRAFT_LABEL": "Affichage en {target} — le client reçoit {source}",
+      "DRAFT_LABEL_NO_SOURCE": "Affichage en {target} — le client reçoit l'original"
     }
   }
 }

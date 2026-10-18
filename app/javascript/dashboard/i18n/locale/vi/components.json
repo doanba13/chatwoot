@@ -87,7 +87,9 @@
         "fr": "Tiếng Pháp"
       },
       "FAILED": "Không dịch được — đang hiển thị bản gốc",
-      "PARTIAL": "Chỉ phần đầu được dịch — mở bản gốc để xem phần còn lại"
+      "PARTIAL": "Chỉ phần đầu được dịch — mở bản gốc để xem phần còn lại",
+      "DRAFT_LABEL": "Đang hiển thị {target} — khách nhận {source}",
+      "DRAFT_LABEL_NO_SOURCE": "Đang hiển thị {target} — khách nhận bản gốc"
     }
   }
 }

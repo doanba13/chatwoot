@@ -177,6 +177,7 @@ Rails.application.routes.draw do
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
               resource :ai_draft, only: [:show]
+              resource :ai_draft_translation, only: [:show]
               resource :ai_draft_instruction, only: [:create] do
                 # Stop during a redraft (conversation-screen spec §3.4). Never
                 # changes cycle state (invariant 9); the worker's compare-and-set

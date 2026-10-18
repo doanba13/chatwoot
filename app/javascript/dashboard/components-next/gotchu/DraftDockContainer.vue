@@ -14,6 +14,12 @@ import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import AiDraftAPI from 'dashboard/api/gotchu/aiDraft';
+import DraftTranslationAPI from 'dashboard/api/gotchu/draftTranslation';
+import {
+  enqueueTranslation,
+  useTranslateSetting,
+} from 'dashboard/composables/useTranslateSetting';
+import { pickDraftText } from './helpers/draftTranslation';
 import { setDraftMeta, useDraftMeta } from './helpers/draftMeta';
 import { redraftSteps } from './helpers/redraftSteps';
 import DraftDock from './DraftDock.vue';
@@ -900,12 +906,89 @@ const traceSummary = computed(() => {
 const dockState = computed(() =>
   waiting.value || holdShown.value ? 'ready' : view.value.state
 );
+// The supporter's-language reading of the draft, for the dock body only. It is
+// fetched per version and dropped by pickDraftText for any other, and nothing
+// below -- insert, send, instruct -- reads it (invariant 6): those keep using
+// `view.text` and `draftVersion`.
+const { enabled: translateOn, target: translateTarget } = useTranslateSetting();
+const draftTranslation = ref(null);
+let translationSeq = 0;
+
+async function loadDraftTranslation() {
+  translationSeq += 1;
+  const seq = translationSeq;
+  draftTranslation.value = null;
+  const version = draftVersion.value;
+  const conversationId = props.conversationId;
+  if (
+    !translateOn.value ||
+    view.value.state !== 'ready' ||
+    !Number.isInteger(version)
+  ) {
+    return;
+  }
+  const target = translateTarget.value;
+  try {
+    const { data } = await enqueueTranslation(() =>
+      DraftTranslationAPI.getTranslation(conversationId, { version, target })
+    );
+    if (seq !== translationSeq) return;
+    draftTranslation.value = {
+      version: data.version,
+      text: data.text,
+      partial: data.partial === true,
+    };
+  } catch {
+    // Stale, limited or failed: the original stays on screen, as it was.
+    if (seq === translationSeq) draftTranslation.value = null;
+  }
+}
+
+watch(
+  () => [
+    translateOn.value,
+    translateTarget.value,
+    draftVersion.value,
+    props.conversationId,
+    view.value.state === 'ready',
+  ],
+  loadDraftTranslation,
+  { immediate: true }
+);
+
+const shownDraft = computed(() =>
+  pickDraftText({
+    draft: { version: draftVersion.value, body: view.value.text },
+    translation: draftTranslation.value,
+    enabled: translateOn.value,
+  })
+);
+
+// Only the plain ready view is translated: a held or in-flight text is not the
+// version the translation was fetched for.
+const translationLabel = computed(() => {
+  if (!shownDraft.value.translated || waiting.value || holdShown.value) {
+    return null;
+  }
+  const targetName = t(`GOTCHU.TRANSLATE.LANGUAGES.${translateTarget.value}`);
+  const lang = view.value.lang;
+  return lang && te(`GOTCHU.TRANSLATE.LANGUAGES.${lang}`)
+    ? t('GOTCHU.TRANSLATE.DRAFT_LABEL', {
+        target: targetName,
+        source: t(`GOTCHU.TRANSLATE.LANGUAGES.${lang}`),
+      })
+    : t('GOTCHU.TRANSLATE.DRAFT_LABEL_NO_SOURCE', { target: targetName });
+});
+const translationPartial = computed(
+  () => !!translationLabel.value && draftTranslation.value?.partial === true
+);
+
 const dockText = computed(() => {
   if (waiting.value && view.value.state !== 'ready') {
     return inFlight.value.draftText ?? '';
   }
   if (holdShown.value) return stoppedHold.value.text ?? '';
-  return view.value.text;
+  return shownDraft.value.text;
 });
 
 // Until the cycle leaves redrafting, read at the fast pace: the Stop is the
@@ -1033,6 +1116,8 @@ const working = computed(() => {
   <DraftDock
     :state="dockState"
     :text="dockText"
+    :translation-label="translationLabel"
+    :translation-partial="translationPartial"
     :expires-at="view.expiresAt"
     :streaming-text="$t('GOTCHU.DRAFT.REDRAFTING')"
     :trace="traceSteps"

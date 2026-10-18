@@ -26,6 +26,16 @@ import {
 // reads, and under `t: key => key` a wrong mapping and a right one both pass.
 withFullI18n();
 
+// Translation is off here; it has its own spec (draftTranslation.spec.js). The
+// real composable needs the store, which this spec does not mount.
+vi.mock('dashboard/composables/useTranslateSetting', () => ({
+  useTranslateSetting: () => ({
+    enabled: { value: false },
+    target: { value: 'en' },
+  }),
+  enqueueTranslation: task => task(),
+}));
+
 vi.mock('dashboard/api/gotchu/aiDraft', () => ({
   default: {
     getDraft: vi.fn(),
